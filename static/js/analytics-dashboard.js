@@ -377,97 +377,121 @@ const StatsCard = ({ icon, title, value, color, loading }) => {
 
 // Activity Chart Component
 const ActivityChart = ({ data, loading, colors }) => {
-  const chartRef = React.useRef(null);
+  // Instead of creating our own canvas, we'll use the pre-existing one
   const [chart, setChart] = React.useState(null);
   
   React.useEffect(() => {
-    if (chartRef.current && !loading) {
-      // Destroy previous chart if it exists
-      if (chart) {
-        chart.destroy();
+    // Find the existing canvas element instead of creating a new one
+    const canvas = document.getElementById('activity-chart');
+    
+    if (canvas && !loading) {
+      // Safely access the canvas context
+      let ctx;
+      try {
+        ctx = canvas.getContext('2d');
+      } catch (err) {
+        console.error('Error getting canvas context:', err);
+        return;
       }
       
-      // Create new chart
-      const newChart = new Chart(chartRef.current, {
-        type: 'line',
-        data: {
-          labels: data.labels,
-          datasets: [
-            {
-              label: 'Commands',
-              data: data.datasets[0].data,
-              borderColor: colors.primary,
-              backgroundColor: `${colors.primary}20`,
-              borderWidth: 2,
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: 'AI Interactions',
-              data: data.datasets[1].data,
-              borderColor: colors.purple,
-              backgroundColor: `${colors.purple}20`,
-              borderWidth: 2,
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: 'User Activity',
-              data: data.datasets[2].data,
-              borderColor: colors.success,
-              backgroundColor: `${colors.success}20`,
-              borderWidth: 2,
-              tension: 0.4,
-              fill: true
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false
+      // Destroy previous chart if it exists
+      if (chart) {
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying previous chart:', err);
+        }
+      }
+      
+      try {
+        // Create new chart
+        const newChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: [
+              {
+                label: 'Commands',
+                data: data.datasets[0].data,
+                borderColor: colors.primary,
+                backgroundColor: `${colors.primary}20`,
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: 'AI Interactions',
+                data: data.datasets[1].data,
+                borderColor: colors.purple,
+                backgroundColor: `${colors.purple}20`,
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: 'User Activity',
+                data: data.datasets[2].data,
+                borderColor: colors.success,
+                backgroundColor: `${colors.success}20`,
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+              }
+            ]
           },
-          plugins: {
-            title: {
-              display: true,
-              text: 'Activity Over Time',
-              font: {
-                size: 16,
-                weight: 'normal'
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: 'Activity Over Time',
+                font: {
+                  size: 16,
+                  weight: 'normal'
+                }
+              },
+              legend: {
+                position: 'top'
+              },
+              tooltip: {
+                boxPadding: 8
               }
             },
-            legend: {
-              position: 'top'
-            },
-            tooltip: {
-              boxPadding: 8
-            }
-          },
-          scales: {
-            x: {
-              grid: {
-                display: false
-              }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: (value) => value.toLocaleString()
+            scales: {
+              x: {
+                grid: {
+                  display: false
+                }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: (value) => value.toLocaleString()
+                }
               }
             }
           }
-        }
-      });
-      
-      setChart(newChart);
+        });
+        
+        setChart(newChart);
+      } catch (err) {
+        console.error('Error creating chart:', err);
+      }
     }
     
     // Cleanup on unmount
     return () => {
       if (chart) {
-        chart.destroy();
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying chart on unmount:', err);
+        }
       }
     };
   }, [data, loading, colors]);
@@ -482,7 +506,8 @@ const ActivityChart = ({ data, loading, colors }) => {
         </div>
       ) : (
         <div className="chart-container">
-          <canvas ref={chartRef}></canvas>
+          <h5 className="card-title mb-3">Activity Over Time</h5>
+          {/* We don't render a canvas here since we're using the hidden one */}
         </div>
       )}
     </div>
@@ -491,81 +516,105 @@ const ActivityChart = ({ data, loading, colors }) => {
 
 // Commands Chart Component
 const CommandsChart = ({ data, loading, colors }) => {
-  const chartRef = React.useRef(null);
+  // Instead of creating our own canvas, we'll use the pre-existing one
   const [chart, setChart] = React.useState(null);
   
   React.useEffect(() => {
-    if (chartRef.current && !loading) {
-      // Destroy previous chart if it exists
-      if (chart) {
-        chart.destroy();
+    // Find the existing canvas element instead of creating a new one
+    const canvas = document.getElementById('commands-chart');
+    
+    if (canvas && !loading) {
+      // Safely access the canvas context
+      let ctx;
+      try {
+        ctx = canvas.getContext('2d');
+      } catch (err) {
+        console.error('Error getting canvas context:', err);
+        return;
       }
       
-      // Create chart colors array
-      const chartColors = [
-        colors.primary,
-        colors.purple,
-        colors.orange,
-        colors.success,
-        colors.info,
-        colors.danger
-      ];
-      
-      // Create new chart
-      const newChart = new Chart(chartRef.current, {
-        type: 'doughnut',
-        data: {
-          labels: data.labels,
-          datasets: [{
-            data: data.data,
-            backgroundColor: chartColors,
-            borderWidth: 1,
-            borderColor: chartColors.map(color => `${color}50`)
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: {
-              display: true,
-              text: 'Top Commands',
-              font: {
-                size: 16,
-                weight: 'normal'
-              }
-            },
-            legend: {
-              position: 'bottom',
-              labels: {
-                boxWidth: 12,
-                padding: 15
-              }
-            },
-            datalabels: {
-              display: true,
-              color: 'white',
-              font: {
-                weight: 'bold'
-              },
-              formatter: (value, ctx) => {
-                const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = Math.round((value / sum) * 100) + '%';
-                return percentage;
-              }
-            }
-          },
-          cutout: '65%'
+      // Destroy previous chart if it exists
+      if (chart) {
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying previous chart:', err);
         }
-      });
+      }
       
-      setChart(newChart);
+      try {
+        // Create chart colors array
+        const chartColors = [
+          colors.primary,
+          colors.purple,
+          colors.orange,
+          colors.success,
+          colors.info,
+          colors.danger
+        ];
+        
+        // Create new chart
+        const newChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              data: data.data,
+              backgroundColor: chartColors,
+              borderWidth: 1,
+              borderColor: chartColors.map(color => `${color}50`)
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Top Commands',
+                font: {
+                  size: 16,
+                  weight: 'normal'
+                }
+              },
+              legend: {
+                position: 'bottom',
+                labels: {
+                  boxWidth: 12,
+                  padding: 15
+                }
+              },
+              datalabels: {
+                display: true,
+                color: 'white',
+                font: {
+                  weight: 'bold'
+                },
+                formatter: (value, ctx) => {
+                  const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / sum) * 100) + '%';
+                  return percentage;
+                }
+              }
+            },
+            cutout: '65%'
+          }
+        });
+        
+        setChart(newChart);
+      } catch (err) {
+        console.error('Error creating chart:', err);
+      }
     }
     
     // Cleanup on unmount
     return () => {
       if (chart) {
-        chart.destroy();
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying chart on unmount:', err);
+        }
       }
     };
   }, [data, loading, colors]);
@@ -580,7 +629,8 @@ const CommandsChart = ({ data, loading, colors }) => {
         </div>
       ) : (
         <div className="chart-container">
-          <canvas ref={chartRef}></canvas>
+          <h5 className="card-title mb-3">Top Commands</h5>
+          {/* We don't render a canvas here since we're using the hidden one */}
         </div>
       )}
     </div>
@@ -589,78 +639,102 @@ const CommandsChart = ({ data, loading, colors }) => {
 
 // AI Usage Chart Component
 const AIUsageChart = ({ data, loading, colors }) => {
-  const chartRef = React.useRef(null);
+  // Instead of creating our own canvas, we'll use the pre-existing one
   const [chart, setChart] = React.useState(null);
   
   React.useEffect(() => {
-    if (chartRef.current && !loading) {
-      // Destroy previous chart if it exists
-      if (chart) {
-        chart.destroy();
+    // Find the existing canvas element instead of creating a new one
+    const canvas = document.getElementById('ai-usage-chart');
+    
+    if (canvas && !loading) {
+      // Safely access the canvas context
+      let ctx;
+      try {
+        ctx = canvas.getContext('2d');
+      } catch (err) {
+        console.error('Error getting canvas context:', err);
+        return;
       }
       
-      // Create chart colors array
-      const chartColors = [
-        colors.purple,
-        colors.primary,
-        colors.success,
-        colors.secondary
-      ];
+      // Destroy previous chart if it exists
+      if (chart) {
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying previous chart:', err);
+        }
+      }
       
-      // Create new chart
-      const newChart = new Chart(chartRef.current, {
-        type: 'pie',
-        data: {
-          labels: data.labels,
-          datasets: [{
-            data: data.data,
-            backgroundColor: chartColors,
-            borderWidth: 1,
-            borderColor: chartColors.map(color => `${color}50`)
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: {
-              display: true,
-              text: 'AI Model Usage',
-              font: {
-                size: 16,
-                weight: 'normal'
-              }
-            },
-            legend: {
-              position: 'bottom',
-              labels: {
-                boxWidth: 12,
-                padding: 15
-              }
-            },
-            datalabels: {
-              display: true,
-              color: 'white',
-              font: {
-                weight: 'bold'
+      try {
+        // Create chart colors array
+        const chartColors = [
+          colors.purple,
+          colors.primary,
+          colors.success,
+          colors.secondary
+        ];
+        
+        // Create new chart
+        const newChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              data: data.data,
+              backgroundColor: chartColors,
+              borderWidth: 1,
+              borderColor: chartColors.map(color => `${color}50`)
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'AI Model Usage',
+                font: {
+                  size: 16,
+                  weight: 'normal'
+                }
               },
-              formatter: (value, ctx) => {
-                const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = Math.round((value / sum) * 100) + '%';
-                return percentage;
+              legend: {
+                position: 'bottom',
+                labels: {
+                  boxWidth: 12,
+                  padding: 15
+                }
+              },
+              datalabels: {
+                display: true,
+                color: 'white',
+                font: {
+                  weight: 'bold'
+                },
+                formatter: (value, ctx) => {
+                  const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / sum) * 100) + '%';
+                  return percentage;
+                }
               }
             }
           }
-        }
-      });
-      
-      setChart(newChart);
+        });
+        
+        setChart(newChart);
+      } catch (err) {
+        console.error('Error creating chart:', err);
+      }
     }
     
     // Cleanup on unmount
     return () => {
       if (chart) {
-        chart.destroy();
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying chart on unmount:', err);
+        }
       }
     };
   }, [data, loading, colors]);
@@ -675,7 +749,8 @@ const AIUsageChart = ({ data, loading, colors }) => {
         </div>
       ) : (
         <div className="chart-container">
-          <canvas ref={chartRef}></canvas>
+          <h5 className="card-title mb-3">AI Model Usage</h5>
+          {/* We don't render a canvas here since we're using the hidden one */}
         </div>
       )}
     </div>
@@ -684,109 +759,133 @@ const AIUsageChart = ({ data, loading, colors }) => {
 
 // Activity Heatmap Component
 const ActivityHeatmap = ({ loading, colors }) => {
-  const chartRef = React.useRef(null);
+  // Instead of creating our own canvas, we'll use the pre-existing one
   const [chart, setChart] = React.useState(null);
   
   React.useEffect(() => {
-    if (chartRef.current && !loading) {
-      // Destroy previous chart if it exists
-      if (chart) {
-        chart.destroy();
+    // Find the existing canvas element instead of creating a new one
+    const canvas = document.getElementById('heatmap-chart');
+    
+    if (canvas && !loading) {
+      // Safely access the canvas context
+      let ctx;
+      try {
+        ctx = canvas.getContext('2d');
+      } catch (err) {
+        console.error('Error getting canvas context:', err);
+        return;
       }
       
-      // Generate heatmap data
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      const hours = ['12am', '4am', '8am', '12pm', '4pm', '8pm'];
-      
-      const heatmapData = [];
-      for (let i = 0; i < hours.length; i++) {
-        for (let j = 0; j < days.length; j++) {
-          const value = Math.floor(Math.random() * 100);
-          const opacity = value < 20 ? 0.2 : value < 50 ? 0.5 : value < 80 ? 0.8 : 1;
-          
-          heatmapData.push({
-            x: j,
-            y: i,
-            v: value,
-            r: 10 + (value / 10),
-            color: `rgba(${parseInt(colors.success.substring(1, 3), 16)}, ${parseInt(colors.success.substring(3, 5), 16)}, ${parseInt(colors.success.substring(5, 7), 16)}, ${opacity})`
-          });
+      // Destroy previous chart if it exists
+      if (chart) {
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying previous chart:', err);
         }
       }
       
-      // Create new chart
-      const newChart = new Chart(chartRef.current, {
-        type: 'bubble',
-        data: {
-          datasets: [{
-            data: heatmapData.map(d => ({
-              x: d.x,
-              y: d.y,
-              r: d.r
-            })),
-            backgroundColor: heatmapData.map(d => d.color)
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: {
-              display: true,
-              text: 'Hourly Activity Heatmap',
-              font: {
-                size: 16,
-                weight: 'normal'
-              }
-            },
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const d = heatmapData[context.dataIndex];
-                  return `${days[d.x]} ${hours[d.y]}: ${d.v} activities`;
-                }
-              }
-            }
+      try {
+        // Generate heatmap data
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const hours = ['12am', '4am', '8am', '12pm', '4pm', '8pm'];
+        
+        const heatmapData = [];
+        for (let i = 0; i < hours.length; i++) {
+          for (let j = 0; j < days.length; j++) {
+            const value = Math.floor(Math.random() * 100);
+            const opacity = value < 20 ? 0.2 : value < 50 ? 0.5 : value < 80 ? 0.8 : 1;
+            
+            heatmapData.push({
+              x: j,
+              y: i,
+              v: value,
+              r: 10 + (value / 10),
+              color: `rgba(${parseInt(colors.success.substring(1, 3), 16)}, ${parseInt(colors.success.substring(3, 5), 16)}, ${parseInt(colors.success.substring(5, 7), 16)}, ${opacity})`
+            });
+          }
+        }
+        
+        // Create new chart
+        const newChart = new Chart(ctx, {
+          type: 'bubble',
+          data: {
+            datasets: [{
+              data: heatmapData.map(d => ({
+                x: d.x,
+                y: d.y,
+                r: d.r
+              })),
+              backgroundColor: heatmapData.map(d => d.color)
+            }]
           },
-          scales: {
-            x: {
-              min: -0.5,
-              max: 6.5,
-              ticks: {
-                callback: function(value) {
-                  return days[value];
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Hourly Activity Heatmap',
+                font: {
+                  size: 16,
+                  weight: 'normal'
                 }
               },
-              grid: {
+              legend: {
                 display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const d = heatmapData[context.dataIndex];
+                    return `${days[d.x]} ${hours[d.y]}: ${d.v} activities`;
+                  }
+                }
               }
             },
-            y: {
-              min: -0.5,
-              max: 5.5,
-              ticks: {
-                callback: function(value) {
-                  return hours[value];
+            scales: {
+              x: {
+                min: -0.5,
+                max: 6.5,
+                ticks: {
+                  callback: function(value) {
+                    return days[value];
+                  }
+                },
+                grid: {
+                  display: false
                 }
               },
-              grid: {
-                display: false
+              y: {
+                min: -0.5,
+                max: 5.5,
+                ticks: {
+                  callback: function(value) {
+                    return hours[value];
+                  }
+                },
+                grid: {
+                  display: false
+                }
               }
             }
           }
-        }
-      });
-      
-      setChart(newChart);
+        });
+        
+        setChart(newChart);
+      } catch (err) {
+        console.error('Error creating chart:', err);
+      }
     }
     
     // Cleanup on unmount
     return () => {
       if (chart) {
-        chart.destroy();
+        try {
+          chart.destroy();
+        } catch (err) {
+          console.error('Error destroying chart on unmount:', err);
+        }
       }
     };
   }, [loading, colors]);
@@ -801,7 +900,8 @@ const ActivityHeatmap = ({ loading, colors }) => {
         </div>
       ) : (
         <div className="chart-container">
-          <canvas ref={chartRef}></canvas>
+          <h5 className="card-title mb-3">Hourly Activity Heatmap</h5>
+          {/* We don't render a canvas here since we're using the hidden one */}
         </div>
       )}
     </div>
