@@ -1,9 +1,67 @@
 <!-- Modern Theme Toggle Button -->
-<div class="relative ml-3" x-data="themeManager">
+<div class="relative ml-3" x-data="{
+    darkMode: localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches) || ['space', 'neon', 'contrast'].includes(localStorage.getItem('theme')),
+    premium: {{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }},
+    themeMenuOpen: false,
+    
+    toggleDarkMode() {
+        this.darkMode = !this.darkMode;
+        const newTheme = this.darkMode ? 'dark' : 'light';
+        this.setTheme(newTheme);
+    },
+    
+    isPremiumTheme(theme) {
+        return ['space', 'neon', 'contrast'].includes(theme);
+    },
+    
+    setPremiumTheme(theme) {
+        if (this.isPremiumTheme(theme) && !this.premium) {
+            console.log('Premium theme not available');
+            return;
+        }
+        
+        this.darkMode = theme === 'dark' || this.isPremiumTheme(theme);
+        this.setTheme(theme);
+        this.themeMenuOpen = false;
+    },
+    
+    setTheme(theme) {
+        // Use the global helper
+        if (window.setTheme) {
+            window.setTheme(theme);
+        } else {
+            // Fallback if window.setTheme not available
+            const root = document.documentElement;
+            
+            // Remove all theme classes first
+            root.classList.remove('theme-light', 'theme-dark', 'theme-space', 'theme-neon', 'theme-contrast');
+            
+            // Set dark mode
+            if (theme === 'dark' || this.isPremiumTheme(theme)) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+            
+            // Add theme class if it's not light or dark
+            if (theme !== 'light' && theme !== 'dark') {
+                root.classList.add(`theme-${theme}`);
+            }
+            
+            // Store theme
+            localStorage.setItem('theme', theme);
+            
+            // Update body data attribute if body exists
+            if (document.body) {
+                document.body.setAttribute('data-theme', theme);
+            }
+        }
+    }
+}">
     <div>
         <button 
             type="button" 
-            class="flex rounded-full items-center justify-center p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+            class="flex rounded-full items-center justify-center p-1 text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             id="theme-menu-button"
             aria-expanded="false" 
             aria-haspopup="true"
@@ -22,11 +80,18 @@
         </button>
     </div>
 
-    <!-- Premium Theme Menu (optional for future) -->
+    <!-- Premium Theme Menu (for premium users) -->
     {% if current_user.is_authenticated and current_user.is_premium %}
     <div 
         x-cloak
-        x-show="false"
+        x-show="themeMenuOpen"
+        @click.away="themeMenuOpen = false"
+        x-transition:enter="transition ease-out duration-200" 
+        x-transition:enter-start="opacity-0 scale-95" 
+        x-transition:enter-end="opacity-100 scale-100" 
+        x-transition:leave="transition ease-in duration-150" 
+        x-transition:leave-start="opacity-100 scale-100" 
+        x-transition:leave-end="opacity-0 scale-95"
         class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none"
         role="menu" 
         aria-orientation="vertical" 

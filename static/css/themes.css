@@ -1,299 +1,176 @@
 /**
- * AstroBot AI - Theme System
+ * AstroBot AI Theme System
  * 
- * Modern theme system using CSS variables with TailwindCSS integration
- * Supports light/dark mode and premium themes:
- * - Light & Dark (standard themes)
- * - Space, Neon, High Contrast (premium themes)
+ * This file contains CSS variables for the theme system.
+ * The theme system supports light mode, dark mode, and premium themes.
  */
 
-/* Global transitions for smoother theme changes */
-.theme-transition,
-.theme-transition * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
-}
-
-/* ---------------------------------- */
-/* Base Light Theme Variables        */
-/* ---------------------------------- */
 :root {
-  /* Discord-inspired color palette */
-  --primary: 88, 101, 242;     /* Discord Blurple */
-  --success: 87, 242, 135;     /* Discord Green */
-  --danger: 237, 66, 69;       /* Discord Red */
-  --warning: 254, 231, 92;     /* Discord Yellow */
-  --info: 52, 152, 219;        /* Light Blue */
-  --link: 0, 103, 224;         /* Link Blue */
+  /* Base Colors - Light Mode */
+  --color-primary-50: 239 246 255; /* blue-50 */
+  --color-primary-100: 219 234 254; /* blue-100 */
+  --color-primary-200: 191 219 254; /* blue-200 */
+  --color-primary-300: 147 197 253; /* blue-300 */
+  --color-primary-400: 96 165 250; /* blue-400 */
+  --color-primary-500: 78 99 238; /* custom blue-500 - CUSTOMIZED TO MATCH LOGO */
+  --color-primary-600: 37 99 235; /* blue-600 */
+  --color-primary-700: 29 78 216; /* blue-700 */
+  --color-primary-800: 30 64 175; /* blue-800 */
+  --color-primary-900: 30 58 138; /* blue-900 */
+  --color-primary-950: 23 37 84; /* blue-950 */
 
-  /* Text colors */
-  --text-normal: 36, 41, 46;   /* Default text */
-  --text-muted: 88, 96, 105;   /* Secondary text */
-  --text-link: 88, 101, 242;   /* Link text */
-  --text-positive: 59, 165, 93; /* Success text */
-  --text-warning: 207, 142, 24; /* Warning text */
-  --text-danger: 215, 58, 73;  /* Danger text */
+  /* UI Colors - Light Mode */
+  --color-bg-app: 249 250 251; /* gray-50 */
+  --color-bg-card: 255 255 255; /* white */
+  --color-bg-card-hover: 243 244 246; /* gray-100 */
+  --color-text-normal: 17 24 39; /* gray-900 */
+  --color-text-muted: 107 114 128; /* gray-500 */
+  --color-text-inverted: 255 255 255; /* white */
+  --color-border: 229 231 235; /* gray-200 */
+  --color-shadow: 0 0 #0000; /* transparent */
   
-  /* Background colors */
-  --bg-primary: 255, 255, 255;    /* Main background */
-  --bg-secondary: 247, 248, 250;  /* Secondary background */
-  --bg-tertiary: 240, 242, 245;   /* Tertiary background */
-  --bg-accent: 236, 238, 244;     /* Accent areas */
-  --bg-navbar: 255, 255, 255;     /* Navbar background */
-  --bg-floating: 255, 255, 255;   /* Floating elements */
+  /* Animation variables */
+  --transition-normal: 200ms;
+  --transition-slow: 300ms;
   
-  /* Interactive elements */
-  --bg-modifier-hover: 0, 0, 0, 0.05;    /* Hover state */
-  --bg-modifier-active: 0, 0, 0, 0.1;   /* Active state */
-  --bg-modifier-selected: 0, 0, 0, 0.08; /* Selected state */
-  --bg-modifier-accent: 0, 0, 0, 0.06;  /* Accent modifier */
-  
-  /* Inputs and interactive elements */
-  --input-bg: 255, 255, 255;        /* Input background */
-  --input-border: 211, 213, 218;    /* Input border */
-  --input-text: 36, 41, 46;         /* Input text */
-  --input-placeholder: 150, 152, 157; /* Placeholder text */
-  
-  /* Button colors */
-  --button-primary-bg: 88, 101, 242;  /* Primary button */
-  --button-secondary-bg: 230, 232, 235; /* Secondary button */
-  --button-danger-bg: 237, 66, 69;    /* Danger button */
-  
-  /* UI element colors */
-  --header-primary: 36, 41, 46;      /* Primary header */
-  --header-secondary: 88, 96, 105;   /* Secondary header */
-  --divider: 225, 225, 225;          /* Divider lines */
-  --card-bg: 255, 255, 255;          /* Card background */
-  --card-border: 228, 231, 235;      /* Card border */
-
-  /* Chat elements */
-  --channeltextarea-bg: 240, 242, 245; /* Chat input background */
-  --activity-card-bg: 240, 242, 245;   /* Activity card background */
-  
-  /* Shadows and effects */
-  --elevation-low: 0 1px 5px rgba(0, 0, 0, 0.05);
-  --elevation-medium: 0 3px 10px rgba(0, 0, 0, 0.08);
-  --elevation-high: 0 8px 24px rgba(0, 0, 0, 0.1);
-  --shadow-color: 0, 0, 0;
-  --shadow-opacity: 0.1;
-  
-  /* Status colors */
-  --online: 59, 165, 93;        /* Online status */
-  --idle: 250, 168, 26;         /* Away/Idle status */
-  --dnd: 237, 66, 69;           /* Do Not Disturb status */
-  --offline: 116, 127, 141;     /* Offline status */
+  /* Theme transition setup for all elements */
+  --theme-transition-duration: 0.3s;
+  --theme-transition-timing: ease;
 }
 
-/* ---------------------------------- */
-/* Dark Theme Variables              */
-/* ---------------------------------- */
+/* Dark Mode Theme */
 .dark {
-  /* Discord-inspired dark color palette */
-  --primary: 88, 101, 242;         /* Keep blurple consistent */
-  --success: 87, 242, 135;         /* Keep success consistent */
-  --danger: 237, 66, 69;           /* Keep danger consistent */
-  --warning: 254, 231, 92;         /* Keep warning consistent */
-  --info: 114, 137, 218;           /* Slightly muted blue */
-  --link: 90, 156, 255;            /* Brighter links for dark mode */
-
-  /* Text colors */
-  --text-normal: 220, 221, 222;    /* Default text */
-  --text-muted: 163, 166, 170;     /* Secondary text */
-  --text-link: 0, 176, 244;        /* Link text */
-  --text-positive: 59, 165, 93;    /* Success text */
-  --text-warning: 250, 168, 26;    /* Warning text */
-  --text-danger: 237, 66, 69;      /* Danger text */
-  
-  /* Background colors */
-  --bg-primary: 36, 39, 43;        /* Main background */
-  --bg-secondary: 32, 34, 37;      /* Secondary background */
-  --bg-tertiary: 24, 25, 28;       /* Tertiary background */
-  --bg-accent: 46, 48, 53;         /* Accent areas */
-  --bg-navbar: 30, 33, 36;         /* Navbar background */
-  --bg-floating: 18, 19, 21;       /* Floating elements */
-  
-  /* Interactive elements */
-  --bg-modifier-hover: 255, 255, 255, 0.05;    /* Hover state */
-  --bg-modifier-active: 255, 255, 255, 0.07;   /* Active state */
-  --bg-modifier-selected: 255, 255, 255, 0.08; /* Selected state */
-  --bg-modifier-accent: 255, 255, 255, 0.06;   /* Accent modifier */
-  
-  /* Inputs and interactive elements */
-  --input-bg: 36, 39, 43;            /* Input background */
-  --input-border: 48, 51, 57;        /* Input border */
-  --input-text: 219, 222, 225;       /* Input text */
-  --input-placeholder: 114, 118, 125; /* Placeholder text */
-  
-  /* Button colors */
-  --button-primary-bg: 88, 101, 242;  /* Primary button */
-  --button-secondary-bg: 79, 84, 92;  /* Secondary button */
-  --button-danger-bg: 237, 66, 69;    /* Danger button */
-  
-  /* UI element colors */
-  --header-primary: 255, 255, 255;    /* Primary header */
-  --header-secondary: 185, 187, 190;  /* Secondary header */
-  --divider: 47, 49, 54;             /* Divider lines */
-  --card-bg: 44, 47, 51;             /* Card background */
-  --card-border: 64, 68, 75;         /* Card border */
-
-  /* Chat elements */
-  --channeltextarea-bg: 64, 68, 75;   /* Chat input background */
-  --activity-card-bg: 44, 47, 51;     /* Activity card background */
-  
-  /* Shadows and effects */
-  --elevation-low: 0 1px 5px rgba(0, 0, 0, 0.3);
-  --elevation-medium: 0 3px 10px rgba(0, 0, 0, 0.4);
-  --elevation-high: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-color: 0, 0, 0;
-  --shadow-opacity: 0.5;
+  /* UI Colors - Dark Mode */
+  --color-bg-app: 17 24 39; /* gray-900 */
+  --color-bg-card: 31 41 55; /* gray-800 */
+  --color-bg-card-hover: 55 65 81; /* gray-700 */
+  --color-text-normal: 243 244 246; /* gray-100 */
+  --color-text-muted: 156 163 175; /* gray-400 */
+  --color-text-inverted: 17 24 39; /* gray-900 */
+  --color-border: 75 85 99; /* gray-600 */
+  --color-shadow: 0 0 #0000; /* transparent */
 }
 
-/* ---------------------------------- */
-/* Space Theme (Premium)             */
-/* ---------------------------------- */
+/* Space Theme (premium) */
 .theme-space {
-  /* Space theme inherits dark mode variables first */
-  --primary: 77, 118, 255;         /* Space blue */
-  --success: 0, 255, 127;          /* Cosmic green */
-  --danger: 255, 69, 0;            /* Nebula red */
-  --warning: 255, 215, 0;          /* Star yellow */
-  --info: 102, 204, 255;           /* Atmosphere blue */
-  --link: 138, 43, 226;            /* Deep space purple */
-
-  /* Text colors */
-  --text-normal: 240, 248, 255;    /* Default text - AliceBlue */
-  --text-muted: 176, 196, 222;     /* Secondary text - LightSteelBlue */
-  --text-link: 102, 204, 255;      /* Link text - Light blue */
+  /* Base Colors - Space Theme */
+  --color-primary-400: 95 123 255; /* custom blue */
+  --color-primary-500: 78 99 238; /* custom blue */
+  --color-primary-600: 63 60 201; /* custom blue */
   
-  /* Background colors */
-  --bg-primary: 10, 10, 40;        /* Main background - Deep space */
-  --bg-secondary: 15, 15, 45;      /* Secondary background */
-  --bg-tertiary: 20, 20, 50;       /* Tertiary background */
-  --bg-accent: 25, 25, 65;         /* Accent areas */
-  --bg-navbar: 5, 5, 35;           /* Navbar background */
-  --bg-floating: 30, 30, 70;       /* Floating elements */
-  
-  /* UI element colors */
-  --header-primary: 240, 248, 255; /* Primary header */
-  --header-secondary: 176, 196, 222; /* Secondary header */
-  --divider: 77, 77, 128;          /* Divider lines */
-  --card-bg: 25, 25, 65;           /* Card background */
-  --card-border: 77, 118, 255;     /* Card border */
-  
-  /* Space theme special effects */
-  --star-density: 300;             /* Stars in background */
-  --nebula-intensity: 0.5;         /* Nebula effect intensity */
-  --planet-size: 150px;            /* Size of planet decorations */
-  --space-glow: 0 0 15px rgba(77, 118, 255, 0.8); /* Space glow effect */
+  /* UI Colors - Space Theme */
+  --color-bg-app: 13 18 30; /* deep blue-black */
+  --color-bg-card: 22 28 45; /* dark blue */
+  --color-bg-card-hover: 31 41 63; /* slightly lighter blue */
+  --color-text-normal: 220 230 255; /* light blue-white */
+  --color-text-muted: 130 149 201; /* muted blue */
+  --color-text-inverted: 13 18 30; /* deep blue-black */
+  --color-border: 40 54 95; /* space border blue */
+  --color-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); /* deep shadow */
 }
 
-/* ---------------------------------- */
-/* Neon Theme (Premium)              */
-/* ---------------------------------- */
+/* Neon Theme (premium) */
 .theme-neon {
-  /* Neon theme inherits dark mode variables first */
-  --primary: 0, 255, 255;          /* Neon cyan */
-  --success: 0, 255, 127;          /* Neon green */
-  --danger: 255, 0, 102;           /* Neon pink */
-  --warning: 255, 255, 0;          /* Neon yellow */
-  --info: 0, 191, 255;             /* Neon blue */
-  --link: 255, 0, 255;             /* Neon magenta */
-
-  /* Text colors */
-  --text-normal: 220, 255, 255;    /* Default text - Cyan tint */
-  --text-muted: 180, 210, 210;     /* Secondary text - Muted cyan */
-  --text-link: 255, 0, 255;        /* Link text - Magenta */
+  /* Base Colors - Neon Theme */
+  --color-primary-400: 0 255 255; /* cyan */
+  --color-primary-500: 0 225 225; /* slightly darker cyan */
+  --color-primary-600: 0 200 200; /* even darker cyan */
   
-  /* Background colors */
-  --bg-primary: 10, 10, 10;        /* Main background - Near black */
-  --bg-secondary: 15, 15, 15;      /* Secondary background */
-  --bg-tertiary: 20, 20, 20;       /* Tertiary background */
-  --bg-accent: 30, 30, 30;         /* Accent areas */
-  --bg-navbar: 5, 5, 5;            /* Navbar background */
-  --bg-floating: 25, 25, 25;       /* Floating elements */
-  
-  /* UI element colors */
-  --header-primary: 0, 255, 255;   /* Primary header - Cyan */
-  --header-secondary: 255, 0, 255; /* Secondary header - Magenta */
-  --divider: 60, 60, 60;           /* Divider lines */
-  --card-bg: 20, 20, 20;           /* Card background */
-  --card-border: 0, 255, 255;      /* Card border - Cyan */
-  
-  /* Neon theme special effects */
-  --neon-glow-intensity: 0.8;      /* Glow intensity */
-  --neon-flicker-speed: 3s;        /* Flicker animation speed */
-  --neon-text-shadow: 0 0 5px rgba(0, 255, 255, 0.8), 0 0 10px rgba(0, 255, 255, 0.5);
-  --neon-box-shadow: 0 0 5px rgba(0, 255, 255, 0.8), 0 0 10px rgba(0, 255, 255, 0.5), 0 0 15px rgba(0, 255, 255, 0.3);
+  /* UI Colors - Neon Theme */
+  --color-bg-app: 10 10 15; /* almost black */
+  --color-bg-card: 22 22 33; /* very dark blue-gray */
+  --color-bg-card-hover: 30 30 45; /* slightly lighter dark blue */
+  --color-text-normal: 225 255 255; /* light cyan-white */
+  --color-text-muted: 96 227 230; /* muted cyan */
+  --color-text-inverted: 10 10 15; /* almost black */
+  --color-border: 0 168 168; /* neon border */
+  --color-shadow: 0 0 15px rgba(0, 255, 255, 0.3); /* cyan glow */
 }
 
-/* ---------------------------------- */
-/* High Contrast Theme (Accessibility)*/
-/* ---------------------------------- */
+/* High Contrast Theme (premium) */
 .theme-contrast {
-  /* High contrast theme for accessibility */
-  --primary: 255, 255, 0;          /* Yellow */
-  --success: 0, 255, 0;            /* Bright green */
-  --danger: 255, 0, 0;             /* Bright red */
-  --warning: 255, 165, 0;          /* Orange */
-  --info: 0, 195, 255;             /* Bright blue */
-  --link: 0, 255, 255;             /* Cyan */
-
-  /* Text colors */
-  --text-normal: 255, 255, 255;    /* White text for maximum contrast */
-  --text-muted: 220, 220, 220;     /* Light gray text */
-  --text-link: 0, 255, 255;        /* Cyan links */
+  /* Base Colors - High Contrast Theme */
+  --color-primary-400: 255 235 0; /* bright yellow */
+  --color-primary-500: 255 220 0; /* yellow */
+  --color-primary-600: 230 190 0; /* darker yellow */
   
-  /* Background colors */
-  --bg-primary: 0, 0, 0;           /* Pure black background */
-  --bg-secondary: 15, 15, 15;      /* Very dark gray */
-  --bg-tertiary: 30, 30, 30;       /* Dark gray */
-  --bg-accent: 45, 45, 45;         /* Medium dark gray */
-  --bg-navbar: 0, 0, 0;            /* Black navbar */
-  --bg-floating: 0, 0, 0;          /* Black floating elements */
-  
-  /* UI element colors */
-  --header-primary: 255, 255, 0;   /* Yellow headers */
-  --header-secondary: 255, 255, 255; /* White secondary headers */
-  --divider: 255, 255, 0;          /* Yellow dividers */
-  --card-bg: 15, 15, 15;           /* Dark card background */
-  --card-border: 255, 255, 0;      /* Yellow borders */
-  
-  /* Accessibility features */
-  --focus-outline: 4px solid rgb(255, 255, 0); /* Strong focus indicator */
-  --interactive-hover: 2px solid rgb(255, 255, 255); /* Visible hover state */
-  --large-text-size: 1.2rem;       /* Larger text base size */
+  /* UI Colors - High Contrast Theme */
+  --color-bg-app: 0 0 0; /* pure black */
+  --color-bg-card: 20 20 20; /* very dark gray */
+  --color-bg-card-hover: 40 40 40; /* dark gray */
+  --color-text-normal: 255 255 255; /* pure white */
+  --color-text-muted: 235 235 235; /* light gray */
+  --color-text-inverted: 0 0 0; /* pure black */
+  --color-border: 255 220 0; /* yellow */
+  --color-shadow: 0 0 0 3px rgba(255, 220, 0, 0.5); /* yellow outline */
 }
 
-/* TailwindCSS-compatible utility classes for theme colors */
-.text-primary { color: rgb(var(--primary)); }
-.bg-primary { background-color: rgb(var(--primary)); }
-.border-primary { border-color: rgb(var(--primary)); }
-
-.text-normal { color: rgb(var(--text-normal)); }
-.text-muted { color: rgb(var(--text-muted)); }
-.text-link { color: rgb(var(--text-link)); }
-
-.bg-app { background-color: rgb(var(--bg-primary)); }
-.bg-card { background-color: rgb(var(--card-bg)); }
-.border-card { border-color: rgb(var(--card-border)); }
-
-.shadow-app { box-shadow: var(--elevation-low); }
-.shadow-card { box-shadow: var(--elevation-medium); }
-.shadow-floating { box-shadow: var(--elevation-high); }
-
-/* Special themed effects */
-.theme-space .star-bg {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 30px 30px;
+/* Applied Utility Classes */
+.bg-app {
+  background-color: rgb(var(--color-bg-app) / 1);
 }
 
-.theme-neon .glow {
-  text-shadow: var(--neon-text-shadow);
+.bg-card {
+  background-color: rgb(var(--color-bg-card) / 1);
 }
 
-.theme-neon .glow-box {
-  box-shadow: var(--neon-box-shadow);
+.text-normal {
+  color: rgb(var(--color-text-normal) / 1);
 }
 
-.theme-contrast *:focus {
-  outline: var(--focus-outline);
+.text-muted {
+  color: rgb(var(--color-text-muted) / 1);
+}
+
+.text-inverted {
+  color: rgb(var(--color-text-inverted) / 1);
+}
+
+.border-theme {
+  border-color: rgb(var(--color-border) / 1);
+}
+
+.shadow-theme {
+  box-shadow: var(--color-shadow);
+}
+
+/* Transition classes for smooth theme changes */
+.theme-transition {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: var(--theme-transition-timing);
+  transition-duration: var(--theme-transition-duration);
+}
+
+/* Animation classes */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.hover\:animate-float:hover {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }

@@ -1,0 +1,341 @@
+/**
+ * Modern UI for AstroBot AI
+ * 
+ * This file contains modern UI styles for the AstroBot dashboard
+ * with support for the theme system.
+ */
+
+/* Modern Sidebar Styling */
+.sidebar {
+  @apply fixed left-0 top-0 h-full w-64 bg-gray-900 text-white transition-all duration-300 ease-in-out z-40;
+}
+
+.sidebar-collapsed {
+  @apply w-16;
+}
+
+.sidebar-header {
+  @apply flex items-center justify-center h-16 border-b border-gray-800;
+}
+
+.sidebar-logo {
+  @apply h-10 w-10;
+}
+
+.sidebar-brand {
+  @apply text-xl font-bold ml-3 transition-opacity duration-200;
+}
+
+.sidebar-nav {
+  @apply mt-5;
+}
+
+.sidebar-item {
+  @apply flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200;
+}
+
+.sidebar-item.active {
+  @apply bg-primary-600 text-white;
+}
+
+.sidebar-icon {
+  @apply text-xl mr-3;
+}
+
+.sidebar-text {
+  @apply transition-opacity duration-200;
+}
+
+/* Content Area */
+.content-area {
+  @apply transition-all duration-300 ease-in-out ml-64;
+}
+
+.content-area-expanded {
+  @apply ml-16;
+}
+
+/* Card Styling */
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-md transition-all duration-200 overflow-hidden;
+}
+
+.card:hover {
+  @apply shadow-lg;
+}
+
+.card-header {
+  @apply px-6 py-4 border-b border-gray-200 dark:border-gray-700 font-medium text-gray-800 dark:text-gray-200;
+}
+
+.card-body {
+  @apply p-6;
+}
+
+.card-footer {
+  @apply px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750;
+}
+
+/* Button Styling */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500;
+}
+
+.btn-secondary {
+  @apply bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500;
+}
+
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 text-white focus:ring-green-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white focus:ring-red-500;
+}
+
+.btn-outline {
+  @apply bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600;
+}
+
+/* Modern Input Styling */
+.form-input {
+  @apply block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white;
+}
+
+.form-select {
+  @apply block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white;
+}
+
+.form-checkbox {
+  @apply h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700;
+}
+
+.form-radio {
+  @apply h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+}
+
+/* Dashboard Cards */
+.stat-card {
+  @apply bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md transition-all duration-200;
+}
+
+.stat-card-value {
+  @apply text-3xl font-bold text-gray-900 dark:text-white;
+}
+
+.stat-card-label {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.stat-card-icon {
+  @apply text-3xl text-primary-500;
+}
+
+/* Theme-specific overrides */
+.theme-space .card {
+  @apply bg-opacity-90;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(77, 118, 255, 0.4);
+}
+
+.theme-space .btn-primary {
+  background: linear-gradient(135deg, rgb(77, 118, 255), rgb(109, 77, 255));
+}
+
+.theme-neon .card {
+  @apply bg-opacity-90;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+}
+
+.theme-neon .btn-primary {
+  background: linear-gradient(135deg, rgb(0, 255, 255), rgb(72, 240, 255));
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
+}
+
+.theme-contrast .card {
+  border: 2px solid yellow;
+}
+
+.theme-contrast .btn {
+  @apply text-lg;
+}
+
+/* Modern Dashboard Layout */
+.dashboard-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+.dashboard-grid-large {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+/* Avatar and User Menu */
+.avatar {
+  @apply h-10 w-10 rounded-full object-cover;
+}
+
+.avatar-sm {
+  @apply h-8 w-8 rounded-full object-cover;
+}
+
+.avatar-lg {
+  @apply h-12 w-12 rounded-full object-cover;
+}
+
+/* Badges */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-primary {
+  @apply bg-primary-100 text-primary-800 dark:bg-primary-800 dark:text-primary-100;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100;
+}
+
+.badge-danger {
+  @apply bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100;
+}
+
+/* AstroBot Custom Styling */
+.astrobot-logo-container {
+  @apply relative flex items-center justify-center;
+  width: 300px;
+  height: 300px;
+}
+
+.astrobot-logo {
+  @apply relative;
+  width: 100%;
+  height: 100%;
+}
+
+.astrobot-logo-bg {
+  @apply absolute inset-0 rounded-full bg-gray-800;
+  z-index: -1;
+}
+
+.astrobot-logo-ring {
+  @apply absolute inset-0 rounded-full;
+  border: 10px solid rgb(78, 99, 238);
+  z-index: -1;
+}
+
+.astrobot-robot {
+  @apply absolute;
+  width: 50%;
+  height: 50%;
+  top: 25%;
+  left: 25%;
+  background-color: rgb(78, 99, 238);
+  border-radius: 8px;
+}
+
+.astrobot-eye {
+  @apply absolute bg-white rounded-full;
+  width: 20%;
+  height: 20%;
+  top: 25%;
+}
+
+.astrobot-eye-left {
+  left: 25%;
+}
+
+.astrobot-eye-right {
+  right: 25%;
+}
+
+.astrobot-eye-pupil {
+  @apply absolute bg-gray-900 rounded-full;
+  width: 50%;
+  height: 50%;
+  top: 25%;
+  left: 25%;
+}
+
+.astrobot-mouth {
+  @apply absolute bg-white rounded-full;
+  width: 60%;
+  height: 12%;
+  bottom: 25%;
+  left: 20%;
+}
+
+.astrobot-antenna {
+  @apply absolute bg-blue-400 rounded-full;
+  width: 20%;
+  height: 20%;
+  top: -15%;
+  left: 40%;
+}
+
+.astrobot-dot {
+  @apply absolute bg-white rounded-full;
+  width: 5%;
+  height: 5%;
+}
+
+.astrobot-dot-top {
+  top: 5%;
+  left: 47.5%;
+}
+
+.astrobot-dot-right {
+  top: 47.5%;
+  right: 5%;
+}
+
+.astrobot-dot-bottom {
+  bottom: 5%;
+  left: 47.5%;
+}
+
+.astrobot-dot-left {
+  top: 47.5%;
+  left: 5%;
+}
+
+.astrobot-star {
+  @apply absolute text-blue-400;
+  font-size: 24px;
+}
+
+.astrobot-star-1 {
+  top: 5%;
+  left: 15%;
+  transform: rotate(45deg);
+}
+
+.astrobot-star-2 {
+  top: 5%;
+  right: 15%;
+  transform: rotate(15deg);
+}
+
+.astrobot-star-3 {
+  bottom: 5%;
+  left: 15%;
+  transform: rotate(20deg);
+}
+
+.astrobot-star-4 {
+  bottom: 5%;
+  right: 15%;
+  transform: rotate(35deg);
+}
