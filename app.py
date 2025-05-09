@@ -1,6 +1,7 @@
 import os
 import logging
-from flask import Flask, render_template, jsonify, redirect, url_for
+import json
+from flask import Flask, render_template, jsonify, redirect, url_for, request
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import traceback
@@ -153,8 +154,28 @@ def permissions():
     return render_template('discord/permissions.html', title="Permissions")
 
 @app.route('/discord/analytics')
+def discord_analytics():
+    return render_template('discord/analytics.html', title="Discord Bot Analytics")
+
+@app.route('/analytics')
 def analytics():
-    return render_template('discord/analytics.html', title="Bot Analytics")
+    return render_template('analytics/dashboard.html', title="Analytics Dashboard")
+
+@app.route('/analytics/commands')
+def commands_analytics():
+    return render_template('analytics/commands.html', title="Command Analytics")
+
+@app.route('/analytics/ai')
+def ai_analytics():
+    return render_template('analytics/ai.html', title="AI Usage Analytics")
+
+@app.route('/analytics/community')
+def community_analytics():
+    return render_template('analytics/community.html', title="Community Analytics")
+
+@app.route('/analytics/moderation')
+def moderation_analytics():
+    return render_template('analytics/moderation.html', title="Moderation Analytics")
 
 # Twitch StreamSync routes
 @app.route('/twitch/integration')
@@ -345,6 +366,140 @@ def get_leaderboard():
     except Exception as e:
         logger.error(f"Error getting leaderboard: {str(e)}")
         return jsonify([])
+
+# Analytics API endpoints
+@app.route('/api/analytics/dashboard')
+def get_analytics_dashboard():
+    try:
+        # Get the days parameter, defaulting to 30
+        days = int(request.args.get('days', 30))
+        
+        # Import the analytics service
+        from services.analytics_service import AnalyticsService
+        
+        # Initialize service
+        analytics_service = AnalyticsService(None)  # None for bot instance, not needed here
+        
+        # Get data (wrap async calls)
+        dashboard_data = run_async(analytics_service.get_dashboard_summary(days=days))
+        
+        return jsonify(dashboard_data)
+    except Exception as e:
+        logger.error(f"Error getting analytics dashboard data: {str(e)}")
+        return jsonify({
+            "error": f"Error getting analytics data: {str(e)}",
+            "days": int(request.args.get('days', 30))
+        })
+
+@app.route('/api/analytics/commands')
+def get_analytics_commands():
+    try:
+        # Get parameters
+        days = int(request.args.get('days', 30))
+        guild_id = request.args.get('guild_id')
+        category = request.args.get('category')
+        
+        # Import the analytics service
+        from services.analytics_service import AnalyticsService
+        
+        # Initialize service
+        analytics_service = AnalyticsService(None)
+        
+        # Get data
+        command_data = run_async(analytics_service.get_command_usage_stats(
+            guild_id=guild_id,
+            days=days,
+            command_type=category
+        ))
+        
+        return jsonify(command_data)
+    except Exception as e:
+        logger.error(f"Error getting command analytics data: {str(e)}")
+        return jsonify({
+            "error": f"Error getting command analytics data: {str(e)}",
+            "days": int(request.args.get('days', 30))
+        })
+
+@app.route('/api/analytics/ai')
+def get_analytics_ai():
+    try:
+        # Get parameters
+        days = int(request.args.get('days', 30))
+        guild_id = request.args.get('guild_id')
+        
+        # Import the analytics service
+        from services.analytics_service import AnalyticsService
+        
+        # Initialize service
+        analytics_service = AnalyticsService(None)
+        
+        # Get data
+        ai_data = run_async(analytics_service.get_ai_usage_stats(
+            guild_id=guild_id,
+            days=days
+        ))
+        
+        return jsonify(ai_data)
+    except Exception as e:
+        logger.error(f"Error getting AI analytics data: {str(e)}")
+        return jsonify({
+            "error": f"Error getting AI analytics data: {str(e)}",
+            "days": int(request.args.get('days', 30))
+        })
+
+@app.route('/api/analytics/community')
+def get_analytics_community():
+    try:
+        # Get parameters
+        days = int(request.args.get('days', 30))
+        guild_id = request.args.get('guild_id')
+        
+        # Import the analytics service
+        from services.analytics_service import AnalyticsService
+        
+        # Initialize service
+        analytics_service = AnalyticsService(None)
+        
+        # Get data
+        community_data = run_async(analytics_service.get_community_stats(
+            guild_id=guild_id,
+            days=days
+        ))
+        
+        return jsonify(community_data)
+    except Exception as e:
+        logger.error(f"Error getting community analytics data: {str(e)}")
+        return jsonify({
+            "error": f"Error getting community analytics data: {str(e)}",
+            "days": int(request.args.get('days', 30))
+        })
+
+@app.route('/api/analytics/moderation')
+def get_analytics_moderation():
+    try:
+        # Get parameters
+        days = int(request.args.get('days', 30))
+        guild_id = request.args.get('guild_id')
+        
+        # Import the analytics service
+        from services.analytics_service import AnalyticsService
+        
+        # Initialize service
+        analytics_service = AnalyticsService(None)
+        
+        # Get data
+        moderation_data = run_async(analytics_service.get_moderation_stats(
+            guild_id=guild_id,
+            days=days
+        ))
+        
+        return jsonify(moderation_data)
+    except Exception as e:
+        logger.error(f"Error getting moderation analytics data: {str(e)}")
+        return jsonify({
+            "error": f"Error getting moderation analytics data: {str(e)}",
+            "days": int(request.args.get('days', 30))
+        })
 
 # Error handlers
 @app.errorhandler(404)
