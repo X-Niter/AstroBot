@@ -4,12 +4,16 @@ import threading
 from bot import setup_bot
 from app import app  # Import for gunicorn to work
 import routes  # Import the new routes
+import socket_events  # Import Socket.IO event handlers
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Initialize Socket.IO
+socketio = socket_events.init_app(app)
 
 # Function to run the Discord bot in a separate thread
 def run_bot():
@@ -30,5 +34,5 @@ if __name__ == "__main__":
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
     
-    # Run the Flask app
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+    # Run the Flask app with Socket.IO
+    socketio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
