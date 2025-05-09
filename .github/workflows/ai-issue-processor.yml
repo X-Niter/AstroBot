@@ -114,44 +114,125 @@ jobs:
       - name: Process with OpenAI
         id: openai
         run: |
-          # This would be your actual OpenAI API integration
-          # Here's a simplified mock-up of what this would do
+          # Set up Python environment
+          pip install openai
           
           ACTION="${{ env.ACTION_TYPE }}"
           TITLE="${{ env.ISSUE_TITLE }}"
           BODY="${{ env.ISSUE_BODY }}"
           
-          # Create a request file for OpenAI API
-          cat > request.json << EOL
-          {
-            "model": "gpt-4o",
-            "messages": [
-              {
-                "role": "system", 
-                "content": "You are an AI assistant specialized in analyzing GitHub issues and suggesting code changes. You will provide analysis, suggestions, and code based on the issue details."
-              },
-              {
-                "role": "user",
-                "content": "Action: $ACTION\nIssue Title: $TITLE\nIssue Description: $BODY\n\nPlease $ACTION this issue and provide relevant code changes or analysis."
-              }
-            ],
-            "temperature": 0.7
-          }
-          EOL
-          
-          # This would be your actual API call - we'll simulate output
-          if [ "$ACTION" == "analyze" ]; then
-            echo "{\"analysis\": \"Analysis of issue #${{ env.ISSUE_NUMBER }}: $TITLE\", \"suggestions\": [\"Suggestion 1\", \"Suggestion 2\"]}" > ai_response.json
-          elif [ "$ACTION" == "suggest-fix" ]; then
-            echo "{\"analysis\": \"Issue #${{ env.ISSUE_NUMBER }} appears to be a bug in the application\", \"fix\": \"Proposed fix details\", \"code_changes\": [{\"file\": \"example.py\", \"change\": \"def fixed_function():\n    return 'fixed'\"}]}" > ai_response.json
-          elif [ "$ACTION" == "implement" ]; then
-            echo "{\"analysis\": \"Implementation plan for feature request #${{ env.ISSUE_NUMBER }}\", \"implementation\": \"Implementation details\", \"code_changes\": [{\"file\": \"new_feature.py\", \"change\": \"def new_feature():\n    return 'implemented'\"}]}" > ai_response.json
-          elif [ "$ACTION" == "optimize" ]; then
-            echo "{\"analysis\": \"Performance optimization for #${{ env.ISSUE_NUMBER }}\", \"optimization\": \"Optimization strategy\", \"code_changes\": [{\"file\": \"slow_code.py\", \"change\": \"def optimized_function():\n    return 'faster'\"}]}" > ai_response.json
-          fi
-          
-          # In a real implementation, you would parse the actual OpenAI response and create files
+          # Create a Python script to call OpenAI API
+          cat > process_issue.py << 'EOF'
+          import json
+          import os
+          import sys
+          from openai import OpenAI
 
+          client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+          def process_issue(action_type, title, body, repo_files=None):
+              # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+              # do not change this unless explicitly requested by the user
+              
+              # Create system prompt based on action type
+              if action_type == "analyze":
+                  system_content = "You are an AI assistant specialized in analyzing GitHub issues. Provide a thorough analysis of the issue and suggest potential approaches."
+              elif action_type == "suggest-fix":
+                  system_content = "You are an AI assistant specialized in debugging code. Analyze the bug described in the issue and suggest specific code changes to fix it."
+              elif action_type == "implement":
+                  system_content = "You are an AI assistant specialized in implementing features. Design and implement the feature described in the issue with specific code changes."
+              elif action_type == "optimize":
+                  system_content = "You are an AI assistant specialized in optimizing code. Analyze the performance issues described and suggest specific optimizations."
+              else:
+                  system_content = "You are an AI assistant specialized in analyzing GitHub issues and suggesting code changes."
+              
+              # Create context about the repository
+              repo_context = ""
+              if repo_files:
+                  repo_context = "The repository contains the following files:\n" + "\n".join(repo_files)
+              
+              # Build the user message
+              user_content = f"""
+              ## Action Requested: {action_type.upper()}
+              
+              ## Issue Title: 
+              {title}
+              
+              ## Issue Description:
+              {body}
+              
+              {repo_context}
+              
+              Please {action_type} this issue and provide your response in JSON format with the following structure:
+              
+              {{
+                "analysis": "Your detailed analysis of the issue",
+                "suggestions": ["Suggestion 1", "Suggestion 2", ...],
+                "fix": "Detailed description of the fix (for suggest-fix)",
+                "implementation": "Implementation details (for implement)",
+                "optimization": "Optimization approach (for optimize)",
+                "code_changes": [
+                  {{
+                    "file": "path/to/file.py",
+                    "change": "The exact code to be added or modified"
+                  }},
+                  ...
+                ]
+              }}
+              
+              Ensure that your response is valid JSON and includes all relevant fields.
+              """
+              
+              # Call the OpenAI API
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4o",
+                      messages=[
+                          {"role": "system", "content": system_content},
+                          {"role": "user", "content": user_content}
+                      ],
+                      temperature=0.7,
+                      response_format={"type": "json_object"}
+                  )
+                  
+                  # Parse the JSON response
+                  result = json.loads(response.choices[0].message.content)
+                  return result
+              except Exception as e:
+                  return {
+                      "analysis": f"Error processing issue: {str(e)}",
+                      "suggestions": ["Try again with more detailed information."],
+                      "error": str(e)
+                  }
+
+          if __name__ == "__main__":
+              action = sys.argv[1]
+              title = sys.argv[2]
+              body = sys.argv[3]
+              
+              # Get list of repository files (could be expanded to include file contents)
+              repo_files = []
+              for root, dirs, files in os.walk('.'):
+                  for file in files:
+                      if not root.startswith('./.git') and not file.endswith('.pyc'):
+                          repo_files.append(os.path.join(root, file))
+              
+              result = process_issue(action, title, body, repo_files[:50])  # Limit to first 50 files for context
+              
+              # Output the result as JSON
+              print(json.dumps(result, indent=2))
+              
+              # Also write to a file
+              with open('ai_response.json', 'w') as f:
+                  json.dump(result, f, indent=2)
+          EOF
+          
+          # Make the script executable
+          chmod +x process_issue.py
+          
+          # Run the Python script
+          python process_issue.py "$ACTION" "$TITLE" "$BODY" > ai_response.json
+          
           echo "AI_RESPONSE_FILE=ai_response.json" >> $GITHUB_ENV
           
           # Comment the analysis on the issue
@@ -201,25 +282,116 @@ jobs:
       - name: Apply AI suggested changes
         if: env.ACTION_TYPE == 'implement' || env.ACTION_TYPE == 'suggest-fix' || env.ACTION_TYPE == 'optimize'
         run: |
-          # In a real implementation, you would iterate through the code changes in the AI response
-          # and create or modify the actual files
-          
-          # For demonstration purposes, we'll create a sample file
-          mkdir -p samples
-          
-          cat > samples/ai_change_example.py << EOL
-          # This is a sample file created by the AI assistant
-          # In a real implementation, this would contain actual code changes
+          # Create a Python script to apply the changes
+          cat > apply_changes.py << 'EOF'
+          import json
+          import os
+          import sys
 
-          def example_function():
-              """
-              Example function demonstrating the changes the AI would make
-              for issue #${{ env.ISSUE_NUMBER }}: ${{ env.ISSUE_TITLE }}
-              """
-              return "AI-suggested implementation"
-          EOL
+          def apply_changes(response_file):
+              try:
+                  # Load the AI response
+                  with open(response_file, 'r') as f:
+                      response = json.load(f)
+                  
+                  # Check if there are code changes to apply
+                  if 'code_changes' not in response or not response['code_changes']:
+                      print("No code changes to apply")
+                      return False
+                  
+                  changes_applied = 0
+                  
+                  # Apply each code change
+                  for change in response['code_changes']:
+                      if 'file' not in change or 'change' not in change:
+                          print(f"Invalid change format: {change}")
+                          continue
+                      
+                      file_path = change['file']
+                      code_content = change['change']
+                      
+                      # Make sure the directory exists
+                      os.makedirs(os.path.dirname(file_path) or '.', exist_ok=True)
+                      
+                      # Check if we're modifying an existing file or creating a new one
+                      if os.path.exists(file_path):
+                          print(f"Modifying existing file: {file_path}")
+                          
+                          # Read existing content
+                          with open(file_path, 'r') as f:
+                              existing_content = f.read()
+                          
+                          # Handle replacements if specified in the change
+                          if 'replace' in change and change['replace']:
+                              if 'pattern' in change and 'with' in change:
+                                  # Replace specific pattern
+                                  modified_content = existing_content.replace(change['pattern'], change['with'])
+                              else:
+                                  # Replace entire file
+                                  modified_content = code_content
+                          else:
+                              # Append to file by default
+                              modified_content = existing_content + "\n\n" + code_content
+                          
+                          # Write back the modified content
+                          with open(file_path, 'w') as f:
+                              f.write(modified_content)
+                      else:
+                          print(f"Creating new file: {file_path}")
+                          
+                          # Create new file with the content
+                          with open(file_path, 'w') as f:
+                              f.write(code_content)
+                      
+                      changes_applied += 1
+                  
+                  print(f"Applied {changes_applied} code changes")
+                  return True
+              except Exception as e:
+                  print(f"Error applying changes: {str(e)}")
+                  return False
+
+          if __name__ == "__main__":
+              if len(sys.argv) < 2:
+                  print("Usage: python apply_changes.py <response_file>")
+                  sys.exit(1)
+              
+              response_file = sys.argv[1]
+              success = apply_changes(response_file)
+              
+              if not success:
+                  # Create a fallback file with explanation
+                  os.makedirs('ai_changes', exist_ok=True)
+                  with open('ai_changes/IMPLEMENTATION.md', 'w') as f:
+                      try:
+                          with open(response_file, 'r') as rf:
+                              response = json.load(rf)
+                          
+                          f.write("# AI Implementation Notes\n\n")
+                          f.write("## Analysis\n\n")
+                          f.write(response.get('analysis', 'No analysis provided') + "\n\n")
+                          
+                          f.write("## Implementation Details\n\n")
+                          f.write(response.get('implementation', response.get('fix', response.get('optimization', 'No implementation details provided'))) + "\n\n")
+                          
+                          f.write("## Code Changes\n\n")
+                          f.write("```python\n")
+                          for change in response.get('code_changes', []):
+                              f.write(f"# File: {change.get('file', 'unknown')}\n")
+                              f.write(change.get('change', '# No changes specified') + "\n\n")
+                          f.write("```\n")
+                      except Exception as e:
+                          f.write(f"# Error creating implementation notes: {str(e)}")
+          EOF
           
-          git add samples/
+          # Make the script executable
+          chmod +x apply_changes.py
+          
+          # Run the Python script to apply changes
+          python apply_changes.py "${{ env.AI_RESPONSE_FILE }}"
+          
+          # Add all changes to git
+          git add .
           git commit -m "feat: Apply AI-suggested changes for issue #${{ env.ISSUE_NUMBER }}"
       
       # Push changes to the branch

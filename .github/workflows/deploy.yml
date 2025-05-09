@@ -53,13 +53,13 @@ jobs:
           # Create a static site generator script if it doesn't exist
           if [ ! -f freeze.py ]; then
             cat > freeze.py << 'EOF'
-from flask_frozen import Freezer
-from app import app
+            from flask_frozen import Freezer
+            from app import app
 
-freezer = Freezer(app)
+            freezer = Freezer(app)
 
-if __name__ == "__main__":
-    freezer.freeze()
+            if __name__ == "__main__":
+                freezer.freeze()
 EOF
           fi
           
@@ -86,25 +86,25 @@ EOF
             sed -i "s/# sys.path.insert(0, os.path.abspath('.'))/sys.path.insert(0, os.path.abspath('..'))/g" docs/conf.py
             
             cat > docs/index.rst << 'EOF'
-Welcome to AstroBot's documentation!
-================================
+            Welcome to AstroBot's documentation!
+            ================================
 
-AstroBot is a sophisticated Discord bot leveraging advanced AI technologies to enhance 
-Minecraft server management, modding, and community interaction through intelligent, 
-adaptive interfaces.
+            AstroBot is a sophisticated Discord bot leveraging advanced AI technologies to enhance 
+            Minecraft server management, modding, and community interaction through intelligent, 
+            adaptive interfaces.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+            .. toctree::
+               :maxdepth: 2
+               :caption: Contents:
 
-   modules
-   
-Indices and tables
-==================
+               modules
+               
+            Indices and tables
+            ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+            * :ref:`genindex`
+            * :ref:`modindex`
+            * :ref:`search`
 EOF
           fi
           

@@ -1,0 +1,372 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number to review'
+        required: true
+        type: number
+
+jobs:
+  review-pr:
+    name: AI-Powered PR Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      # Determine PR to process
+      - name: Set PR number
+        id: set-pr
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "PR_NUMBER=${{ github.event.inputs.pr_number }}" >> $GITHUB_ENV
+          else
+            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          fi
+      
+      # Get PR details
+      - name: Get PR details
+        id: get-pr
+        run: |
+          PR_JSON=$(gh api repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }})
+          echo "PR_TITLE=$(echo $PR_JSON | jq -r '.title')" >> $GITHUB_ENV
+          echo "PR_BODY=$(echo $PR_JSON | jq -r '.body')" >> $GITHUB_ENV
+          echo "PR_AUTHOR=$(echo $PR_JSON | jq -r '.user.login')" >> $GITHUB_ENV
+          echo "PR_BASE=$(echo $PR_JSON | jq -r '.base.ref')" >> $GITHUB_ENV
+          echo "PR_HEAD=$(echo $PR_JSON | jq -r '.head.ref')" >> $GITHUB_ENV
+          
+          # Get changed files
+          FILES_JSON=$(gh api repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/files)
+          echo "CHANGED_FILES=$(echo $FILES_JSON | jq -r '.[].filename' | tr '\n' ',' | sed 's/,$//')" >> $GITHUB_ENV
+          
+          # Save files json for later
+          echo $FILES_JSON > pr_files.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Check if this is an AI command comment
+      - name: Check for AI review command
+        id: check-command
+        if: github.event_name == 'pull_request_review_comment'
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          if [[ "$COMMENT" =~ "@ai "* ]]; then
+            COMMAND=$(echo "$COMMENT" | grep -o '@ai [a-z\-]*' | sed 's/@ai //')
+            echo "AI_COMMAND=$COMMAND" >> $GITHUB_ENV
+            echo "HAS_COMMAND=true" >> $GITHUB_ENV
+            echo "COMMENT_ID=${{ github.event.comment.id }}" >> $GITHUB_ENV
+            
+            # Extract the rest as instructions
+            INSTRUCTIONS=$(echo "$COMMENT" | sed 's/@ai [a-z\-]* //')
+            echo "AI_INSTRUCTIONS=$INSTRUCTIONS" >> $GITHUB_ENV
+          else
+            echo "HAS_COMMAND=false" >> $GITHUB_ENV
+          fi
+      
+      # Install Python and dependencies
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: pip install openai
+
+      # Review the PR with AI
+      - name: Process with OpenAI
+        id: openai
+        run: |
+          # Create a Python script to review the PR
+          cat > review_pr.py << 'EOF'
+          import json
+          import os
+          import sys
+          import subprocess
+          from openai import OpenAI
+
+          client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+          def get_diff_for_file(file_path):
+              """Get the git diff for a specific file"""
+              try:
+                  result = subprocess.run(
+                      ["git", "diff", "--staged", file_path],
+                      capture_output=True,
+                      text=True,
+                      check=True
+                  )
+                  return result.stdout
+              except subprocess.CalledProcessError:
+                  # If the file isn't staged, try unstaged diff
+                  try:
+                      result = subprocess.run(
+                          ["git", "diff", f"origin/{os.environ.get('PR_BASE')}", file_path],
+                          capture_output=True,
+                          text=True,
+                          check=True
+                      )
+                      return result.stdout
+                  except subprocess.CalledProcessError:
+                      return f"Unable to get diff for {file_path}"
+
+          def get_file_content(file_path):
+              """Get the content of a file"""
+              try:
+                  with open(file_path, 'r') as f:
+                      return f.read()
+              except Exception as e:
+                  return f"Error reading file: {str(e)}"
+
+          def review_pr(pr_info, pr_files, command=None, instructions=None):
+              # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+              # do not change this unless explicitly requested by the user
+              
+              # Determine the type of review based on the command
+              if command == "review-code":
+                  system_content = """You are an expert code reviewer with deep understanding of best practices,
+                  security vulnerabilities, and performance considerations. Analyze the pull request
+                  and suggest specific code improvements."""
+              elif command == "suggest-tests":
+                  system_content = """You are an expert in software testing. Analyze the pull request
+                  and suggest appropriate tests that should be added or improved."""
+              elif command == "check-security":
+                  system_content = """You are a security expert specialized in identifying security vulnerabilities
+                  and potential exploits. Analyze the pull request focusing exclusively on security issues."""
+              else:
+                  system_content = """You are an expert code reviewer. Provide a comprehensive review of the pull request,
+                  focusing on code quality, performance, maintainability, and potential bugs."""
+              
+              # Prepare file diffs for context
+              file_diffs = []
+              for file_info in pr_files:
+                  filename = file_info['filename']
+                  diff = get_diff_for_file(filename)
+                  
+                  if diff:
+                      file_diffs.append({
+                          "file": filename,
+                          "diff": diff[:4000]  # Limit diff size
+                      })
+                  
+                  # For new files, include content
+                  if file_info['status'] == 'added':
+                      content = get_file_content(filename)
+                      if content:
+                          file_diffs.append({
+                              "file": filename,
+                              "content": content[:4000]  # Limit content size
+                          })
+              
+              # Combine instructions from PR and command
+              custom_instructions = ""
+              if instructions:
+                  custom_instructions = f"\nAdditional reviewer instructions: {instructions}\n"
+              
+              # Build user message
+              user_content = f"""
+              ## Pull Request Details
+              
+              **Title:** {pr_info['title']}
+              **Description:** {pr_info['body']}
+              **Author:** {pr_info['author']}
+              **Base Branch:** {pr_info['base']}
+              **Changed Files:**
+              {', '.join(file.get('filename') for file in pr_files[:10])}
+              {f'... and {len(pr_files) - 10} more files' if len(pr_files) > 10 else ''}
+              
+              {custom_instructions}
+              
+              ## File Changes
+              
+              """
+              
+              # Add file diffs
+              for file_diff in file_diffs[:5]:  # Limit to first 5 files
+                  user_content += f"### {file_diff['file']}\n"
+                  if 'diff' in file_diff:
+                      user_content += f"```diff\n{file_diff['diff']}\n```\n\n"
+                  if 'content' in file_diff:
+                      user_content += f"**New File Content:**\n```\n{file_diff['content']}\n```\n\n"
+              
+              # Add note if there are more files
+              if len(file_diffs) > 5:
+                  user_content += f"\n... and {len(file_diffs) - 5} more files not shown here.\n"
+              
+              # Request format for response
+              user_content += """
+              Please provide a detailed code review in the following JSON format:
+              
+              {
+                "summary": "Brief summary of the changes",
+                "overall_assessment": "APPROVE, COMMENT, or REQUEST_CHANGES",
+                "comments": [
+                  {
+                    "file": "path/to/file.py",
+                    "line": 42,
+                    "comment": "Suggested change or observation",
+                    "severity": "LOW, MEDIUM, or HIGH"
+                  }
+                ],
+                "recommendations": ["Recommendation 1", "Recommendation 2", ...],
+                "security_concerns": ["Security issue 1", ...] (if applicable),
+                "tests_needed": ["Test case 1", ...] (if applicable)
+              }
+              
+              Focus on the most important issues, providing specific and actionable feedback.
+              """
+              
+              # Call the OpenAI API
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4o",
+                      messages=[
+                          {"role": "system", "content": system_content},
+                          {"role": "user", "content": user_content}
+                      ],
+                      temperature=0.5,
+                      response_format={"type": "json_object"}
+                  )
+                  
+                  # Parse the JSON response
+                  result = json.loads(response.choices[0].message.content)
+                  return result
+              except Exception as e:
+                  return {
+                      "summary": f"Error reviewing PR: {str(e)}",
+                      "overall_assessment": "COMMENT",
+                      "comments": [],
+                      "recommendations": ["Try again with more specific information."],
+                      "error": str(e)
+                  }
+
+          if __name__ == "__main__":
+              pr_title = os.environ.get("PR_TITLE", "")
+              pr_body = os.environ.get("PR_BODY", "")
+              pr_author = os.environ.get("PR_AUTHOR", "")
+              pr_base = os.environ.get("PR_BASE", "")
+              
+              pr_info = {
+                  "title": pr_title,
+                  "body": pr_body,
+                  "author": pr_author,
+                  "base": pr_base
+              }
+              
+              # Load PR files
+              with open('pr_files.json', 'r') as f:
+                  pr_files = json.load(f)
+              
+              # Get command and instructions if available
+              command = os.environ.get("AI_COMMAND", None)
+              instructions = os.environ.get("AI_INSTRUCTIONS", None)
+              
+              result = review_pr(pr_info, pr_files, command, instructions)
+              
+              # Output the result as JSON
+              print(json.dumps(result, indent=2))
+              
+              # Also write to a file
+              with open('ai_review.json', 'w') as f:
+                  json.dump(result, f, indent=2)
+          EOF
+          
+          # Make the script executable
+          chmod +x review_pr.py
+          
+          # Run the Python script
+          python review_pr.py > ai_review.json
+          
+          echo "REVIEW_FILE=ai_review.json" >> $GITHUB_ENV
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PR_TITLE: ${{ env.PR_TITLE }}
+          PR_BODY: ${{ env.PR_BODY }}
+          PR_AUTHOR: ${{ env.PR_AUTHOR }}
+          PR_BASE: ${{ env.PR_BASE }}
+          PR_HEAD: ${{ env.PR_HEAD }}
+          AI_COMMAND: ${{ env.AI_COMMAND }}
+          AI_INSTRUCTIONS: ${{ env.AI_INSTRUCTIONS }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      
+      # Post the review summary
+      - name: Post review summary
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request_review_comment" ] && [ "${{ env.HAS_COMMAND }}" == "true" ]; then
+            # Reply to the comment that triggered this
+            jq -r '.summary' ${{ env.REVIEW_FILE }} | gh api repos/${{ github.repository }}/pulls/comments/${{ env.COMMENT_ID }}/replies -F body=@-
+          else
+            # Post a new review
+            ASSESSMENT=$(jq -r '.overall_assessment' ${{ env.REVIEW_FILE }})
+            SUMMARY=$(jq -r '.summary' ${{ env.REVIEW_FILE }})
+            
+            # Format recommendations
+            RECOMMENDATIONS=$(jq -r '.recommendations | map("* " + .) | join("\n")' ${{ env.REVIEW_FILE }})
+            
+            # Format security concerns if any
+            SECURITY_CONCERNS=$(jq -r 'if has("security_concerns") and (.security_concerns | length > 0) then
+              "## Security Concerns\n\n" + (.security_concerns | map("* " + .) | join("\n"))
+              else "" end' ${{ env.REVIEW_FILE }})
+            
+            # Format tests needed if any
+            TESTS_NEEDED=$(jq -r 'if has("tests_needed") and (.tests_needed | length > 0) then
+              "## Tests Needed\n\n" + (.tests_needed | map("* " + .) | join("\n"))
+              else "" end' ${{ env.REVIEW_FILE }})
+            
+            # Create review body
+            REVIEW_BODY="# AI Code Review
+
+            $SUMMARY
+
+            ## Recommendations
+
+            $RECOMMENDATIONS
+            
+            $SECURITY_CONCERNS
+            
+            $TESTS_NEEDED
+            
+            ---
+            
+            *This review was automatically generated by the AI assistant.*
+            *For detailed comments on specific lines of code, see below.*"
+            
+            echo "$REVIEW_BODY" > review_body.md
+            
+            # Create a file with individual comments
+            jq -r '.comments | map("file="+.file+"\nline="+(.line|tostring)+"\nbody="+.comment+"\n")' ${{ env.REVIEW_FILE }} > comments.txt
+            
+            # Submit the review with appropriate event type based on assessment
+            EVENT="COMMENT"
+            if [ "$ASSESSMENT" == "APPROVE" ]; then
+              EVENT="APPROVE"
+            elif [ "$ASSESSMENT" == "REQUEST_CHANGES" ]; then
+              EVENT="REQUEST_CHANGES"
+            fi
+            
+            gh pr review ${{ env.PR_NUMBER }} --body-file review_body.md --$EVENT
+            
+            # Add individual comments
+            while IFS= read -r file_line && IFS= read -r line_line && IFS= read -r body_line && IFS= read -r empty_line; do
+              FILE="${file_line#file=}"
+              LINE="${line_line#line=}"
+              BODY="${body_line#body=}"
+              
+              # Add the comment
+              gh pr comment ${{ env.PR_NUMBER }} --body "$BODY" --path "$FILE" --line "$LINE"
+            done < comments.txt
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,598 @@
+name: Self-Healing Workflow
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of scan to perform'
+        required: true
+        type: choice
+        options:
+          - all
+          - security
+          - dependencies
+          - linting
+          - tests
+
+jobs:
+  detect-and-fix:
+    name: Detect and Fix Issues
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 bandit safety pytest pytest-cov
+          
+          # Install project dependencies
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then
+            pip install .
+          fi
+          
+          # Install OpenAI for AI assistance
+          pip install openai
+      
+      - name: Determine scan type
+        id: scan-type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "SCAN_TYPE=${{ github.event.inputs.scan_type }}" >> $GITHUB_ENV
+          else
+            echo "SCAN_TYPE=all" >> $GITHUB_ENV
+          fi
+      
+      - name: Run security scan
+        if: env.SCAN_TYPE == 'all' || env.SCAN_TYPE == 'security'
+        id: security-scan
+        run: |
+          # Create security report directory
+          mkdir -p .github/reports
+          
+          # Run bandit for security vulnerabilities
+          bandit -r . -x ./tests,./.venv,./venv,./build -f json -o .github/reports/bandit-report.json || true
+          
+          # Run safety to check dependencies for vulnerabilities
+          safety check --json > .github/reports/safety-report.json || true
+          
+          # Flag if we found issues
+          if [ -s .github/reports/bandit-report.json ]; then
+            BANDIT_ISSUES=$(cat .github/reports/bandit-report.json | jq '.results | length')
+            if [ $BANDIT_ISSUES -gt 0 ]; then
+              echo "SECURITY_ISSUES=true" >> $GITHUB_ENV
+              echo "Found $BANDIT_ISSUES security issues with bandit"
+            fi
+          fi
+          
+          if [ -s .github/reports/safety-report.json ]; then
+            SAFETY_ISSUES=$(cat .github/reports/safety-report.json | jq 'length')
+            if [ $SAFETY_ISSUES -gt 0 ]; then
+              echo "SECURITY_ISSUES=true" >> $GITHUB_ENV
+              echo "Found $SAFETY_ISSUES vulnerable dependencies with safety"
+            fi
+          fi
+      
+      - name: Run dependency check
+        if: env.SCAN_TYPE == 'all' || env.SCAN_TYPE == 'dependencies'
+        id: dependency-check
+        run: |
+          # Check for outdated dependencies
+          python -m pip list --outdated --format=json > .github/reports/outdated-deps.json || true
+          
+          # Check if there are outdated dependencies
+          if [ -s .github/reports/outdated-deps.json ]; then
+            OUTDATED_COUNT=$(cat .github/reports/outdated-deps.json | jq '. | length')
+            if [ $OUTDATED_COUNT -gt 0 ]; then
+              echo "OUTDATED_DEPENDENCIES=true" >> $GITHUB_ENV
+              echo "Found $OUTDATED_COUNT outdated dependencies"
+            fi
+          fi
+      
+      - name: Run code quality check
+        if: env.SCAN_TYPE == 'all' || env.SCAN_TYPE == 'linting'
+        id: code-quality
+        run: |
+          # Run flake8 for code quality issues
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics > .github/reports/flake8-critical.txt || true
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics > .github/reports/flake8-full.txt
+          
+          # Check if there are critical issues
+          if [ -s .github/reports/flake8-critical.txt ]; then
+            CRITICAL_COUNT=$(grep -c "^" .github/reports/flake8-critical.txt)
+            if [ $CRITICAL_COUNT -gt 0 ]; then
+              echo "CODE_QUALITY_ISSUES=true" >> $GITHUB_ENV
+              echo "Found $CRITICAL_COUNT critical code quality issues"
+            fi
+          fi
+      
+      - name: Run tests
+        if: env.SCAN_TYPE == 'all' || env.SCAN_TYPE == 'tests'
+        id: run-tests
+        run: |
+          # Run pytest with coverage
+          python -m pytest --cov=. --cov-report=xml:.github/reports/coverage.xml || echo "TESTS_FAILING=true" >> $GITHUB_ENV
+      
+      - name: Process issues with AI
+        if: env.SECURITY_ISSUES == 'true' || env.OUTDATED_DEPENDENCIES == 'true' || env.CODE_QUALITY_ISSUES == 'true' || env.TESTS_FAILING == 'true'
+        run: |
+          # Create Python script to process and fix issues
+          cat > fix_issues.py << 'EOF'
+          import json
+          import os
+          import sys
+          import subprocess
+          from openai import OpenAI
+
+          client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+          def read_json_file(file_path):
+              try:
+                  with open(file_path, 'r') as f:
+                      return json.load(f)
+              except Exception as e:
+                  print(f"Error reading {file_path}: {str(e)}")
+                  return {}
+
+          def read_text_file(file_path):
+              try:
+                  with open(file_path, 'r') as f:
+                      return f.read()
+              except Exception as e:
+                  print(f"Error reading {file_path}: {str(e)}")
+                  return ""
+
+          def get_file_content(file_path):
+              try:
+                  with open(file_path, 'r') as f:
+                      return f.read()
+              except Exception as e:
+                  return f"Error reading file: {str(e)}"
+
+          def fix_security_issues():
+              results = []
+              
+              # Process bandit results
+              bandit_report = read_json_file('.github/reports/bandit-report.json')
+              if bandit_report and 'results' in bandit_report:
+                  for issue in bandit_report['results']:
+                      file_path = issue.get('filename', '')
+                      line_number = issue.get('line_number', 0)
+                      issue_text = issue.get('issue_text', '')
+                      severity = issue.get('issue_severity', 'LOW')
+                      confidence = issue.get('issue_confidence', 'LOW')
+                      
+                      if severity in ('HIGH', 'MEDIUM') and confidence in ('HIGH', 'MEDIUM'):
+                          # Get file content for context
+                          file_content = get_file_content(file_path)
+                          
+                          fix = analyze_and_fix_issue(
+                              file_path=file_path,
+                              file_content=file_content,
+                              issue_type="security",
+                              issue_details=f"Line {line_number}: {issue_text} (Severity: {severity}, Confidence: {confidence})",
+                              line_number=line_number
+                          )
+                          
+                          if fix:
+                              results.append(fix)
+              
+              # Process safety results
+              safety_report = read_json_file('.github/reports/safety-report.json')
+              if safety_report:
+                  for vuln in safety_report:
+                      if isinstance(vuln, dict):
+                          package = vuln.get('package_name', '')
+                          current_version = vuln.get('installed_version', '')
+                          fixed_version = vuln.get('fixed_version', '')
+                          vulnerability = vuln.get('vulnerability', '')
+                          
+                          fix = {
+                              "type": "dependency",
+                              "issue": f"Vulnerable dependency: {package} {current_version}",
+                              "details": f"Vulnerability: {vulnerability}",
+                              "recommendation": f"Update to {fixed_version} or later",
+                              "fix_command": f"pip install --upgrade {package}>={fixed_version}"
+                          }
+                          results.append(fix)
+              
+              return results
+
+          def fix_dependency_issues():
+              results = []
+              
+              # Process outdated dependencies
+              outdated_deps = read_json_file('.github/reports/outdated-deps.json')
+              if outdated_deps:
+                  for dep in outdated_deps:
+                      name = dep.get('name', '')
+                      current_version = dep.get('version', '')
+                      latest_version = dep.get('latest_version', '')
+                      
+                      # Only suggest updates for non-minor versions or significant packages
+                      if name and latest_version and current_version != latest_version:
+                          fix = {
+                              "type": "dependency",
+                              "issue": f"Outdated dependency: {name} {current_version}",
+                              "details": f"Latest version: {latest_version}",
+                              "recommendation": f"Update to {latest_version}",
+                              "fix_command": f"pip install --upgrade {name}=={latest_version}"
+                          }
+                          results.append(fix)
+              
+              return results
+
+          def fix_code_quality_issues():
+              results = []
+              
+              # Process flake8 critical issues
+              flake8_critical = read_text_file('.github/reports/flake8-critical.txt')
+              if flake8_critical:
+                  lines = flake8_critical.split('\n')
+                  for line in lines:
+                      if line and ':' in line:
+                          parts = line.split(':')
+                          if len(parts) >= 3:
+                              file_path = parts[0]
+                              try:
+                                  line_number = int(parts[1])
+                                  issue = ':'.join(parts[2:]).strip()
+                                  
+                                  # Get file content for context
+                                  file_content = get_file_content(file_path)
+                                  
+                                  fix = analyze_and_fix_issue(
+                                      file_path=file_path,
+                                      file_content=file_content,
+                                      issue_type="code_quality",
+                                      issue_details=f"Line {line_number}: {issue}",
+                                      line_number=line_number
+                                  )
+                                  
+                                  if fix:
+                                      results.append(fix)
+                              except ValueError:
+                                  pass
+              
+              return results
+
+          def analyze_and_fix_issue(file_path, file_content, issue_type, issue_details, line_number=None):
+              # Prepare context
+              context = file_content
+              if line_number:
+                  # Extract relevant portion around the issue
+                  lines = file_content.split('\n')
+                  start_line = max(0, line_number - 5)
+                  end_line = min(len(lines), line_number + 5)
+                  context = '\n'.join(lines[start_line:end_line])
+              
+              # Create prompt based on issue type
+              if issue_type == "security":
+                  system_content = "You are a security expert specialized in fixing security vulnerabilities in code."
+              elif issue_type == "code_quality":
+                  system_content = "You are a code quality expert specialized in fixing linting and code style issues."
+              else:
+                  system_content = "You are a software developer specialized in fixing code issues."
+              
+              user_content = f"""
+              ## Issue to Fix
+              
+              File: {file_path}
+              {issue_details}
+              
+              ## File Context
+              
+              ```
+              {context}
+              ```
+              
+              Please analyze this issue and provide a fix in JSON format with the following structure:
+              
+              {{
+                "type": "{issue_type}",
+                "issue": "Brief description of the issue",
+                "details": "Detailed explanation of the problem",
+                "recommendation": "Your recommendation for fixing it",
+                "fixed_code": "The corrected code snippet",
+                "line_range": [start_line, end_line]
+              }}
+              
+              If it's a security issue, explain the vulnerability and how your fix addresses it.
+              If it's a code quality issue, explain the style or linting problem and how your fix improves the code.
+              """
+              
+              # Call the OpenAI API
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4o",
+                      messages=[
+                          {"role": "system", "content": system_content},
+                          {"role": "user", "content": user_content}
+                      ],
+                      temperature=0.5,
+                      response_format={"type": "json_object"}
+                  )
+                  
+                  # Parse the JSON response
+                  result = json.loads(response.choices[0].message.content)
+                  
+                  # Add file path if not included
+                  if 'file_path' not in result:
+                      result['file_path'] = file_path
+                  
+                  return result
+              except Exception as e:
+                  print(f"Error analyzing issue: {str(e)}")
+                  return None
+
+          def apply_fixes(fixes):
+              applied_fixes = []
+              
+              for fix in fixes:
+                  fix_type = fix.get('type')
+                  
+                  if fix_type == 'dependency':
+                      # Apply dependency fix
+                      if 'fix_command' in fix:
+                          try:
+                              print(f"Applying dependency fix: {fix['fix_command']}")
+                              result = subprocess.run(fix['fix_command'], shell=True, check=True, capture_output=True, text=True)
+                              fix['applied'] = True
+                              fix['result'] = "Success"
+                              applied_fixes.append(fix)
+                          except subprocess.CalledProcessError as e:
+                              fix['applied'] = False
+                              fix['result'] = f"Failed: {str(e)}"
+                              applied_fixes.append(fix)
+                  elif fix_type in ('security', 'code_quality'):
+                      # Apply code fix
+                      if 'file_path' in fix and 'fixed_code' in fix and 'line_range' in fix:
+                          file_path = fix['file_path']
+                          fixed_code = fix['fixed_code']
+                          line_range = fix['line_range']
+                          
+                          try:
+                              # Read original file
+                              with open(file_path, 'r') as f:
+                                  lines = f.readlines()
+                              
+                              # Apply fix - replace the specified lines
+                              start_line, end_line = line_range
+                              fixed_lines = fixed_code.strip().split('\n')
+                              
+                              # Ensure line numbers are 0-indexed for the array
+                              start_index = start_line - 1 if start_line > 0 else 0
+                              end_index = end_line if end_line <= len(lines) else len(lines)
+                              
+                              # Replace the lines
+                              new_lines = lines[:start_index] + [line + '\n' for line in fixed_lines] + lines[end_index:]
+                              
+                              # Write back to file
+                              with open(file_path, 'w') as f:
+                                  f.writelines(new_lines)
+                              
+                              fix['applied'] = True
+                              fix['result'] = "Success"
+                              applied_fixes.append(fix)
+                          except Exception as e:
+                              fix['applied'] = False
+                              fix['result'] = f"Failed: {str(e)}"
+                              applied_fixes.append(fix)
+              
+              return applied_fixes
+
+          def create_report(fixes):
+              # Create a markdown report
+              report = "# Self-Healing Workflow Report\n\n"
+              
+              if not fixes:
+                  report += "No issues were fixed in this run.\n"
+                  return report
+              
+              # Group fixes by type
+              security_fixes = [fix for fix in fixes if fix.get('type') == 'security']
+              dependency_fixes = [fix for fix in fixes if fix.get('type') == 'dependency']
+              code_quality_fixes = [fix for fix in fixes if fix.get('type') == 'code_quality']
+              
+              # Add security fixes to report
+              if security_fixes:
+                  report += f"## Security Issues Fixed ({len(security_fixes)})\n\n"
+                  for fix in security_fixes:
+                      status = "✅ Fixed" if fix.get('applied', False) else "❌ Fix Failed"
+                      report += f"### {fix.get('issue', 'Security Issue')} ({status})\n\n"
+                      report += f"- **File:** {fix.get('file_path', 'Unknown')}\n"
+                      report += f"- **Details:** {fix.get('details', 'No details provided')}\n"
+                      report += f"- **Recommendation:** {fix.get('recommendation', 'No recommendation provided')}\n"
+                      if not fix.get('applied', False):
+                          report += f"- **Error:** {fix.get('result', 'Unknown error')}\n"
+                      report += "\n"
+              
+              # Add dependency fixes to report
+              if dependency_fixes:
+                  report += f"## Dependency Issues Fixed ({len(dependency_fixes)})\n\n"
+                  for fix in dependency_fixes:
+                      status = "✅ Fixed" if fix.get('applied', False) else "❌ Fix Failed"
+                      report += f"### {fix.get('issue', 'Dependency Issue')} ({status})\n\n"
+                      report += f"- **Details:** {fix.get('details', 'No details provided')}\n"
+                      report += f"- **Recommendation:** {fix.get('recommendation', 'No recommendation provided')}\n"
+                      report += f"- **Command:** `{fix.get('fix_command', 'No command provided')}`\n"
+                      if not fix.get('applied', False):
+                          report += f"- **Error:** {fix.get('result', 'Unknown error')}\n"
+                      report += "\n"
+              
+              # Add code quality fixes to report
+              if code_quality_fixes:
+                  report += f"## Code Quality Issues Fixed ({len(code_quality_fixes)})\n\n"
+                  for fix in code_quality_fixes:
+                      status = "✅ Fixed" if fix.get('applied', False) else "❌ Fix Failed"
+                      report += f"### {fix.get('issue', 'Code Quality Issue')} ({status})\n\n"
+                      report += f"- **File:** {fix.get('file_path', 'Unknown')}\n"
+                      report += f"- **Details:** {fix.get('details', 'No details provided')}\n"
+                      report += f"- **Recommendation:** {fix.get('recommendation', 'No recommendation provided')}\n"
+                      if not fix.get('applied', False):
+                          report += f"- **Error:** {fix.get('result', 'Unknown error')}\n"
+                      report += "\n"
+              
+              return report
+
+          if __name__ == "__main__":
+              all_fixes = []
+              
+              # Process each type of issue
+              if os.environ.get("SECURITY_ISSUES") == "true":
+                  security_fixes = fix_security_issues()
+                  all_fixes.extend(security_fixes)
+              
+              if os.environ.get("OUTDATED_DEPENDENCIES") == "true":
+                  dependency_fixes = fix_dependency_issues()
+                  all_fixes.extend(dependency_fixes)
+              
+              if os.environ.get("CODE_QUALITY_ISSUES") == "true":
+                  code_quality_fixes = fix_code_quality_issues()
+                  all_fixes.extend(code_quality_fixes)
+              
+              # Apply the fixes
+              applied_fixes = apply_fixes(all_fixes)
+              
+              # Create a report
+              report = create_report(applied_fixes)
+              
+              # Write report to file
+              os.makedirs('.github/reports', exist_ok=True)
+              with open('.github/reports/self-healing-report.md', 'w') as f:
+                  f.write(report)
+              
+              # Print summary
+              fixed_count = sum(1 for fix in applied_fixes if fix.get('applied', False))
+              failed_count = sum(1 for fix in applied_fixes if not fix.get('applied', False))
+              print(f"Applied {fixed_count} fixes successfully, {failed_count} fixes failed")
+              
+              # Save the fixes as JSON for PR creation
+              with open('.github/reports/applied-fixes.json', 'w') as f:
+                  json.dump(applied_fixes, f, indent=2)
+          EOF
+          
+          # Run the fix script
+          python fix_issues.py
+          
+          # Set flag if any fixes were applied
+          if [ -f .github/reports/applied-fixes.json ]; then
+            FIXES_COUNT=$(cat .github/reports/applied-fixes.json | jq 'map(select(.applied == true)) | length')
+            if [ "$FIXES_COUNT" -gt 0 ]; then
+              echo "FIXES_APPLIED=true" >> $GITHUB_ENV
+              echo "FIXES_COUNT=$FIXES_COUNT" >> $GITHUB_ENV
+            fi
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SECURITY_ISSUES: ${{ env.SECURITY_ISSUES }}
+          OUTDATED_DEPENDENCIES: ${{ env.OUTDATED_DEPENDENCIES }}
+          CODE_QUALITY_ISSUES: ${{ env.CODE_QUALITY_ISSUES }}
+          TESTS_FAILING: ${{ env.TESTS_FAILING }}
+      
+      - name: Create pull request with fixes
+        if: env.FIXES_APPLIED == 'true'
+        run: |
+          # Create branch for fixes
+          BRANCH_NAME="self-healing-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b $BRANCH_NAME
+          
+          # Commit all changes
+          git config user.name "GitHub Self-Healing Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "fix: Apply automated fixes from self-healing workflow"
+          
+          # Push the branch
+          git push origin $BRANCH_NAME
+          
+          # Create PR
+          PR_TITLE="🤖 Self-healing: Automated fixes for security and code quality issues"
+          
+          # Use the generated report as PR body
+          gh pr create \
+            --title "$PR_TITLE" \
+            --body-file .github/reports/self-healing-report.md \
+            --base main \
+            --head $BRANCH_NAME \
+            --label "auto-fix" \
+            --label "self-healing"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create issue if fixes failed
+        if: env.FIXES_APPLIED != 'true' && (env.SECURITY_ISSUES == 'true' || env.OUTDATED_DEPENDENCIES == 'true' || env.CODE_QUALITY_ISSUES == 'true' || env.TESTS_FAILING == 'true')
+        run: |
+          # Create an issue for manual review
+          ISSUE_TITLE="🚨 Manual review needed: Issues detected by self-healing workflow"
+          
+          # Generate issue body
+          ISSUE_BODY="# Manual Review Required
+
+          The self-healing workflow has detected issues but was unable to fix them automatically.
+          
+          ## Issues Detected
+          
+          "
+          
+          if [ "${{ env.SECURITY_ISSUES }}" == "true" ]; then
+            ISSUE_BODY+="### Security Issues
+          
+          - Security vulnerabilities detected by Bandit
+          - Vulnerable dependencies detected by Safety
+          
+          "
+          fi
+          
+          if [ "${{ env.OUTDATED_DEPENDENCIES }}" == "true" ]; then
+            ISSUE_BODY+="### Outdated Dependencies
+          
+          - Several dependencies are outdated and should be updated
+          
+          "
+          fi
+          
+          if [ "${{ env.CODE_QUALITY_ISSUES }}" == "true" ]; then
+            ISSUE_BODY+="### Code Quality Issues
+          
+          - Critical code quality issues detected by Flake8
+          
+          "
+          fi
+          
+          if [ "${{ env.TESTS_FAILING }}" == "true" ]; then
+            ISSUE_BODY+="### Failing Tests
+          
+          - Some tests are failing and need attention
+          
+          "
+          fi
+          
+          ISSUE_BODY+="## Next Steps
+          
+          Please review the detailed scan reports in the workflow run: [Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          "
+          
+          # Create the issue
+          echo "$ISSUE_BODY" > issue_body.md
+          gh issue create --title "$ISSUE_TITLE" --body-file issue_body.md --label "needs-triage" --label "self-healing"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
