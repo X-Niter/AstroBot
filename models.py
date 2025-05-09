@@ -497,3 +497,40 @@ class WebhookEvent(db.Model):
             except:
                 return {}
         return {}
+
+
+class ServerConfiguration(db.Model):
+    """Server configuration from onboarding wizard"""
+    __tablename__ = 'server_configurations'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    server_purpose = Column(String(50), nullable=False)
+    server_size = Column(String(20), nullable=False)
+    activity_level = Column(String(20), nullable=False)
+    moderation_needs = Column(String(20), nullable=False)
+    selected_features = Column(Text, nullable=False)  # JSON string of feature names
+    feature_settings = Column(Text, nullable=True)  # JSON string of settings
+    additional_requirements = Column(Text, nullable=True)
+    status = Column(String(20), default="pending")  # pending, configured, failed
+    discord_guild_id = Column(String(20), nullable=True)
+    created_by_user_id = Column(Integer, ForeignKey('website_users.id'), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<ServerConfiguration {self.id} - {self.name}>"
+    
+    def get_selected_features(self):
+        """Get selected features as list"""
+        try:
+            return json.loads(self.selected_features)
+        except:
+            return []
+    
+    def get_feature_settings(self):
+        """Get feature settings as dictionary"""
+        try:
+            return json.loads(self.feature_settings)
+        except:
+            return {}
