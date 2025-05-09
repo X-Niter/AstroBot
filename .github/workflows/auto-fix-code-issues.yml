@@ -1006,7 +1006,7 @@ where = ["src"]
                       f.write(str(len(all_fixes)))
               else:
                   print("No issues were fixed in this run")
-EOF
+          EOF
           
           # Run the Python script
           python fix_code_issues.py
