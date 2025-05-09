@@ -182,7 +182,7 @@ Here are some of the most useful commands available in AstroBot:
 !custom            - Manage custom commands
 ```
 
-For a complete command list, check our [documentation](https://yourusername.github.io/astrobot/user-guide).
+For a complete command list, check our [documentation](https://x-niter.github.io/astrobot/user-guide).
 
 ## 📚 **Documentation**
 
