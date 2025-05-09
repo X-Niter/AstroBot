@@ -1,323 +1,256 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}Customize Bot - {{ server.name }}{% endblock %}
 
-{% block content %}
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Customize Bot for {{ server.name }}</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="#">Discord Servers</a></li>
-        <li class="breadcrumb-item active">Customize Bot</li>
-    </ol>
+{% block styles %}
+<style>
+    .color-swatch {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-block;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
     
-    {% if not server.is_premium and not current_user.is_premium %}
-    <div class="alert alert-warning d-flex align-items-center" role="alert">
-        <div class="flex-shrink-0">
-            <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
-        </div>
-        <div>
-            <h4 class="alert-heading">Premium Feature</h4>
-            <p class="mb-0">Bot customization is a premium feature. <a href="{{ url_for('premium_plans') }}" class="alert-link">Upgrade to Premium</a> to access this feature.</p>
-        </div>
-    </div>
-    {% else %}
+    .color-swatch:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 2px white, 0 0 0 4px currentColor;
+    }
     
-    {% if error %}
-    <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
+    .color-swatch.active {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 2px white, 0 0 0 4px currentColor;
+    }
     
-    {% if success %}
-    <div class="alert alert-success">{{ success }}</div>
-    {% endif %}
+    .bot-avatar-preview {
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
     
-    <div class="row">
-        <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <i class="bi bi-robot me-1"></i>
-                        Bot Appearance
-                    </div>
-                    <div>
-                        <span class="badge bg-primary">Premium Feature</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <form method="POST" enctype="multipart/form-data">
-                        {{ form.hidden_tag() }}
-                        
-                        <div class="mb-4 text-center">
-                            <div class="bot-avatar-preview position-relative mx-auto mb-3" style="width: 128px; height: 128px;">
-                                <div class="rounded-circle bg-dark overflow-hidden d-flex align-items-center justify-content-center" style="width: 128px; height: 128px;">
-                                    {% if customization and customization.custom_avatar_url %}
-                                    <img src="{{ customization.custom_avatar_url }}" alt="Bot Avatar" class="img-fluid" id="avatarPreview">
-                                    {% else %}
-                                    <img src="{{ url_for('static', filename='img/astrobot-logo.svg') }}" alt="Default Avatar" class="img-fluid p-3" id="avatarPreview">
-                                    {% endif %}
-                                </div>
-                                <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" id="changeAvatarBtn" style="width: 32px; height: 32px;">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                            </div>
-                            <p class="text-muted small mb-0">Customized bot avatar</p>
-                            <div class="d-none">
-                                {{ form.avatar_file(class="form-control", accept=".jpg,.jpeg,.png,.gif") }}
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.custom_name.id }}" class="form-label">Bot Name</label>
-                            {{ form.custom_name(class="form-control", placeholder="e.g. AstroHelper") }}
-                            <div class="form-text">Customize the bot's name in this server (Default: AstroBot AI)</div>
-                            {% if form.custom_name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.custom_name.errors %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.theme_color.id }}" class="form-label">Theme Color</label>
-                            <div class="input-group">
-                                {{ form.theme_color(class="form-control", type="text") }}
-                                <span class="input-group-text color-preview"></span>
-                            </div>
-                            <div class="form-text">Custom color for bot embeds and responses (HEX code e.g. #7289DA)</div>
-                            {% if form.theme_color.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.theme_color.errors %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.custom_status.id }}" class="form-label">Status Text</label>
-                            {{ form.custom_status(class="form-control", placeholder="e.g. Helping server members") }}
-                            <div class="form-text">Custom status message (keep it short)</div>
-                            {% if form.custom_status.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.custom_status.errors %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="{{ form.custom_playing.id }}" class="form-label">"Playing" Status</label>
-                            {{ form.custom_playing(class="form-control", placeholder="e.g. Minecraft") }}
-                            <div class="form-text">What game/activity should the bot display as playing?</div>
-                            {% if form.custom_playing.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.custom_playing.errors %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-1"></i> Save Customization
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="bi bi-eye me-1"></i>
-                    Preview
-                </div>
-                <div class="card-body">
-                    <div class="bot-preview p-3 border rounded" style="background-color: #36393f;">
-                        <!-- Discord-like message preview -->
-                        <div class="d-flex mb-3 align-items-center">
-                            <div class="flex-shrink-0 me-2">
-                                <div class="rounded-circle bg-dark overflow-hidden d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                    <img id="previewAvatar" src="{{ customization.custom_avatar_url if customization and customization.custom_avatar_url else url_for('static', filename='img/astrobot-logo.svg') }}" alt="Bot Avatar" class="img-fluid" style="{{ 'padding: 5px;' if not customization or not customization.custom_avatar_url }}">
-                                </div>
-                            </div>
-                            <div>
-                                <div class="fw-bold" style="color: #ffffff;" id="previewName">
-                                    {{ customization.custom_name if customization and customization.custom_name else "AstroBot AI" }}
-                                </div>
-                                <div class="d-flex text-muted small">
-                                    <div class="me-2" id="previewStatus" style="color: #a3a6aa;">
-                                        {{ customization.custom_status if customization and customization.custom_status else "Online" }}
-                                    </div>
-                                    <div id="previewPlaying" style="color: #a3a6aa;">
-                                        {% if customization and customization.custom_playing %}
-                                        Playing {{ customization.custom_playing }}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Example bot response with embed -->
-                        <div class="bot-message mb-3">
-                            <div class="d-flex mb-2 align-items-center">
-                                <div class="flex-shrink-0 me-2">
-                                    <div class="rounded-circle bg-dark overflow-hidden d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                        <img src="{{ customization.custom_avatar_url if customization and customization.custom_avatar_url else url_for('static', filename='img/astrobot-logo.svg') }}" alt="Bot Avatar" class="img-fluid" style="{{ 'padding: 5px;' if not customization or not customization.custom_avatar_url }}">
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="fw-bold" style="color: #ffffff;">
-                                        {{ customization.custom_name if customization and customization.custom_name else "AstroBot AI" }}
-                                    </div>
-                                    <div class="text-muted small" style="color: #a3a6aa;">Today at {{ now.strftime('%I:%M %p') }}</div>
-                                </div>
-                            </div>
-                            
-                            <div class="embed-message ms-5 ps-2 rounded" style="border-left: 4px solid {{ customization.theme_color if customization and customization.theme_color else '#7289DA' }}; background-color: #2f3136;">
-                                <div class="p-3">
-                                    <div class="embed-title fw-bold mb-2" style="color: #ffffff;">Server Status Update</div>
-                                    <div class="embed-description mb-2" style="color: #dcddde;">The Minecraft server is now online and ready for players!</div>
-                                    <div class="embed-fields">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <div class="fw-bold" style="color: #ffffff;">Players Online:</div>
-                                            <div style="color: #dcddde;">5/20</div>
-                                        </div>
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <div class="fw-bold" style="color: #ffffff;">Server Version:</div>
-                                            <div style="color: #dcddde;">1.20.4</div>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <div class="fw-bold" style="color: #ffffff;">Uptime:</div>
-                                            <div style="color: #dcddde;">2 hours</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="text-muted small text-center" style="color: #a3a6aa;">
-                            This is a preview of how the bot will appear in Discord
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="bi bi-info-circle me-1"></i>
-                    About This Feature
-                </div>
-                <div class="card-body">
-                    <p>With premium bot customization, you can:</p>
-                    <ul>
-                        <li>Change the bot's display name specifically for your server</li>
-                        <li>Upload a custom avatar for the bot</li>
-                        <li>Set custom status and "playing" text</li>
-                        <li>Choose a custom theme color for bot message embeds</li>
-                    </ul>
-                    <div class="alert alert-info mb-0">
-                        <i class="bi bi-lightbulb me-2"></i>
-                        Changes may take up to 5 minutes to appear in Discord due to Discord's API rate limits.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
+    .bot-preview-card {
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .bot-preview-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+</style>
 {% endblock %}
 
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle avatar file upload
-    const avatarInput = document.getElementById('{{ form.avatar_file.id }}');
-    const changeAvatarBtn = document.getElementById('changeAvatarBtn');
-    const avatarPreview = document.getElementById('avatarPreview');
-    const previewAvatar = document.getElementById('previewAvatar');
+{% block content %}
+<div class="container mx-auto py-6">
+    <div class="mb-6">
+        <a href="{{ url_for('server_index') }}" class="flex items-center text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
+            <i class="bi bi-arrow-left mr-2"></i> Back to Servers
+        </a>
+    </div>
     
-    if (changeAvatarBtn && avatarInput) {
-        changeAvatarBtn.addEventListener('click', function() {
-            avatarInput.click();
-        });
-    }
-    
-    if (avatarInput && avatarPreview) {
-        avatarInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Customization Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                    Customize Bot for {{ server.name }}
+                </h1>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">
+                    Customize how AstroBot appears in your Discord server.
+                </p>
                 
-                reader.onload = function(e) {
-                    avatarPreview.src = e.target.result;
-                    previewAvatar.src = e.target.result;
-                    avatarPreview.style.padding = '0';
-                    previewAvatar.style.padding = '0';
-                }
-                
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-    }
-    
-    // Handle color picker
-    const colorInput = document.getElementById('{{ form.theme_color.id }}');
-    const colorPreview = document.querySelector('.color-preview');
-    
-    if (colorInput && colorPreview) {
-        // Update color preview on load
-        colorPreview.style.backgroundColor = colorInput.value || '#7289DA';
+                <form method="POST" action="{{ url_for('bot_customization', server_id=server.server_id) }}" enctype="multipart/form-data" 
+                      x-data="{ 
+                        previewName: '{{ customization.custom_name or 'AstroBot' }}',
+                        previewStatus: '{{ customization.custom_status or 'Helping with Minecraft & modding' }}',
+                        previewPlaying: '{{ customization.custom_playing or 'Minecraft' }}',
+                        previewColor: '{{ customization.theme_color or '#5865F2' }}',
+                        avatarFile: null,
+                        avatarPreview: '{{ customization.avatar_url or url_for('static', filename='img/astrobot-logo.svg') }}'
+                      }"
+                      class="space-y-6">
+                    {{ form.csrf_token }}
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="custom_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Bot Display Name
+                            </label>
+                            <div class="mt-1">
+                                {{ form.custom_name(class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md", placeholder="AstroBot", x_model="previewName") }}
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Must be between 3-32 characters
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="custom_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Status Text
+                            </label>
+                            <div class="mt-1">
+                                {{ form.custom_status(class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md", placeholder="Helping with Minecraft & modding", x_model="previewStatus") }}
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Custom status message (max 100 characters)
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="custom_playing" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Playing Status
+                            </label>
+                            <div class="mt-1">
+                                {{ form.custom_playing(class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md", placeholder="Minecraft", x_model="previewPlaying") }}
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Shows as "Playing [text]" in Discord (max 100 characters)
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="theme_color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Theme Color
+                            </label>
+                            <div class="flex items-center space-x-4">
+                                <input type="color" 
+                                       name="theme_color" 
+                                       id="theme_color" 
+                                       value="{{ customization.theme_color or '#5865F2' }}" 
+                                       class="h-10 w-10 border-0 rounded cursor-pointer"
+                                       x-model="previewColor">
+                                       
+                                {{ form.theme_color(class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md", x_model="previewColor") }}
+                            </div>
+                            <div class="mt-3 grid grid-cols-6 gap-2">
+                                <div class="color-swatch" style="background-color: #5865F2;" title="Discord Blue" @click="previewColor = '#5865F2'"></div>
+                                <div class="color-swatch" style="background-color: #57F287;" title="Green" @click="previewColor = '#57F287'"></div>
+                                <div class="color-swatch" style="background-color: #FEE75C;" title="Yellow" @click="previewColor = '#FEE75C'"></div>
+                                <div class="color-swatch" style="background-color: #EB459E;" title="Pink" @click="previewColor = '#EB459E'"></div>
+                                <div class="color-swatch" style="background-color: #ED4245;" title="Red" @click="previewColor = '#ED4245'"></div>
+                                <div class="color-swatch" style="background-color: #000000;" title="Black" @click="previewColor = '#000000'"></div>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                The color used for embeds and bot responses
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="avatar_file" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Bot Avatar
+                            </label>
+                            <div class="mt-1 flex items-center space-x-4">
+                                <div>
+                                    <img :src="avatarPreview" alt="Bot Avatar" class="bot-avatar-preview">
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-center w-full">
+                                        <label for="avatar_file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500">
+                                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <svg aria-hidden="true" class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                                <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG or GIF (MAX. 2MB)</p>
+                                            </div>
+                                            <input id="avatar_file" name="avatar_file" type="file" class="hidden" 
+                                                   accept=".jpg,.jpeg,.png,.gif"
+                                                   @change="
+                                                     avatarFile = $event.target.files[0];
+                                                     if (avatarFile) {
+                                                       const reader = new FileReader();
+                                                       reader.onload = (e) => {
+                                                         avatarPreview = e.target.result;
+                                                       };
+                                                       reader.readAsDataURL(avatarFile);
+                                                     }
+                                                   ">
+                                        </label>
+                                    </div>
+                                    <p class="mt-1 text-center text-xs text-gray-500 dark:text-gray-400">
+                                        Recommended: 512x512 pixels
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-end">
+                        <a href="{{ url_for('server_index') }}" class="mr-4 inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Cancel
+                        </a>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         
-        // Update color preview on change
-        colorInput.addEventListener('input', function() {
-            colorPreview.style.backgroundColor = this.value;
-            
-            // Update embed preview
-            const embedMessage = document.querySelector('.embed-message');
-            if (embedMessage) {
-                embedMessage.style.borderLeftColor = this.value;
-            }
-        });
-    }
-    
-    // Update name preview
-    const nameInput = document.getElementById('{{ form.custom_name.id }}');
-    const namePreview = document.getElementById('previewName');
-    
-    if (nameInput && namePreview) {
-        nameInput.addEventListener('input', function() {
-            namePreview.textContent = this.value || 'AstroBot AI';
-        });
-    }
-    
-    // Update status preview
-    const statusInput = document.getElementById('{{ form.custom_status.id }}');
-    const statusPreview = document.getElementById('previewStatus');
-    
-    if (statusInput && statusPreview) {
-        statusInput.addEventListener('input', function() {
-            statusPreview.textContent = this.value || 'Online';
-        });
-    }
-    
-    // Update playing preview
-    const playingInput = document.getElementById('{{ form.custom_playing.id }}');
-    const playingPreview = document.getElementById('previewPlaying');
-    
-    if (playingInput && playingPreview) {
-        playingInput.addEventListener('input', function() {
-            if (this.value) {
-                playingPreview.textContent = 'Playing ' + this.value;
-            } else {
-                playingPreview.textContent = '';
-            }
-        });
-    }
-});
-</script>
+        <!-- Live Preview -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 sticky top-6">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Live Preview</h2>
+                
+                <div class="bot-preview-card bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                    <!-- Discord-like message preview -->
+                    <div class="p-4 bg-gray-200 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-400 dark:bg-gray-600 mr-2 overflow-hidden">
+                                <img x-bind:src="avatarPreview" alt="Bot Avatar" class="w-full h-full object-cover">
+                            </div>
+                            <div>
+                                <div class="flex items-center">
+                                    <span class="font-medium text-gray-900 dark:text-white" x-text="previewName"></span>
+                                    <span class="ml-2 px-1 py-0.5 text-xs bg-green-500 text-white rounded-sm">BOT</span>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    <span x-text="previewStatus"></span> • Playing <span x-text="previewPlaying"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Message content -->
+                    <div class="p-4">
+                        <div class="text-sm text-gray-700 dark:text-gray-300">
+                            <span class="font-medium">Hello</span>, I'm your customized AstroBot! I can help you with Minecraft server management, modding, and more.
+                        </div>
+                        
+                        <!-- Embed preview -->
+                        <div class="mt-2 border-l-4 rounded-sm pl-3 py-2" x-bind:style="{ 'border-color': previewColor }">
+                            <div class="text-sm font-medium" x-bind:style="{ 'color': previewColor }">Server Status</div>
+                            <div class="text-xs text-gray-700 dark:text-gray-300 mt-1">
+                                <div class="flex justify-between">
+                                    <span>Players Online:</span>
+                                    <span>3/20</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Uptime:</span>
+                                    <span>2 days</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Version:</span>
+                                    <span>1.20.4</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-4 border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
+                    <h3 class="text-sm font-medium text-indigo-800 dark:text-indigo-300 mb-2">Important Notes</h3>
+                    <ul class="text-xs text-indigo-700 dark:text-indigo-400 space-y-1 list-disc list-inside">
+                        <li>Changes may take up to 5 minutes to appear in Discord</li>
+                        <li>Customizations are specific to this server only</li>
+                        <li>Image uploads must be less than 2MB</li>
+                        <li>Inappropriate content will be removed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

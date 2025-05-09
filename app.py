@@ -12,6 +12,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import traceback
 from sqlalchemy.orm import DeclarativeBase
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
 
 from config import MONGODB_URI, DB_NAME
 
@@ -406,6 +408,8 @@ def server_index():
 @login_required
 def bot_customization(server_id):
     """Customize bot appearance for a specific server (premium feature)"""
+    from models import DiscordServer, BotCustomization
+    
     # Get the server
     server = DiscordServer.query.filter_by(server_id=server_id).first_or_404()
     
