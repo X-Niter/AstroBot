@@ -60,7 +60,7 @@ jobs:
 
             if __name__ == "__main__":
                 freezer.freeze()
-EOF
+            EOF
           fi
           
           # Run the static site generator

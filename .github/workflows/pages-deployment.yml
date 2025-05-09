@@ -130,7 +130,7 @@ nav:
   - User Guide: user-guide.md
   - API Reference: api-reference.md
   - Contributing: contributing.md
-EOF
+            EOF
           fi
       
       # Generate automatic API documentation
