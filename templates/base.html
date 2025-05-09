@@ -11,7 +11,7 @@
     {% if current_user.is_authenticated %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/' + current_user.theme_preference + '.css') }}">
     {% else %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/light.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/dark.css') }}">
     {% endif %}
     {% block styles %}{% endblock %}
     
@@ -104,7 +104,7 @@
         }
     </style>
 </head>
-<body class="theme-{{ current_user.theme_preference if current_user.is_authenticated else 'light' }}"
+<body class="theme-{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}"
 >
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
