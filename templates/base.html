@@ -30,7 +30,9 @@
     
     {% block styles %}{% endblock %}
 </head>
-<body class="theme-{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}" data-theme="{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}">
+<body class="{{ 'dark' if (current_user.is_authenticated and current_user.theme_preference != 'light') or (not current_user.is_authenticated) else '' }} {{ current_user.theme_preference if current_user.is_authenticated and current_user.theme_preference.startswith('theme-') else '' }}" 
+      data-theme="{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}"
+      data-user-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}">
     <nav x-data="{ mobileMenuOpen: false, 
                   discordOpen: false, 
                   minecraftOpen: false, 
