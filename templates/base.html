@@ -75,12 +75,15 @@
       data-user-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}"
       data-premium="{{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }}"
 >
-    <nav x-data="{ mobileMenuOpen: false, 
+    <nav x-data="{ 
+                  mobileMenuOpen: false, 
                   discordOpen: false, 
                   minecraftOpen: false, 
                   twitchOpen: false, 
                   analyticsOpen: false, 
-                  userMenuOpen: false }" 
+                  userMenuOpen: false,
+                  toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; }
+                }" 
          class="bg-gray-900 border-b border-gray-800 shadow-lg">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-16 items-center justify-between">
