@@ -1,10 +1,13 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import ForeignKey, Column, Integer, String, Boolean, Float, DateTime, Text, JSON
 from sqlalchemy.orm import relationship
-import datetime
 import json
 
 from app import db
+from datetime import datetime
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, JSON
 
 class User(db.Model):
     """User model for both Discord users and Twitch streamers"""
@@ -211,6 +214,115 @@ class PointTransaction(db.Model):
     
     def __repr__(self):
         return f"<PointTransaction {self.amount} points for {self.user_id}>"
+
+class WebsiteUser(UserMixin, db.Model):
+    """User model for website login"""
+    __tablename__ = 'website_users'
+    
+    id = Column(Integer, primary_key=True)
+    username = Column(String(64), unique=True, nullable=False)
+    email = Column(String(120), unique=True, nullable=False)
+    password_hash = Column(String(256), nullable=False)
+    discord_id = Column(String(20), unique=True, nullable=True)
+    is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    last_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    feedback = relationship("Feedback", back_populates="user")
+    api_keys = relationship("ApiKey", back_populates="user")
+    
+    def __repr__(self):
+        return f"<WebsiteUser {self.username}>"
+    
+    def set_password(self, password):
+        """Set user password"""
+        self.password_hash = generate_password_hash(password)
+        
+    def check_password(self, password):
+        """Check password against hash"""
+        return check_password_hash(self.password_hash, password)
+
+
+class Feedback(db.Model):
+    """User feedback and suggestions"""
+    __tablename__ = 'feedback'
+    
+    id = Column(Integer, primary_key=True)
+    feedback_type = Column(String(20), nullable=False) # bug_report, feature_request, improvement, general_feedback, question
+    feature_category = Column(String(20), nullable=True) # moderation, custom_commands, minecraft, twitch, ai, music, web_dashboard, api, other
+    subject = Column(String(100), nullable=False)
+    message = Column(Text, nullable=False)
+    contact_info = Column(String(100), nullable=True)
+    can_contact = Column(Boolean, default=False)
+    status = Column(String(20), default="pending") # pending, reviewing, implemented, rejected, closed
+    user_id = Column(Integer, ForeignKey('website_users.id'), nullable=True)
+    discord_id = Column(String(20), nullable=True)
+    discord_username = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("WebsiteUser", back_populates="feedback")
+    
+    def __repr__(self):
+        return f"<Feedback {self.id} - {self.subject}>"
+
+
+class DocumentationFeedback(db.Model):
+    """Feedback on documentation pages"""
+    __tablename__ = 'documentation_feedback'
+    
+    id = Column(Integer, primary_key=True)
+    page_path = Column(String(255), nullable=False)
+    helpful = Column(Boolean, nullable=False)
+    comment = Column(Text, nullable=True)
+    user_id = Column(Integer, ForeignKey('website_users.id'), nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<DocumentationFeedback {self.id} - {self.helpful}>"
+
+
+class ApiKey(db.Model):
+    """API key for external access"""
+    __tablename__ = 'api_keys'
+    
+    id = Column(Integer, primary_key=True)
+    key = Column(String(64), unique=True, nullable=False, index=True)
+    description = Column(String(255), nullable=True)
+    permissions = Column(String(20), default="read") # read, write, admin
+    user_id = Column(Integer, ForeignKey('website_users.id'), nullable=False)
+    last_used = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("WebsiteUser", back_populates="api_keys")
+    
+    def __repr__(self):
+        return f"<ApiKey {self.id} - {self.permissions}>"
+
+
+class Webhook(db.Model):
+    """External webhook configuration"""
+    __tablename__ = 'webhooks'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False)
+    url = Column(String(255), nullable=False)
+    event_type = Column(String(50), nullable=False) # all, moderation, user_join_leave, message, command
+    guild_id = Column(String(20), nullable=True)
+    active = Column(Boolean, default=True)
+    last_triggered = Column(DateTime, nullable=True)
+    created_by = Column(Integer, ForeignKey('website_users.id'), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<Webhook {self.name} - {self.event_type}>"
+
 
 class AIUsage(db.Model):
     """AI usage tracking"""

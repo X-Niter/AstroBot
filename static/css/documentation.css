@@ -1,0 +1,337 @@
+/* Documentation Styles */
+
+.documentation-container {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+}
+
+/* Sidebar styles */
+.doc-sidebar {
+    border-right: 1px solid #e9ecef;
+}
+
+.doc-sidebar .sticky-top {
+    top: 2rem;
+    z-index: 900;
+}
+
+.doc-sidebar h5 {
+    color: #333;
+    font-weight: 600;
+}
+
+.doc-sidebar .nav-link {
+    color: #495057;
+    padding: 0.5rem 0;
+    border-left: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.doc-sidebar .nav-link:hover {
+    color: #007bff;
+    border-left: 2px solid #007bff;
+    padding-left: 0.5rem;
+}
+
+.doc-sidebar .nav-link.active {
+    color: #007bff;
+    border-left: 2px solid #007bff;
+    font-weight: 500;
+    padding-left: 0.5rem;
+}
+
+.doc-sidebar .nav-group {
+    margin-top: 1.5rem;
+}
+
+.doc-sidebar .nav-group h6 {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    padding-left: 0.25rem;
+}
+
+/* Content styles */
+.doc-content {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+}
+
+.doc-content h2 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.doc-content h3 {
+    margin-top: 1.75rem;
+    margin-bottom: 1rem;
+}
+
+.doc-content code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    color: #e83e8c;
+}
+
+.doc-content pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+}
+
+.doc-content pre code {
+    background-color: transparent;
+    padding: 0;
+    color: #212529;
+}
+
+.doc-content .table {
+    margin-bottom: 2rem;
+}
+
+.doc-content .jumbotron {
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    background-color: #007bff !important;
+}
+
+.doc-content .card {
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.doc-content .card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.doc-content .card-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.doc-content .card-title i {
+    margin-right: 0.5rem;
+}
+
+/* Documentation images */
+.doc-image {
+    max-width: 100%;
+    height: auto;
+    margin: 1.5rem 0;
+    border-radius: 4px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.doc-image-center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Feature overview cards */
+.feature-card {
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.feature-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.feature-card .card-footer {
+    background-color: transparent;
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Table of contents */
+.doc-toc {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.doc-toc ul {
+    margin-bottom: 0;
+}
+
+.doc-toc a {
+    color: #495057;
+    text-decoration: none;
+}
+
+.doc-toc a:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+/* Code blocks with syntax highlighting */
+.syntax-highlight {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.syntax-highlight pre {
+    margin-bottom: 0;
+    background-color: transparent;
+    padding: 0;
+}
+
+.syntax-highlight .language-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #6c757d;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0 0.25rem 0 0.25rem;
+}
+
+/* Note and warning boxes */
+.doc-note,
+.doc-warning,
+.doc-tip {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.doc-note {
+    background-color: #e7f5ff;
+    border-left: 4px solid #4dabf7;
+}
+
+.doc-warning {
+    background-color: #fff9db;
+    border-left: 4px solid #ffd43b;
+}
+
+.doc-tip {
+    background-color: #ebfbee;
+    border-left: 4px solid #51cf66;
+}
+
+.doc-note h5,
+.doc-warning h5,
+.doc-tip h5 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+/* API endpoint styles */
+.api-endpoint {
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.api-endpoint-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.api-endpoint-method {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-right: 1rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.api-endpoint-method.get {
+    background-color: #e7f5ff;
+    color: #1971c2;
+}
+
+.api-endpoint-method.post {
+    background-color: #e6fcf5;
+    color: #0ca678;
+}
+
+.api-endpoint-method.put {
+    background-color: #fff9db;
+    color: #e67700;
+}
+
+.api-endpoint-method.delete {
+    background-color: #fff5f5;
+    color: #e03131;
+}
+
+.api-endpoint-path {
+    font-family: monospace;
+    font-size: 1rem;
+}
+
+.api-endpoint-body {
+    padding: 1.5rem;
+}
+
+.api-endpoint-description {
+    margin-bottom: 1rem;
+}
+
+.api-endpoint-body h5 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.api-endpoint-body table {
+    margin-bottom: 1.5rem;
+}
+
+/* Documentation feedback component */
+.doc-feedback {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.doc-feedback h5 {
+    margin-bottom: 1rem;
+}
+
+.doc-feedback .btn-group {
+    margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .doc-sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+        margin-bottom: 2rem;
+    }
+    
+    .doc-sidebar .sticky-top {
+        position: relative;
+        top: 0;
+    }
+}
