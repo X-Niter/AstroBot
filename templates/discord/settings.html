@@ -1,1 +1,208 @@
-null
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Bot Settings</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Bot Settings</li>
+    </ol>
+    
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-cogs me-1"></i>
+                    Your Discord Servers
+                </div>
+                <div class="card-body">
+                    {% if current_user.is_authenticated %}
+                        {% if servers %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Server</th>
+                                            <th>Members</th>
+                                            <th>Status</th>
+                                            <th>Premium</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for server in servers %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if server.icon_url %}
+                                                    <div class="me-2">
+                                                        <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="rounded-circle" width="40" height="40">
+                                                    </div>
+                                                    {% else %}
+                                                    <div class="me-2 bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-server text-white"></i>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <span class="fw-bold">{{ server.name }}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ server.member_count }}</td>
+                                            <td>
+                                                {% if server.bot_joined_at %}
+                                                <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">Not Joined</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if server.is_premium %}
+                                                <span class="badge bg-primary"><i class="fas fa-gem me-1"></i> Premium</span>
+                                                {% else %}
+                                                <span class="badge bg-light text-dark">Standard</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('bot_customization', server_id=server.server_id) }}" class="btn btn-outline-primary btn-sm">
+                                                        <i class="fas fa-paint-brush me-1"></i> Customize
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-1"></i> Server Settings</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="fas fa-chart-bar me-1"></i> Analytics</a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-sign-out-alt me-1"></i> Remove Bot</a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <h5 class="alert-heading">No servers found</h5>
+                                <p>You don't have any Discord servers connected to your account yet.</p>
+                                <hr>
+                                <p class="mb-0">Connect your server to AstroBot AI to access advanced features and customization options.</p>
+                                <div class="mt-3">
+                                    <a href="#" class="btn btn-primary">
+                                        <i class="fab fa-discord me-1"></i> Connect a Discord Server
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading">Authentication Required</h5>
+                            <p>You need to log in to view and manage your Discord servers.</p>
+                            <hr>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('login') }}" class="btn btn-primary">
+                                    <i class="fas fa-sign-in-alt me-1"></i> Log In
+                                </a>
+                                <a href="{{ url_for('register') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-user-plus me-1"></i> Register
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-robot me-1"></i>
+                    AstroBot AI Status
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success rounded-circle me-2" style="width: 12px; height: 12px;"></div>
+                        <span class="fw-bold">Bot Status:</span>
+                        <span class="ms-2">Online</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fw-bold me-2">Uptime:</span>
+                        <span>99.8% (30 days)</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fw-bold me-2">Version:</span>
+                        <span>1.2.4</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center">
+                        <span class="fw-bold me-2">AI Models:</span>
+                        <span>
+                            <span class="badge bg-secondary me-1">Claude 3.5</span>
+                            <span class="badge bg-secondary">GPT-4o</span>
+                        </span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted mb-3">AstroBot AI is currently serving on <span class="fw-bold">{{ servers|length if servers else 0 }}</span> of your servers.</div>
+                    
+                    <div class="d-grid">
+                        <a href="{{ url_for('documentation_index') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-book me-1"></i> View Documentation
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-gem me-1"></i>
+                    Premium Benefits
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <span>Customize bot name and avatar</span>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <span>Create custom command prefix</span>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <span>Set custom theme colors</span>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <span>Unlimited AI responses</span>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <span>Priority support</span>
+                        </li>
+                    </ul>
+                    
+                    <div class="d-grid">
+                        {% if current_user.is_authenticated and current_user.is_premium %}
+                        <span class="badge bg-primary p-2 mb-2"><i class="fas fa-gem me-1"></i> Premium Active</span>
+                        <a href="{{ url_for('user_premium_features') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list me-1"></i> View Premium Features
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('premium_plans') }}" class="btn btn-primary">
+                            <i class="fas fa-gem me-1"></i> Upgrade to Premium
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

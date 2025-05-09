@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Your Premium Features</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Premium Features</li>
+    </ol>
+    
+    {% if current_user.is_premium %}
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-gem me-1"></i>
+                    Active Premium Features
+                </div>
+                <div class="card-body">
+                    {% if user_features %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Expires</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_feature in user_features %}
+                                <tr>
+                                    <td>
+                                        <span class="fw-bold">{{ user_feature.feature.name }}</span>
+                                    </td>
+                                    <td>{{ user_feature.feature.description }}</td>
+                                    <td>
+                                        {% if user_feature.feature.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user_feature.expires_at %}
+                                        {{ user_feature.expires_at.strftime('%Y-%m-%d') }}
+                                        {% else %}
+                                        <span class="badge bg-secondary">Never</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">No specific features assigned</h5>
+                        <p>You have premium status, but no specific features have been assigned to your account.</p>
+                        <p>Contact support if you believe this is in error.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-list me-1"></i>
+                    Available Premium Features
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for feature in all_features %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 {% if feature.feature_key in user_features|map(attribute='feature.feature_key')|list %}border-primary{% endif %}">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ feature.name }}</h5>
+                                    <p class="card-text text-muted small">{{ feature.description }}</p>
+                                    
+                                    {% if feature.feature_key in user_features|map(attribute='feature.feature_key')|list %}
+                                    <span class="badge bg-primary"><i class="fas fa-check me-1"></i> Active</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark">Unavailable</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-user-shield me-1"></i>
+                    Premium Account Status
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fw-bold me-2">Status:</span>
+                        <span class="badge bg-success">Active</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fw-bold me-2">Since:</span>
+                        <span>{{ current_user.premium_since.strftime('%B %d, %Y') if current_user.premium_since else 'Unknown' }}</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fw-bold me-2">Tier:</span>
+                        <span>Standard Premium</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid">
+                        <a href="{{ url_for('premium_plans') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-up me-1"></i> Upgrade Plan
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-question-circle me-1"></i>
+                    Premium Support
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">As a premium user, you have access to priority support.</p>
+                    
+                    <div class="d-grid">
+                        <a href="#" class="btn btn-primary mb-2">
+                            <i class="fas fa-headset me-1"></i> Contact Support
+                        </a>
+                        <a href="{{ url_for('documentation_index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-book me-1"></i> Documentation
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <h4 class="alert-heading">Premium Required</h4>
+        <p>You need a premium subscription to access advanced features.</p>
+        <hr>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('premium_plans') }}" class="btn btn-primary">
+                <i class="fas fa-gem me-1"></i> View Premium Plans
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

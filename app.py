@@ -414,6 +414,29 @@ def community_analytics():
 def moderation_analytics():
     return render_template('analytics/moderation.html', title="Moderation Analytics")
 
+# Premium plans routes
+@app.route('/premium/plans')
+def premium_plans():
+    """Premium subscription plans page"""
+    return render_template('premium/plans.html', title="Premium Plans")
+
+@app.route('/premium/user-features')
+@login_required
+def user_premium_features():
+    """Show premium features available to the user"""
+    # Get user's features
+    user_features = []
+    if current_user.is_premium:
+        user_features = UserPremiumFeature.query.filter_by(user_id=current_user.id).all()
+    
+    # Get all available features
+    all_features = PremiumFeature.query.filter_by(is_active=True).all()
+    
+    return render_template('premium/user_features.html', 
+                          title="Your Premium Features",
+                          user_features=user_features,
+                          all_features=all_features)
+
 # Twitch StreamSync routes
 @app.route('/twitch/integration')
 def twitch_integration():

@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Premium Plans</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Premium Plans</li>
+    </ol>
+    
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 text-center">Standard</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <span class="display-4">Free</span>
+                        <span class="text-muted">/month</span>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Access to basic commands
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Minecraft server status monitoring
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Basic moderation tools
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Community polls and feedback
+                        </li>
+                        <li class="list-group-item text-muted">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <s>Custom bot appearance</s>
+                        </li>
+                        <li class="list-group-item text-muted">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <s>Advanced AI features</s>
+                        </li>
+                        <li class="list-group-item text-muted">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <s>Unlimited AI responses</s>
+                        </li>
+                        <li class="list-group-item text-muted">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <s>Custom prefix</s>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-auto text-center">
+                        <a href="#" class="btn btn-outline-secondary btn-lg">Current Plan</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow border-primary">
+                <div class="card-header bg-primary text-white position-relative">
+                    <h5 class="mb-0 text-center">Premium</h5>
+                    <span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-success">
+                        Most Popular
+                    </span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <span class="display-4">$4.99</span>
+                        <span class="text-muted">/month</span>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>All Standard features</strong>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Custom bot appearance</strong>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Custom command prefix
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            500 AI responses per month
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Advanced moderation tools
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Auto-moderation with AI
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Custom reaction roles
+                        </li>
+                        <li class="list-group-item text-muted">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <s>Unlimited AI responses</s>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-auto text-center">
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.is_premium %}
+                            <span class="badge bg-primary p-2 mb-2"><i class="fas fa-gem me-1"></i> Your Current Plan</span>
+                            <button type="button" class="btn btn-outline-primary btn-lg" disabled>
+                                Active Subscription
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-primary btn-lg">
+                                <i class="fas fa-gem me-1"></i> Subscribe Now
+                            </button>
+                            {% endif %}
+                        {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login to Subscribe
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0 text-center">Enterprise</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <span class="display-4">$9.99</span>
+                        <span class="text-muted">/month</span>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>All Premium features</strong>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Unlimited AI responses</strong>
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Advanced Twitch integration
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Custom commands with AI
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Priority support
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Advanced analytics
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Multiple server management
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Custom plugin integration
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-auto text-center">
+                        {% if current_user.is_authenticated %}
+                            <button type="button" class="btn btn-dark btn-lg">
+                                <i class="fas fa-crown me-1"></i> Upgrade to Enterprise
+                            </button>
+                        {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-dark btn-lg">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login to Subscribe
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-question-circle me-1"></i>
+                    Frequently Asked Questions
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="premiumFAQ">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    How do I customize my bot's appearance?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#premiumFAQ">
+                                <div class="accordion-body">
+                                    After upgrading to Premium, go to Bot Settings and select the server you want to customize. Click on the "Customize" button to access appearance settings. You can change the bot's name, avatar, status, and even set a custom theme color for all embed messages.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    Can I change plans later?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#premiumFAQ">
+                                <div class="accordion-body">
+                                    Yes, you can upgrade or downgrade your plan at any time. When upgrading, the new features will be available immediately. When downgrading, your premium features will remain until the end of your current billing period.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    What AI models does AstroBot use?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#premiumFAQ">
+                                <div class="accordion-body">
+                                    AstroBot AI uses cutting-edge AI models including Claude 3.5 by Anthropic and GPT-4o by OpenAI to provide intelligent responses and generate creative content. Premium users get more AI responses per month, while Enterprise users get unlimited access to these powerful AI capabilities.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                    What payment methods do you accept?
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#premiumFAQ">
+                                <div class="accordion-body">
+                                    We accept all major credit cards, PayPal, and multiple cryptocurrency options. All transactions are securely processed and we don't store your payment information.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
