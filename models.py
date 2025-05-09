@@ -215,6 +215,48 @@ class PointTransaction(db.Model):
     def __repr__(self):
         return f"<PointTransaction {self.amount} points for {self.user_id}>"
 
+class PremiumFeature(db.Model):
+    """Premium features that can be assigned to users"""
+    __tablename__ = 'premium_features'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False, unique=True)
+    description = Column(Text, nullable=True)
+    feature_key = Column(String(100), nullable=False, unique=True)
+    parent_id = Column(Integer, ForeignKey('premium_features.id'), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Self-referential relationship for feature hierarchy
+    parent = relationship("PremiumFeature", remote_side=[id], backref="subfeatures")
+    
+    # Relationship with UserPremiumFeature
+    user_features = relationship("UserPremiumFeature", back_populates="feature")
+    
+    def __repr__(self):
+        return f"<PremiumFeature {self.name}>"
+
+
+class UserPremiumFeature(db.Model):
+    """Many-to-many relationship between users and premium features"""
+    __tablename__ = 'user_premium_features'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('website_users.id'), nullable=False)
+    feature_id = Column(Integer, ForeignKey('premium_features.id'), nullable=False)
+    assigned_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    assigned_by_id = Column(Integer, ForeignKey('website_users.id'), nullable=True)
+    
+    # Relationships
+    user = relationship("WebsiteUser", foreign_keys=[user_id], back_populates="premium_features")
+    feature = relationship("PremiumFeature", back_populates="user_features")
+    assigned_by = relationship("WebsiteUser", foreign_keys=[assigned_by_id])
+    
+    def __repr__(self):
+        return f"<UserPremiumFeature {self.user_id}:{self.feature_id}>"
+
+
 class WebsiteUser(UserMixin, db.Model):
     """User model for website login"""
     __tablename__ = 'website_users'
@@ -226,12 +268,17 @@ class WebsiteUser(UserMixin, db.Model):
     discord_id = Column(String(20), unique=True, nullable=True)
     is_admin = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
+    is_premium = Column(Boolean, default=False)
+    premium_since = Column(DateTime, nullable=True)
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
     feedback = relationship("Feedback", back_populates="user")
     api_keys = relationship("ApiKey", back_populates="user")
+    premium_features = relationship("UserPremiumFeature", foreign_keys=[UserPremiumFeature.user_id], 
+                                   back_populates="user")
+    servers = relationship("DiscordServer", back_populates="owner")
     
     def __repr__(self):
         return f"<WebsiteUser {self.username}>"
@@ -243,6 +290,16 @@ class WebsiteUser(UserMixin, db.Model):
     def check_password(self, password):
         """Check password against hash"""
         return check_password_hash(self.password_hash, password)
+    
+    def has_premium_feature(self, feature_key):
+        """Check if user has a specific premium feature"""
+        now = datetime.utcnow()
+        for user_feature in self.premium_features:
+            if (user_feature.feature.feature_key == feature_key and 
+                user_feature.feature.is_active and
+                (user_feature.expires_at is None or user_feature.expires_at > now)):
+                return True
+        return False
 
 
 class Feedback(db.Model):
@@ -499,6 +556,68 @@ class WebhookEvent(db.Model):
         return {}
 
 
+class BotCustomization(db.Model):
+    """Bot appearance and behavior customization for premium users"""
+    __tablename__ = 'bot_customizations'
+    
+    id = Column(Integer, primary_key=True)
+    server_id = Column(Integer, ForeignKey('discord_servers.id'), nullable=False)
+    custom_name = Column(String(100), nullable=True)
+    custom_avatar_url = Column(String(255), nullable=True)
+    custom_status = Column(String(100), nullable=True)
+    custom_playing = Column(String(100), nullable=True)
+    theme_color = Column(String(7), nullable=True)  # HEX color code
+    custom_prefix = Column(String(10), nullable=True)
+    created_by_id = Column(Integer, ForeignKey('website_users.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    server = relationship("DiscordServer", back_populates="customization")
+    created_by = relationship("WebsiteUser")
+    
+    def __repr__(self):
+        return f"<BotCustomization for server {self.server_id}>"
+
+
+class DiscordServer(db.Model):
+    """Discord server details with premium and visibility settings"""
+    __tablename__ = 'discord_servers'
+    
+    id = Column(Integer, primary_key=True)
+    server_id = Column(String(20), unique=True, nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    icon_url = Column(String(255), nullable=True)
+    invite_url = Column(String(255), nullable=True)
+    member_count = Column(Integer, default=0)
+    is_premium = Column(Boolean, default=False)
+    is_featured = Column(Boolean, default=False)
+    owner_id = Column(Integer, ForeignKey('website_users.id'), nullable=True)
+    discord_owner_id = Column(String(20), nullable=True)
+    is_public = Column(Boolean, default=True)
+    show_config = Column(Boolean, default=True)
+    bot_joined_at = Column(DateTime, nullable=True)
+    last_active = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    owner = relationship("WebsiteUser", back_populates="servers")
+    configurations = relationship("ServerConfiguration", back_populates="discord_server")
+    customization = relationship("BotCustomization", uselist=False, back_populates="server")
+    
+    def __repr__(self):
+        return f"<DiscordServer {self.name} ({self.server_id})>"
+    
+    @property
+    def can_customize_bot(self):
+        """Check if the server has premium features for bot customization"""
+        if not self.owner:
+            return False
+        return self.owner.has_premium_feature('bot_customization')
+
+
 class ServerConfiguration(db.Model):
     """Server configuration from onboarding wizard"""
     __tablename__ = 'server_configurations'
@@ -513,10 +632,14 @@ class ServerConfiguration(db.Model):
     feature_settings = Column(Text, nullable=True)  # JSON string of settings
     additional_requirements = Column(Text, nullable=True)
     status = Column(String(20), default="pending")  # pending, configured, failed
-    discord_guild_id = Column(String(20), nullable=True)
+    discord_guild_id = Column(String(20), nullable=True, index=True)
+    discord_server_id = Column(Integer, ForeignKey('discord_servers.id'), nullable=True)
     created_by_user_id = Column(Integer, ForeignKey('website_users.id'), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    discord_server = relationship("DiscordServer", back_populates="configurations")
     
     def __repr__(self):
         return f"<ServerConfiguration {self.id} - {self.name}>"

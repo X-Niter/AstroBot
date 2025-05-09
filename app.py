@@ -363,6 +363,137 @@ def points_settings():
 def ai_generator():
     return render_template('mods/ai_generator.html', title="AI Generation")
 
+# Admin routes
+@app.route('/admin/premium-users')
+@login_required
+def premium_users():
+    """Admin panel for managing premium users"""
+    if not current_user.is_admin:
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('index'))
+    
+    users = WebsiteUser.query.all()
+    premium_features = PremiumFeature.query.all()
+    
+    return render_template('admin/premium_users.html', 
+                          title="Premium User Management", 
+                          users=users, 
+                          features=premium_features)
+
+@app.route('/admin/premium-features')
+@login_required
+def premium_features():
+    """Admin panel for managing premium features"""
+    if not current_user.is_admin:
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('index'))
+    
+    features = PremiumFeature.query.all()
+    return render_template('admin/premium_features.html', 
+                          title="Premium Features Management", 
+                          features=features)
+
+@app.route('/admin/server-showcase')
+@login_required
+def server_showcase():
+    """Admin panel for managing server showcase"""
+    if not current_user.is_admin:
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('index'))
+    
+    servers = DiscordServer.query.all()
+    return render_template('admin/server_showcase.html', 
+                          title="Server Showcase Management", 
+                          servers=servers)
+
+@app.route('/api/admin/toggle-premium', methods=['POST'])
+@login_required
+def toggle_premium():
+    """Toggle premium status for a user"""
+    if not current_user.is_admin:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    
+    data = request.json
+    if not data or 'user_id' not in data:
+        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    
+    try:
+        user = WebsiteUser.query.get(data['user_id'])
+        if not user:
+            return jsonify({'status': 'error', 'message': 'User not found'}), 404
+        
+        user.is_premium = not user.is_premium
+        if user.is_premium and not user.premium_since:
+            user.premium_since = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': f"User {user.username} premium status set to {user.is_premium}",
+            'is_premium': user.is_premium
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling premium status: {str(e)}")
+        return jsonify({'status': 'error', 'message': f"Error: {str(e)}"}), 500
+
+@app.route('/api/admin/assign-feature', methods=['POST'])
+@login_required
+def assign_premium_feature():
+    """Assign a premium feature to a user"""
+    if not current_user.is_admin:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    
+    data = request.json
+    if not data or 'user_id' not in data or 'feature_id' not in data:
+        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    
+    try:
+        user = WebsiteUser.query.get(data['user_id'])
+        feature = PremiumFeature.query.get(data['feature_id'])
+        
+        if not user or not feature:
+            return jsonify({'status': 'error', 'message': 'User or feature not found'}), 404
+        
+        # Check if user already has this feature
+        existing = UserPremiumFeature.query.filter_by(
+            user_id=user.id, feature_id=feature.id
+        ).first()
+        
+        if existing:
+            return jsonify({'status': 'error', 'message': 'User already has this feature'}), 400
+        
+        # Create new user-feature association
+        expires_at = None
+        if data.get('expires_days'):
+            expires_at = datetime.utcnow() + timedelta(days=int(data['expires_days']))
+        
+        user_feature = UserPremiumFeature(
+            user_id=user.id,
+            feature_id=feature.id,
+            assigned_by_id=current_user.id,
+            expires_at=expires_at
+        )
+        
+        db.session.add(user_feature)
+        
+        # Ensure user is marked as premium
+        if not user.is_premium:
+            user.is_premium = True
+            user.premium_since = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f"Feature '{feature.name}' assigned to {user.username}"
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error assigning premium feature: {str(e)}")
+        return jsonify({'status': 'error', 'message': f"Error: {str(e)}"}), 500
+
 # Settings routes
 @app.route('/settings/api-keys')
 def api_settings():
