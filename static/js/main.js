@@ -171,6 +171,9 @@ function updateTheme(theme) {
     if (['space', 'neon', 'contrast'].includes(theme)) {
         applyCustomThemeCSS(theme);
     }
+    
+    // Update theme card selections in settings page
+    updateThemeCardSelections(theme);
 }
 
 /**
@@ -189,6 +192,36 @@ function applyCustomThemeCSS(theme) {
  */
 function getCSRFToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
+
+/**
+ * Update theme card selections (highlight active card, remove highlights from others)
+ */
+function updateThemeCardSelections(theme) {
+    // Find all theme cards in the settings page
+    const themeCards = document.querySelectorAll('[data-theme]');
+    
+    if (themeCards.length > 0) {
+        // Remove border-primary from all theme cards
+        themeCards.forEach(card => {
+            card.classList.remove('border-primary');
+        });
+        
+        // Add border-primary to the selected theme card
+        const selectedCard = document.querySelector(`[data-theme="${theme}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('border-primary');
+            
+            // Check the radio button
+            const radioButton = document.getElementById(`theme-${theme}`);
+            if (radioButton) {
+                radioButton.checked = true;
+            }
+            
+            // Show toast notification
+            showToast(`${theme.charAt(0).toUpperCase() + theme.slice(1)} theme applied`, 'success');
+        }
+    }
 }
 
 /**

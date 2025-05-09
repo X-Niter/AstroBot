@@ -70,7 +70,9 @@
                                     <div class="col-6 col-md-4">
                                         <div class="card theme-card h-100 {% if current_user.theme_preference == 'light' %}border-primary{% endif %}" data-theme="light">
                                             <div class="card-body p-2">
-                                                <div class="theme-preview d-flex flex-column" style="height: 120px;">
+                                                <div class="theme-preview d-flex flex-column" style="height: 120px; cursor: pointer;" 
+                                                     onclick="document.getElementById('theme-light').checked = true;"
+                                                     data-bs-toggle="tooltip" title="Click to preview Light theme">
                                                     <div class="theme-preview-header bg-light p-2 mb-2" style="height: 30px; border-bottom: 1px solid #dee2e6;"></div>
                                                     <div class="theme-preview-content d-flex">
                                                         <div class="theme-preview-sidebar bg-light p-2 me-2" style="width: 30px; height: 80px;"></div>
@@ -78,7 +80,10 @@
                                                     </div>
                                                 </div>
                                                 <div class="d-flex align-items-center mt-2">
-                                                    <input class="form-check-input me-2" type="radio" name="theme_preference" id="theme-light" value="light" {% if current_user.theme_preference == 'light' %}checked{% endif %}>
+                                                    <input class="form-check-input me-2 theme-radio" type="radio" 
+                                                           name="theme_preference" id="theme-light" value="light" 
+                                                           {% if current_user.theme_preference == 'light' %}checked{% endif %}
+                                                           onchange="updateTheme('light'); document.querySelector('[data-theme=light]').classList.add('border-primary');">
                                                     <label class="form-check-label" for="theme-light">Light</label>
                                                 </div>
                                             </div>
@@ -87,7 +92,9 @@
                                     <div class="col-6 col-md-4">
                                         <div class="card theme-card h-100 {% if current_user.theme_preference == 'dark' %}border-primary{% endif %}" data-theme="dark">
                                             <div class="card-body p-2">
-                                                <div class="theme-preview d-flex flex-column" style="height: 120px;">
+                                                <div class="theme-preview d-flex flex-column" style="height: 120px; cursor: pointer;" 
+                                                     onclick="document.getElementById('theme-dark').checked = true;"
+                                                     data-bs-toggle="tooltip" title="Click to preview Dark theme">
                                                     <div class="theme-preview-header bg-dark p-2 mb-2" style="height: 30px; border-bottom: 1px solid #444;"></div>
                                                     <div class="theme-preview-content d-flex">
                                                         <div class="theme-preview-sidebar bg-dark p-2 me-2" style="width: 30px; height: 80px;"></div>
@@ -95,7 +102,10 @@
                                                     </div>
                                                 </div>
                                                 <div class="d-flex align-items-center mt-2">
-                                                    <input class="form-check-input me-2" type="radio" name="theme_preference" id="theme-dark" value="dark" {% if current_user.theme_preference == 'dark' %}checked{% endif %}>
+                                                    <input class="form-check-input me-2 theme-radio" type="radio" 
+                                                           name="theme_preference" id="theme-dark" value="dark" 
+                                                           {% if current_user.theme_preference == 'dark' %}checked{% endif %}
+                                                           onchange="updateTheme('dark'); document.querySelector('[data-theme=dark]').classList.add('border-primary');">
                                                     <label class="form-check-label" for="theme-dark">Dark</label>
                                                 </div>
                                             </div>
@@ -105,7 +115,9 @@
                                     <div class="col-6 col-md-4">
                                         <div class="card theme-card h-100 {% if current_user.theme_preference == 'space' %}border-primary{% endif %}" data-theme="space">
                                             <div class="card-body p-2">
-                                                <div class="theme-preview d-flex flex-column" style="height: 120px; background-color: #0d1117;">
+                                                <div class="theme-preview d-flex flex-column" style="height: 120px; background-color: #0d1117; cursor: pointer;" 
+                                                     onclick="document.getElementById('theme-space').checked = true;"
+                                                     data-bs-toggle="tooltip" title="Click to preview Space theme">
                                                     <div class="theme-preview-header p-2 mb-2" style="height: 30px; border-bottom: 1px solid #30363d; background: linear-gradient(90deg, #0d1117, #1a1f27);"></div>
                                                     <div class="theme-preview-content d-flex">
                                                         <div class="theme-preview-sidebar p-2 me-2" style="width: 30px; height: 80px; background: linear-gradient(140deg, #0d1117, #1a1f27);"></div>
@@ -113,7 +125,10 @@
                                                     </div>
                                                 </div>
                                                 <div class="d-flex align-items-center mt-2">
-                                                    <input class="form-check-input me-2" type="radio" name="theme_preference" id="theme-space" value="space" {% if current_user.theme_preference == 'space' %}checked{% endif %}>
+                                                    <input class="form-check-input me-2 theme-radio" type="radio" 
+                                                           name="theme_preference" id="theme-space" value="space" 
+                                                           {% if current_user.theme_preference == 'space' %}checked{% endif %}
+                                                           onchange="updateTheme('space'); document.querySelector('[data-theme=space]').classList.add('border-primary');">
                                                     <label class="form-check-label" for="theme-space">Space <span class="badge bg-warning text-dark">Premium</span></label>
                                                 </div>
                                             </div>
@@ -122,7 +137,9 @@
                                     <div class="col-6 col-md-4">
                                         <div class="card theme-card h-100 {% if current_user.theme_preference == 'neon' %}border-primary{% endif %}" data-theme="neon">
                                             <div class="card-body p-2">
-                                                <div class="theme-preview d-flex flex-column" style="height: 120px; background-color: #0f0f12;">
+                                                <div class="theme-preview d-flex flex-column" style="height: 120px; background-color: #0f0f12; cursor: pointer;" 
+                                                     onclick="document.getElementById('theme-neon').checked = true;"
+                                                     data-bs-toggle="tooltip" title="Click to preview Neon theme">
                                                     <div class="theme-preview-header p-2 mb-2" style="height: 30px; border-bottom: 1px solid #ff00ff; background-color: #000000;"></div>
                                                     <div class="theme-preview-content d-flex">
                                                         <div class="theme-preview-sidebar p-2 me-2" style="width: 30px; height: 80px; background-color: #0f0f12;"></div>
@@ -130,7 +147,10 @@
                                                     </div>
                                                 </div>
                                                 <div class="d-flex align-items-center mt-2">
-                                                    <input class="form-check-input me-2" type="radio" name="theme_preference" id="theme-neon" value="neon" {% if current_user.theme_preference == 'neon' %}checked{% endif %}>
+                                                    <input class="form-check-input me-2 theme-radio" type="radio" 
+                                                           name="theme_preference" id="theme-neon" value="neon" 
+                                                           {% if current_user.theme_preference == 'neon' %}checked{% endif %}
+                                                           onchange="updateTheme('neon'); document.querySelector('[data-theme=neon]').classList.add('border-primary');">
                                                     <label class="form-check-label" for="theme-neon">Neon <span class="badge bg-warning text-dark">Premium</span></label>
                                                 </div>
                                             </div>
@@ -139,7 +159,9 @@
                                     <div class="col-6 col-md-4">
                                         <div class="card theme-card h-100 {% if current_user.theme_preference == 'contrast' %}border-primary{% endif %}" data-theme="contrast">
                                             <div class="card-body p-2">
-                                                <div class="theme-preview d-flex flex-column" style="height: 120px; background-color: #000000;">
+                                                <div class="theme-preview d-flex flex-column" style="height: 120px; background-color: #000000; cursor: pointer;" 
+                                                     onclick="document.getElementById('theme-contrast').checked = true;"
+                                                     data-bs-toggle="tooltip" title="Click to preview High Contrast theme">
                                                     <div class="theme-preview-header p-2 mb-2" style="height: 30px; border-bottom: 2px solid #ffcc00; background-color: #000000;"></div>
                                                     <div class="theme-preview-content d-flex">
                                                         <div class="theme-preview-sidebar p-2 me-2" style="width: 30px; height: 80px; background-color: #000000;"></div>
@@ -147,7 +169,10 @@
                                                     </div>
                                                 </div>
                                                 <div class="d-flex align-items-center mt-2">
-                                                    <input class="form-check-input me-2" type="radio" name="theme_preference" id="theme-contrast" value="contrast" {% if current_user.theme_preference == 'contrast' %}checked{% endif %}>
+                                                    <input class="form-check-input me-2 theme-radio" type="radio" 
+                                                           name="theme_preference" id="theme-contrast" value="contrast" 
+                                                           {% if current_user.theme_preference == 'contrast' %}checked{% endif %}
+                                                           onchange="updateTheme('contrast'); document.querySelector('[data-theme=contrast]').classList.add('border-primary');">
                                                     <label class="form-check-label" for="theme-contrast">High Contrast <span class="badge bg-warning text-dark">Premium</span></label>
                                                 </div>
                                             </div>
