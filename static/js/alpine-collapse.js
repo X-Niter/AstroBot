@@ -3,6 +3,19 @@
  * This is a simplified version for our usage
  */
 document.addEventListener('alpine:init', () => {
+    // Make sure Alpine is available
+    if (!window.Alpine) {
+        console.error('Alpine.js not found - cannot initialize alpine-collapse');
+        return;
+    }
+    
+    // Skip if collapse is already registered
+    if (window.Alpine.collapse) {
+        console.log('Alpine.collapse already registered, skipping custom implementation');
+        return;
+    }
+    
+    // Register the custom directive
     window.Alpine.directive('collapse', (el, { modifiers, expression }, { effect, evaluateLater, cleanup }) => {
         const evaluate = evaluateLater(expression);
         

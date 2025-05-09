@@ -7,7 +7,12 @@
 
 // Initialize theme before Alpine.js loads to prevent flashing
 function initializeTheme() {
+    // Don't run in environments without document
+    if (typeof document === 'undefined') return;
+    
     const getTheme = () => {
+        if (typeof localStorage === 'undefined') return 'light';
+        
         const persistedTheme = localStorage.getItem('theme');
         if (persistedTheme) return persistedTheme;
         
@@ -15,43 +20,79 @@ function initializeTheme() {
     };
     
     const theme = getTheme();
-    const root = document.documentElement;
     
-    if (theme === 'dark' || ['space', 'neon', 'contrast'].includes(theme)) {
-        root.classList.add('dark');
-    } else {
-        root.classList.remove('dark');
+    // Handle documentElement updates safely
+    if (document.documentElement) {
+        const root = document.documentElement;
+        
+        if (theme === 'dark' || ['space', 'neon', 'contrast'].includes(theme)) {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+        
+        if (theme !== 'light' && theme !== 'dark') {
+            root.classList.add(`theme-${theme}`);
+        }
     }
     
-    if (theme !== 'light' && theme !== 'dark') {
-        root.classList.add(`theme-${theme}`);
-    }
-    
-    // Wait for document.body to be available
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            if (document.body) {
+    // Handle document.body updates safely
+    const setBodyTheme = () => {
+        if (document.body) {
+            try {
                 document.body.setAttribute('data-theme', theme);
+            } catch (e) {
+                console.warn('Could not set body theme attribute:', e);
             }
-        });
-    } else if (document.body) {
-        document.body.setAttribute('data-theme', theme);
+        }
+    };
+    
+    // If DOM is still loading, wait for it to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setBodyTheme);
+    } else {
+        // Try immediately
+        setBodyTheme();
+        
+        // If body isn't available yet, try again after a short delay
+        if (!document.body) {
+            setTimeout(setBodyTheme, 50);
+        }
     }
 }
 
-// Run theme initialization immediately
-if (typeof document !== 'undefined') {
-    initializeTheme();
+// Run theme initialization with a slight delay to ensure DOM is available
+if (typeof window !== 'undefined') {
+    // Run immediately but wrapped in try/catch
+    try {
+        initializeTheme();
+    } catch (e) {
+        console.warn('Error during initial theme setup:', e);
+    }
+    
+    // Also run when DOM is fully loaded for safety
+    window.addEventListener('DOMContentLoaded', () => {
+        try {
+            initializeTheme();
+        } catch (e) {
+            console.warn('Error during DOMContentLoaded theme setup:', e);
+        }
+    });
 }
 
 document.addEventListener('alpine:init', () => {
     // Register any additional Alpine.js components or stores here
     
-    // Setup collapse plugin if available
-    if (typeof Alpine.plugin === 'function' && typeof Alpine.collapse === 'object') {
-        Alpine.plugin(Alpine.collapse);
-    } else {
-        console.log('Alpine collapse plugin not available - using auto import');
+    // Register Alpine Collapse plugin if it's a global
+    if (typeof Alpine.plugin === 'function') {
+        // If Alpine.collapse is available as a plugin, use it
+        if (typeof Alpine.collapse === 'object') {
+            Alpine.plugin(Alpine.collapse);
+            console.log('Using global Alpine collapse plugin');
+        } else {
+            // Otherwise we'll use our custom implementation in alpine-collapse.js
+            console.log('Alpine collapse plugin not available - using custom implementation');
+        }
     }
     
     // Create a global store for application state
@@ -109,7 +150,7 @@ document.addEventListener('alpine:init', () => {
         // Set a specific theme
         set(themeName) {
             // Check if it's a premium theme and user has premium
-            if (this.isPremiumTheme(themeName) && !document.body.getAttribute('data-premium') === 'true') {
+            if (this.isPremiumTheme(themeName) && document.body && document.body.getAttribute('data-premium') !== 'true') {
                 console.warn('Cannot apply premium theme - user does not have premium subscription');
                 return;
             }
