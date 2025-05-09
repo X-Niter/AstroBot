@@ -568,86 +568,119 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.5/dist/cdn.min.js"></script>
     <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.plugin(Alpine.collapse);
-            
-            Alpine.data('themeManager', () => ({
-                theme: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-                darkMode: localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches),
-                premium: {{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }},
-                
-                init() {
-                    // Initialize theme on page load
-                    this.setTheme(this.theme);
+        // Initialize theme before Alpine.js loads to prevent flashing
+        (function() {
+            if (typeof document !== 'undefined' && document.documentElement) {
+                const getTheme = function() {
+                    const storedTheme = localStorage.getItem('theme');
+                    if (storedTheme) return storedTheme;
                     
-                    // Listen for OS theme changes
-                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-                        if (!localStorage.getItem('theme')) {
-                            this.darkMode = e.matches;
-                            this.theme = e.matches ? 'dark' : 'light';
+                    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                };
+                
+                const theme = getTheme();
+                if (theme === 'dark' || ['space', 'neon', 'contrast'].includes(theme)) {
+                    document.documentElement.classList.add('dark');
+                }
+                
+                if (theme !== 'light' && theme !== 'dark') {
+                    document.documentElement.classList.add(`theme-${theme}`);
+                }
+            }
+        })();
+    </script>
+    <script>
+        document.addEventListener('alpine:init', function() {
+            if (typeof Alpine.plugin === 'function' && typeof Alpine.collapse === 'object') {
+                Alpine.plugin(Alpine.collapse);
+            }
+            
+            Alpine.data('themeManager', function() {
+                return {
+                    theme: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+                    darkMode: localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches),
+                    premium: {{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }},
+                    
+                    init: function() {
+                        // Initialize theme on page load
+                        if (document.body) {
                             this.setTheme(this.theme);
                         }
-                    });
-                },
-                
-                toggleDarkMode() {
-                    this.darkMode = !this.darkMode;
-                    const newTheme = this.darkMode ? 'dark' : 'light';
-                    this.setTheme(newTheme);
-                    localStorage.setItem('theme', newTheme);
-                },
-                
-                setPremiumTheme(themeId) {
-                    if (this.isPremiumTheme(themeId) && !this.premium) {
-                        console.log('Premium theme not available');
-                        return;
+                        
+                        // Listen for OS theme changes
+                        const self = this;
+                        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                            if (!localStorage.getItem('theme')) {
+                                self.darkMode = e.matches;
+                                self.theme = e.matches ? 'dark' : 'light';
+                                self.setTheme(self.theme);
+                            }
+                        });
+                    },
+                    
+                    toggleDarkMode: function() {
+                        this.darkMode = !this.darkMode;
+                        const newTheme = this.darkMode ? 'dark' : 'light';
+                        this.setTheme(newTheme);
+                        localStorage.setItem('theme', newTheme);
+                    },
+                    
+                    setPremiumTheme: function(themeId) {
+                        if (this.isPremiumTheme(themeId) && !this.premium) {
+                            console.log('Premium theme not available');
+                            return;
+                        }
+                        
+                        this.theme = themeId;
+                        this.darkMode = themeId === 'dark' || this.isPremiumTheme(themeId);
+                        this.setTheme(themeId);
+                        localStorage.setItem('theme', themeId);
+                    },
+                    
+                    isPremiumTheme: function(themeId) {
+                        return ['space', 'neon', 'contrast'].includes(themeId);
+                    },
+                    
+                    setTheme: function(theme) {
+                        if (!document.documentElement) return;
+                        
+                        const root = document.documentElement;
+                        
+                        // Remove all theme classes first
+                        root.classList.remove('theme-light', 'theme-dark', 'theme-space', 'theme-neon', 'theme-contrast');
+                        
+                        // Add the selected theme class
+                        if (theme !== 'light') {
+                            root.classList.add(`theme-${theme}`);
+                        }
+                        
+                        // Set dark mode if needed
+                        if (theme === 'dark' || this.isPremiumTheme(theme)) {
+                            root.classList.add('dark');
+                        } else {
+                            root.classList.remove('dark');
+                        }
+                        
+                        // Set data attributes on body if it exists
+                        if (document.body) {
+                            document.body.setAttribute('data-theme', theme);
+                        }
+                        
+                        // Dispatch event for other components to react
+                        window.dispatchEvent(new CustomEvent('theme-changed', { 
+                            detail: { theme: theme, isDark: theme === 'dark' || this.isPremiumTheme(theme) } 
+                        }));
+                    },
+                    
+                    resetToSystemTheme: function() {
+                        localStorage.removeItem('theme');
+                        const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                        this.theme = preferredTheme;
+                        this.darkMode = preferredTheme === 'dark';
+                        this.setTheme(preferredTheme);
                     }
-                    
-                    this.theme = themeId;
-                    this.darkMode = themeId === 'dark' || this.isPremiumTheme(themeId);
-                    this.setTheme(themeId);
-                    localStorage.setItem('theme', themeId);
-                },
-                
-                isPremiumTheme(themeId) {
-                    return ['space', 'neon', 'contrast'].includes(themeId);
-                },
-                
-                setTheme(theme) {
-                    const root = document.documentElement;
-                    
-                    // Remove all theme classes first
-                    root.classList.remove('theme-light', 'theme-dark', 'theme-space', 'theme-neon', 'theme-contrast');
-                    
-                    // Add the selected theme class
-                    if (theme !== 'light') {
-                        root.classList.add(`theme-${theme}`);
-                    }
-                    
-                    // Set dark mode if needed
-                    if (theme === 'dark' || this.isPremiumTheme(theme)) {
-                        root.classList.add('dark');
-                    } else {
-                        root.classList.remove('dark');
-                    }
-                    
-                    // Set data attributes
-                    document.body.setAttribute('data-theme', theme);
-                    
-                    // Dispatch event for other components to react
-                    window.dispatchEvent(new CustomEvent('theme-changed', { 
-                        detail: { theme, isDark: theme === 'dark' || this.isPremiumTheme(theme) } 
-                    }));
-                },
-                
-                resetToSystemTheme() {
-                    localStorage.removeItem('theme');
-                    const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                    this.theme = preferredTheme;
-                    this.darkMode = preferredTheme === 'dark';
-                    this.setTheme(preferredTheme);
-                }
-            }));
+                };
+            });
         });
     </script>
     
