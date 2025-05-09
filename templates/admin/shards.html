@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+<li class="breadcrumb-item active">Shard Management</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="fs-2 mb-3">
+                <i class="fas fa-cubes me-2"></i> Shard Management
+            </h1>
+            <p class="text-muted">
+                Manage Discord bot shards, balance server load, and monitor performance.
+            </p>
+        </div>
+        <div class="col-lg-4">
+            <div class="d-flex justify-content-end align-items-center h-100">
+                <button class="btn btn-outline-light me-2">
+                    <i class="fas fa-sync me-1"></i> Refresh
+                </button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add Shard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sharding Overview -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="stat-value">16</div>
+                    <div class="stat-label">Total Shards</div>
+                    <div class="small text-muted mt-2">Last scaled: 3 days ago</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon success">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value">237</div>
+                    <div class="stat-label">Total Discord Servers</div>
+                    <div class="small text-muted mt-2">Avg. 14.8 servers per shard</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon info">
+                        <i class="fas fa-memory"></i>
+                    </div>
+                    <div class="stat-value">63.2%</div>
+                    <div class="stat-label">Average Memory Usage</div>
+                    <div class="small text-muted mt-2">Recommended max: 80%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="stat-value">99.98%</div>
+                    <div class="stat-label">Shard Uptime</div>
+                    <div class="small text-muted mt-2">Last restart: 5 days ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shards Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-th me-2"></i> Active Shards</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-light me-2">
+                            <i class="fas fa-balance-scale me-1"></i> Auto-Balance
+                        </button>
+                        <button class="btn btn-sm btn-outline-light">
+                            <i class="fas fa-download me-1"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Shard ID</th>
+                                    <th>Status</th>
+                                    <th>Servers</th>
+                                    <th>Users</th>
+                                    <th>Memory</th>
+                                    <th>CPU</th>
+                                    <th>Uptime</th>
+                                    <th>Version</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Shard-0</td>
+                                    <td><span class="badge bg-success">Online</span></td>
+                                    <td>34</td>
+                                    <td>24.6K</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 45%;" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>45%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 32%;" aria-valuenow="32" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>32%</span>
+                                        </div>
+                                    </td>
+                                    <td>7d 14h</td>
+                                    <td>v1.4.2</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-dark">
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-sync me-2"></i> Restart</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i> Details</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i> Metrics</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-times-circle me-2"></i> Stop</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Shard-1</td>
+                                    <td><span class="badge bg-success">Online</span></td>
+                                    <td>28</td>
+                                    <td>18.2K</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 38%;" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>38%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 28%;" aria-valuenow="28" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>28%</span>
+                                        </div>
+                                    </td>
+                                    <td>7d 14h</td>
+                                    <td>v1.4.2</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-dark">
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-sync me-2"></i> Restart</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i> Details</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i> Metrics</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-times-circle me-2"></i> Stop</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Shard-2</td>
+                                    <td><span class="badge bg-success">Online</span></td>
+                                    <td>41</td>
+                                    <td>30.5K</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 72%;" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>72%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 68%;" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>68%</span>
+                                        </div>
+                                    </td>
+                                    <td>7d 14h</td>
+                                    <td>v1.4.2</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-dark">
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-sync me-2"></i> Restart</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i> Details</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i> Metrics</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-times-circle me-2"></i> Stop</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Shard-3</td>
+                                    <td><span class="badge bg-success">Online</span></td>
+                                    <td>37</td>
+                                    <td>27.3K</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 55%;" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>55%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 42%;" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>42%</span>
+                                        </div>
+                                    </td>
+                                    <td>7d 14h</td>
+                                    <td>v1.4.2</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-dark">
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-sync me-2"></i> Restart</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i> Details</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i> Metrics</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-times-circle me-2"></i> Stop</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Shard-4</td>
+                                    <td><span class="badge bg-warning">Updating</span></td>
+                                    <td>29</td>
+                                    <td>21.8K</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 42%;" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>42%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 38%;" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span>38%</span>
+                                        </div>
+                                    </td>
+                                    <td>5m</td>
+                                    <td>v1.4.1 → v1.4.2</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" disabled>
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-dark">
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-sync me-2"></i> Restart</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i> Details</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i> Metrics</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-times-circle me-2"></i> Stop</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <select class="form-select form-select-sm" style="max-width: 100px; display: inline-block;">
+                                <option>10</option>
+                                <option>25</option>
+                                <option>50</option>
+                                <option>All</option>
+                            </select>
+                            <span class="ms-2">shards per page</span>
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-Scaling Settings -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i> Auto-Scaling Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoScalingSwitch" checked>
+                            <label class="form-check-label" for="autoScalingSwitch">Enable auto-scaling</label>
+                        </div>
+                        <small class="text-muted">Automatically add or remove shards based on load</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Scale Up Threshold</label>
+                        <div class="d-flex align-items-center">
+                            <input type="range" class="form-range me-2" min="50" max="95" value="80" id="scaleUpRange">
+                            <span id="scaleUpValue">80%</span>
+                        </div>
+                        <small class="text-muted">Add new shards when average memory usage exceeds this threshold</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Scale Down Threshold</label>
+                        <div class="d-flex align-items-center">
+                            <input type="range" class="form-range me-2" min="10" max="50" value="30" id="scaleDownRange">
+                            <span id="scaleDownValue">30%</span>
+                        </div>
+                        <small class="text-muted">Consider removing shards when average memory usage is below this threshold</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Cooldown Period</label>
+                        <select class="form-select">
+                            <option>5 minutes</option>
+                            <option selected>15 minutes</option>
+                            <option>30 minutes</option>
+                            <option>1 hour</option>
+                        </select>
+                        <small class="text-muted">Minimum time between scaling events</small>
+                    </div>
+                    
+                    <button class="btn btn-primary">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i> Load Balancing</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoBalanceSwitch" checked>
+                            <label class="form-check-label" for="autoBalanceSwitch">Auto-balance shards</label>
+                        </div>
+                        <small class="text-muted">Automatically redistribute servers across shards</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Balancing Algorithm</label>
+                        <select class="form-select">
+                            <option>Even Distribution</option>
+                            <option selected>Memory-Optimized</option>
+                            <option>Latency-Optimized</option>
+                            <option>Custom</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Imbalance Threshold</label>
+                        <div class="d-flex align-items-center">
+                            <input type="range" class="form-range me-2" min="5" max="50" value="20" id="imbalanceRange">
+                            <span id="imbalanceValue">20%</span>
+                        </div>
+                        <small class="text-muted">Trigger balancing when server count difference exceeds this percentage</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Balance Check Interval</label>
+                        <select class="form-select">
+                            <option>1 hour</option>
+                            <option selected>3 hours</option>
+                            <option>6 hours</option>
+                            <option>12 hours</option>
+                            <option>24 hours</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-outline-light me-2">Check Balance Now</button>
+                    <button class="btn btn-primary">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Scale up range slider
+        const scaleUpRange = document.getElementById('scaleUpRange');
+        const scaleUpValue = document.getElementById('scaleUpValue');
+        
+        scaleUpRange.addEventListener('input', function() {
+            scaleUpValue.textContent = this.value + '%';
+        });
+        
+        // Scale down range slider
+        const scaleDownRange = document.getElementById('scaleDownRange');
+        const scaleDownValue = document.getElementById('scaleDownValue');
+        
+        scaleDownRange.addEventListener('input', function() {
+            scaleDownValue.textContent = this.value + '%';
+        });
+        
+        // Imbalance threshold slider
+        const imbalanceRange = document.getElementById('imbalanceRange');
+        const imbalanceValue = document.getElementById('imbalanceValue');
+        
+        imbalanceRange.addEventListener('input', function() {
+            imbalanceValue.textContent = this.value + '%';
+        });
+    });
+</script>
+{% endblock %}

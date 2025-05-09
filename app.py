@@ -580,6 +580,35 @@ def generate_time_data(days, is_ai=False):
     data.reverse()
     return data
 
+# Admin routes
+@app.route('/admin')
+def admin_dashboard():
+    return render_template('admin/dashboard.html', title="Admin Dashboard")
+
+@app.route('/admin/deployment')
+def admin_deployment():
+    return render_template('admin/deployment.html', title="Intelligent Deployment")
+
+@app.route('/admin/shards')
+def admin_shards():
+    return render_template('admin/shards.html', title="Shard Management")
+
+@app.route('/admin/deployments-history')
+def admin_deployments_history():
+    return render_template('admin/deployments_history.html', title="Deployment History")
+
+@app.route('/admin/alerts')
+def admin_alerts():
+    return render_template('admin/alerts.html', title="System Alerts")
+
+@app.route('/admin/logs')
+def admin_logs():
+    return render_template('admin/logs.html', title="System Logs")
+
+@app.route('/admin/settings')
+def admin_settings():
+    return render_template('admin/settings.html', title="System Settings")
+
 # Error handlers
 @app.errorhandler(404)
 def page_not_found(e):
