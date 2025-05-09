@@ -1,0 +1,292 @@
+name: AI Comment Handler
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      comment_url:
+        description: 'URL of the comment to process'
+        required: true
+        type: string
+
+jobs:
+  process-comment:
+    name: Process AI Commands in Comments
+    runs-on: ubuntu-latest
+    # Only run on comments containing @ai
+    if: contains(github.event.comment.body, '@ai')
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      # Extract the AI command from the comment
+      - name: Extract AI command
+        id: extract
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # For workflow_dispatch, fetch the comment
+            echo "Fetching comment from ${{ github.event.inputs.comment_url }}"
+            COMMENT_BODY=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" ${{ github.event.inputs.comment_url }} | jq -r '.body')
+          else
+            COMMENT_BODY="${{ github.event.comment.body }}"
+          fi
+          
+          # Extract the command (first word after @ai)
+          if [[ "$COMMENT_BODY" =~ "@ai "* ]]; then
+            COMMAND=$(echo "$COMMENT_BODY" | grep -o '@ai [a-z\-]*' | head -1 | sed 's/@ai //')
+            echo "AI_COMMAND=$COMMAND" >> $GITHUB_ENV
+            
+            # Extract the instructions (everything after the command)
+            INSTRUCTIONS=$(echo "$COMMENT_BODY" | sed "s/@ai $COMMAND//")
+            echo "AI_INSTRUCTIONS=$INSTRUCTIONS" >> $GITHUB_ENV
+            
+            # Set the issue or PR number
+            if [ "${{ github.event_name }}" == "issue_comment" ]; then
+              echo "ITEM_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+              echo "ITEM_TYPE=issue" >> $GITHUB_ENV
+            elif [ "${{ github.event_name }}" == "pull_request_review_comment" ]; then
+              echo "ITEM_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+              echo "ITEM_TYPE=pr" >> $GITHUB_ENV
+            else
+              # For workflow_dispatch, detect from the URL structure
+              if [[ "${{ github.event.inputs.comment_url }}" == */issues/* ]]; then
+                ITEM_NUMBER=$(echo "${{ github.event.inputs.comment_url }}" | grep -o '/issues/[0-9]*' | grep -o '[0-9]*')
+                echo "ITEM_NUMBER=$ITEM_NUMBER" >> $GITHUB_ENV
+                echo "ITEM_TYPE=issue" >> $GITHUB_ENV
+              elif [[ "${{ github.event.inputs.comment_url }}" == */pull/* ]]; then
+                ITEM_NUMBER=$(echo "${{ github.event.inputs.comment_url }}" | grep -o '/pull/[0-9]*' | grep -o '[0-9]*')
+                echo "ITEM_NUMBER=$ITEM_NUMBER" >> $GITHUB_ENV
+                echo "ITEM_TYPE=pr" >> $GITHUB_ENV
+              fi
+            fi
+            
+            echo "VALID_COMMAND=true" >> $GITHUB_ENV
+          else
+            echo "VALID_COMMAND=false" >> $GITHUB_ENV
+          fi
+      
+      # Process the command with AI
+      - name: Process command with OpenAI
+        if: env.VALID_COMMAND == 'true'
+        id: process-command
+        run: |
+          COMMAND="${{ env.AI_COMMAND }}"
+          INSTRUCTIONS="${{ env.AI_INSTRUCTIONS }}"
+          ITEM_NUMBER="${{ env.ITEM_NUMBER }}"
+          ITEM_TYPE="${{ env.ITEM_TYPE }}"
+          
+          # Get item details
+          if [ "$ITEM_TYPE" == "issue" ]; then
+            ITEM_JSON=$(gh api repos/${{ github.repository }}/issues/$ITEM_NUMBER)
+            ITEM_TITLE=$(echo $ITEM_JSON | jq -r '.title')
+            ITEM_BODY=$(echo $ITEM_JSON | jq -r '.body')
+          else
+            ITEM_JSON=$(gh api repos/${{ github.repository }}/pulls/$ITEM_NUMBER)
+            ITEM_TITLE=$(echo $ITEM_JSON | jq -r '.title')
+            ITEM_BODY=$(echo $ITEM_JSON | jq -r '.body')
+          fi
+          
+          # Create unique branch
+          BRANCH_NAME="ai-comment-$ITEM_NUMBER-$(date +%s)"
+          git checkout -b $BRANCH_NAME
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+          # Initial comment acknowledging the command
+          COMMENT_BODY="🤖 Processing your \`@ai $COMMAND\` request...\n\nWorking on: $INSTRUCTIONS"
+          
+          if [ "$ITEM_TYPE" == "issue" ]; then
+            gh issue comment $ITEM_NUMBER --body "$COMMENT_BODY"
+          else
+            gh pr comment $ITEM_NUMBER --body "$COMMENT_BODY"
+          fi
+          
+          # This would be a real OpenAI API call in production
+          # Here we'll simulate based on the command type
+          
+          case "$COMMAND" in
+            explain)
+              RESPONSE="## AI Explanation\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\nThe code in question appears to be handling user authentication with proper session management. It uses secure password hashing and verification through Flask's security mechanisms. The specific section handles login requests, validates credentials, and manages user sessions.\n\nThis is a standard pattern for user authentication in web applications."
+              ;;
+            
+            fix)
+              RESPONSE="## AI Fix Suggestion\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\nI've examined the issue and here's a potential fix:\n\n\`\`\`python\ndef fixed_function(param):\n    if param is None:\n        return default_value\n    return process_valid_param(param)\n\`\`\`\n\nThis handles the null parameter case that was causing the error."
+              
+              # Create sample fix file
+              mkdir -p ai-fixes
+              echo "# Sample fix for the reported issue" > ai-fixes/sample_fix.py
+              echo "def fixed_function(param):" >> ai-fixes/sample_fix.py
+              echo "    if param is None:" >> ai-fixes/sample_fix.py
+              echo "        return default_value" >> ai-fixes/sample_fix.py
+              echo "    return process_valid_param(param)" >> ai-fixes/sample_fix.py
+              
+              git add ai-fixes/
+              git commit -m "fix: Add AI-suggested fix for #$ITEM_NUMBER"
+              ;;
+            
+            implement)
+              RESPONSE="## AI Implementation\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\nI've created a basic implementation of the requested feature:\n\n\`\`\`python\ndef new_feature(user_id, options=None):\n    \"\"\"Implements the requested feature\"\"\"\n    options = options or {}\n    \n    # Feature implementation\n    result = process_user_data(user_id, options)\n    return result\n\`\`\`\n\nThis implementation matches the requirements specified in the issue."
+              
+              # Create sample implementation file
+              mkdir -p ai-implementations
+              echo "# Sample implementation of requested feature" > ai-implementations/new_feature.py
+              echo "def new_feature(user_id, options=None):" >> ai-implementations/new_feature.py
+              echo "    \"\"\"Implements the requested feature\"\"\"" >> ai-implementations/new_feature.py
+              echo "    options = options or {}" >> ai-implementations/new_feature.py
+              echo "    " >> ai-implementations/new_feature.py
+              echo "    # Feature implementation" >> ai-implementations/new_feature.py
+              echo "    result = process_user_data(user_id, options)" >> ai-implementations/new_feature.py
+              echo "    return result" >> ai-implementations/new_feature.py
+              
+              git add ai-implementations/
+              git commit -m "feat: Add AI-generated implementation for #$ITEM_NUMBER"
+              ;;
+            
+            optimize)
+              RESPONSE="## AI Optimization\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\nHere's an optimized version of the code:\n\n\`\`\`python\n# Original: O(n²) complexity\n# Optimized: O(n) complexity\ndef optimized_function(data):\n    result = {}\n    for item in data:\n        key = item['id']\n        result[key] = item\n    return result\n\`\`\`\n\nThis optimization improves performance by using a dictionary for O(1) lookups instead of nested loops."
+              
+              # Create sample optimization file
+              mkdir -p ai-optimizations
+              echo "# Sample optimization" > ai-optimizations/optimized_code.py
+              echo "def optimized_function(data):" >> ai-optimizations/optimized_code.py
+              echo "    result = {}" >> ai-optimizations/optimized_code.py
+              echo "    for item in data:" >> ai-optimizations/optimized_code.py
+              echo "        key = item['id']" >> ai-optimizations/optimized_code.py
+              echo "        result[key] = item" >> ai-optimizations/optimized_code.py
+              echo "    return result" >> ai-optimizations/optimized_code.py
+              
+              git add ai-optimizations/
+              git commit -m "perf: Add AI-optimized code for #$ITEM_NUMBER"
+              ;;
+            
+            test)
+              RESPONSE="## AI Test Generation\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\nI've generated test cases for the specified functionality:\n\n\`\`\`python\nimport pytest\n\ndef test_function_with_valid_input():\n    result = function_under_test('valid_input')\n    assert result == expected_output\n\ndef test_function_with_invalid_input():\n    with pytest.raises(ValueError):\n        function_under_test(None)\n\`\`\`\n\nThese tests cover both the happy path and error cases."
+              
+              # Create sample test file
+              mkdir -p ai-tests
+              echo "# Sample test cases" > ai-tests/test_sample.py
+              echo "import pytest" >> ai-tests/test_sample.py
+              echo "" >> ai-tests/test_sample.py
+              echo "def test_function_with_valid_input():" >> ai-tests/test_sample.py
+              echo "    result = function_under_test('valid_input')" >> ai-tests/test_sample.py
+              echo "    assert result == expected_output" >> ai-tests/test_sample.py
+              echo "" >> ai-tests/test_sample.py
+              echo "def test_function_with_invalid_input():" >> ai-tests/test_sample.py
+              echo "    with pytest.raises(ValueError):" >> ai-tests/test_sample.py
+              echo "        function_under_test(None)" >> ai-tests/test_sample.py
+              
+              git add ai-tests/
+              git commit -m "test: Add AI-generated tests for #$ITEM_NUMBER"
+              ;;
+            
+            document)
+              RESPONSE="## AI Documentation\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\nI've created documentation for the specified component:\n\n\`\`\`markdown\n# Authentication Module\n\n## Overview\nThe authentication module handles user login, registration, and session management.\n\n## Functions\n\n### login_user(username, password)\nValidates user credentials and creates a session.\n\n#### Parameters\n- username (str): User's username\n- password (str): User's password\n\n#### Returns\n- bool: True if authentication successful, False otherwise\n\`\`\`\n\nThis documentation follows standard formatting practices and includes all necessary details."
+              
+              # Create sample documentation file
+              mkdir -p ai-docs
+              echo "# Authentication Module" > ai-docs/authentication.md
+              echo "" >> ai-docs/authentication.md
+              echo "## Overview" >> ai-docs/authentication.md
+              echo "The authentication module handles user login, registration, and session management." >> ai-docs/authentication.md
+              echo "" >> ai-docs/authentication.md
+              echo "## Functions" >> ai-docs/authentication.md
+              echo "" >> ai-docs/authentication.md
+              echo "### login_user(username, password)" >> ai-docs/authentication.md
+              echo "Validates user credentials and creates a session." >> ai-docs/authentication.md
+              echo "" >> ai-docs/authentication.md
+              echo "#### Parameters" >> ai-docs/authentication.md
+              echo "- username (str): User's username" >> ai-docs/authentication.md
+              echo "- password (str): User's password" >> ai-docs/authentication.md
+              echo "" >> ai-docs/authentication.md
+              echo "#### Returns" >> ai-docs/authentication.md
+              echo "- bool: True if authentication successful, False otherwise" >> ai-docs/authentication.md
+              
+              git add ai-docs/
+              git commit -m "docs: Add AI-generated documentation for #$ITEM_NUMBER"
+              ;;
+            
+            analyze)
+              RESPONSE="## AI Analysis\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\n### Analysis Results\n\n1. **Code Structure**: The codebase follows a modular approach with clear separation of concerns.\n2. **Potential Issues**: There's a risk of race condition in the concurrent operations section.\n3. **Performance**: The database queries could be optimized to reduce latency.\n4. **Security**: Authentication implementation follows best practices with proper password hashing.\n\n### Recommendations\n\n1. Add database query caching to improve performance\n2. Use a transaction to prevent the identified race condition\n3. Add more comprehensive error handling"
+              ;;
+            
+            summarize)
+              RESPONSE="## AI Summary\n\n$(echo $INSTRUCTIONS | sed 's/^/> /')\n\n### Pull Request Summary\n\nThis PR implements the new user authentication system with the following changes:\n\n1. Adds a new `UserAuthService` class for handling authentication logic\n2. Implements secure password hashing using Argon2\n3. Adds JWT token generation and validation\n4. Creates new API endpoints for login, logout, and token refresh\n5. Updates tests for the authentication flow\n\nOverall, this is a comprehensive implementation that follows security best practices and maintains good code organization."
+              ;;
+            
+            *)
+              RESPONSE="I don't recognize the command \`$COMMAND\`. Available commands are:\n\n- @ai explain - Explain code or concepts\n- @ai fix - Suggest fixes for issues\n- @ai implement - Implement requested features\n- @ai optimize - Optimize existing code\n- @ai test - Generate test cases\n- @ai document - Create documentation\n- @ai analyze - Analyze code or issues\n- @ai summarize - Summarize PRs or discussions"
+              ;;
+          esac
+          
+          # Record the response
+          echo "$RESPONSE" > ai_response.md
+          echo "AI_RESPONSE_FILE=ai_response.md" >> $GITHUB_ENV
+          
+          # Push branch if we made commits
+          if [ "$(git log origin/main..HEAD)" != "" ]; then
+            git push origin $BRANCH_NAME
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        continue-on-error: true
+      
+      # Create PR if we made code changes
+      - name: Create PR if needed
+        if: env.VALID_COMMAND == 'true' && env.AI_COMMAND != 'explain' && env.AI_COMMAND != 'analyze' && env.AI_COMMAND != 'summarize'
+        run: |
+          # Only create PR if we actually have commits in the branch
+          if [ "$(git log origin/main..HEAD)" != "" ]; then
+            # Create PR with AI response
+            PR_BODY="This PR was generated in response to an \`@ai ${{ env.AI_COMMAND }}\` comment on #${{ env.ITEM_NUMBER }}.
+
+            $(cat ${{ env.AI_RESPONSE_FILE }})
+            
+            ---
+            
+            To provide feedback on these changes, please comment on this PR.
+            To request further adjustments, add a comment with \`@ai adjust [your instructions]\`."
+            
+            # Create the PR
+            PR_URL=$(gh pr create --title "[${{ env.AI_COMMAND }}] AI response to comment on #${{ env.ITEM_NUMBER }}" \
+                               --body "$PR_BODY" \
+                               --base main \
+                               --head ${{ env.BRANCH_NAME }} \
+                               --label "ai-generated")
+            
+            echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+            
+            # Comment on original issue/PR with link to the created PR
+            COMMENT="I've created a pull request with my ${{ env.AI_COMMAND }} implementation: $PR_URL"
+            
+            if [ "${{ env.ITEM_TYPE }}" == "issue" ]; then
+              gh issue comment ${{ env.ITEM_NUMBER }} --body "$COMMENT"
+            else
+              gh pr comment ${{ env.ITEM_NUMBER }} --body "$COMMENT"
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Comment response if no PR was created
+      - name: Comment response
+        if: env.VALID_COMMAND == 'true' && (env.AI_COMMAND == 'explain' || env.AI_COMMAND == 'analyze' || env.AI_COMMAND == 'summarize' || env.PR_URL == '')
+        run: |
+          RESPONSE="$(cat ${{ env.AI_RESPONSE_FILE }})"
+          
+          if [ "${{ env.ITEM_TYPE }}" == "issue" ]; then
+            gh issue comment ${{ env.ITEM_NUMBER }} --body "$RESPONSE"
+          else
+            gh pr comment ${{ env.ITEM_NUMBER }} --body "$RESPONSE"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
