@@ -20,22 +20,46 @@
     --footer-text: #ffffff;
 }
 
+/* Essential fix for body background */
+.theme-dark body {
+    background-color: var(--primary-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Override card styles */
+.theme-dark .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.theme-dark .card-header {
+    background-color: var(--secondary-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.theme-dark .stat-card {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+.theme-dark .stat-card .stat-label {
+    color: var(--muted-text) !important;
+}
+
+.theme-dark .list-group-item {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
 .theme-dark .navbar {
     background-color: var(--nav-bg) !important;
 }
 
 .theme-dark .navbar-dark .navbar-nav .nav-link {
     color: var(--nav-text);
-}
-
-.theme-dark .card {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
-}
-
-.theme-dark .card-header {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-color: var(--border-color);
 }
 
 .theme-dark .modal-content {
@@ -86,11 +110,7 @@
     color: var(--muted-text) !important;
 }
 
-.theme-dark .list-group-item {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
-    color: var(--text-color);
-}
+/* .theme-dark .list-group-item style is already defined above with !important */
 
 .theme-dark .border-bottom {
     border-color: var(--border-color) !important;
