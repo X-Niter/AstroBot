@@ -1,0 +1,704 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Commands System{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/documentation.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 col-lg-2 d-md-block doc-sidebar">
+            <div class="doc-nav">
+                <a href="{{ url_for('documentation_index') }}" class="nav-link">
+                    Getting Started
+                </a>
+                
+                <div class="nav-heading">Discord Bot</div>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='moderation') }}" class="nav-link">
+                    Moderation System
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='custom_commands') }}" class="nav-link active">
+                    Custom Commands
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='ai_features') }}" class="nav-link">
+                    AI Features
+                </a>
+                
+                <div class="nav-heading">Minecraft</div>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='server_management') }}" class="nav-link">
+                    Server Management
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='whitelist') }}" class="nav-link">
+                    Whitelist System
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='mod_integration') }}" class="nav-link">
+                    Mod Integration
+                </a>
+                
+                <div class="nav-heading">Twitch</div>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='twitch_integration') }}" class="nav-link">
+                    Twitch Integration
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='features', page_name='points_system') }}" class="nav-link">
+                    Points System
+                </a>
+                
+                <div class="nav-heading">API</div>
+                <a href="{{ url_for('documentation_page', page_type='api', page_name='overview') }}" class="nav-link">
+                    API Overview
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='api', page_name='authentication') }}" class="nav-link">
+                    Authentication
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='api', page_name='endpoints') }}" class="nav-link">
+                    Endpoints
+                </a>
+                
+                <div class="nav-heading">Guides</div>
+                <a href="{{ url_for('documentation_page', page_type='guides', page_name='setup') }}" class="nav-link">
+                    Setup Guide
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='guides', page_name='permissions') }}" class="nav-link">
+                    Permissions Guide
+                </a>
+                <a href="{{ url_for('documentation_page', page_type='guides', page_name='advanced_commands') }}" class="nav-link">
+                    Advanced Commands
+                </a>
+            </div>
+        </nav>
+        
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-8 doc-content">
+            <div class="d-block d-md-none mb-3">
+                <button class="btn btn-primary" id="sidebar-toggle" type="button">
+                    <i class="bi bi-list"></i> Menu
+                </button>
+            </div>
+            
+            <h1>Custom Commands System</h1>
+            
+            <p class="lead">
+                Create powerful, customized commands for your Discord server with AstroBot's intuitive custom commands system. From simple text responses to complex, dynamic interactions with external APIs and conditional logic.
+            </p>
+            
+            <h2 id="overview">Overview</h2>
+            
+            <p>
+                The custom commands system lets you create unique commands specifically tailored to your community's needs. These commands can:
+            </p>
+            
+            <ul>
+                <li>Respond with text, images, or embeds</li>
+                <li>Use variables and user inputs</li>
+                <li>Execute conditional logic</li>
+                <li>Integrate with external APIs</li>
+                <li>Store and retrieve data</li>
+                <li>Generate dynamic content</li>
+                <li>Create interactive menus and forms</li>
+            </ul>
+            
+            <div class="callout callout-info">
+                <h5>Administrator Permissions Required</h5>
+                <p>Creating and managing custom commands requires <strong>Administrator</strong> or <strong>Manage Server</strong> permissions, but anyone can use the commands once they're created (unless permissions are restricted).</p>
+            </div>
+            
+            <h2 id="basic-commands">Basic Custom Commands</h2>
+            
+            <p>
+                Let's start with the basics of creating a simple custom command:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create welcome "Welcome to our server, {user.mention}! Check out {channel.mention:rules} for our server rules."</code></pre>
+            </div>
+            
+            <p>
+                This creates a command called "welcome" that responds with a personalized greeting, mentioning the user who triggered the command and linking to a channel called "rules".
+            </p>
+            
+            <p>
+                To use this command, members would type:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro welcome</code></pre>
+            </div>
+            
+            <h3 id="command-parameters">Command Parameters</h3>
+            
+            <p>
+                You can create commands that accept parameters from users:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create greet "Hello, {params.0}! Welcome to {server.name}."</code></pre>
+            </div>
+            
+            <p>
+                This command takes one parameter (a name) and incorporates it into the greeting. Users would invoke it like:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro greet John</code></pre>
+            </div>
+            
+            <p>
+                You can access parameters by index (<code>{params.0}</code>, <code>{params.1}</code>, etc.) or collect all remaining parameters with <code>{params.all}</code>:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create echo "You said: {params.all}"</code></pre>
+            </div>
+            
+            <h2 id="embeds">Creating Rich Embeds</h2>
+            
+            <p>
+                Custom commands can create rich embeds with multiple fields, colors, images, and more:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create server-info {{
+  "embed": {
+    "title": "{server.name} Information",
+    "description": "Here's some information about our server!",
+    "color": "5865F2",
+    "thumbnail": "{server.icon_url}",
+    "fields": [
+      {
+        "name": "Member Count",
+        "value": "{server.member_count}",
+        "inline": true
+      },
+      {
+        "name": "Server Created",
+        "value": "{server.created_at:date}",
+        "inline": true
+      },
+      {
+        "name": "Owner",
+        "value": "{server.owner.mention}",
+        "inline": true
+      }
+    ],
+    "footer": {
+      "text": "Requested by {user.name}",
+      "icon_url": "{user.avatar_url}"
+    }
+  }
+}}</code></pre>
+            </div>
+            
+            <p>
+                Note the use of double curly braces <code>{{ }}</code> to define a JSON object for the embed. Within this JSON, you can use AstroBot's variables in single curly braces <code>{ }</code>.
+            </p>
+            
+            <h2 id="variables">Available Variables</h2>
+            
+            <p>
+                AstroBot provides many variables you can use in your custom commands:
+            </p>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>{user}</code></td>
+                            <td>The user who triggered the command</td>
+                            <td><code>{user.name}</code>, <code>{user.id}</code>, <code>{user.mention}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>{server}</code></td>
+                            <td>The Discord server (guild)</td>
+                            <td><code>{server.name}</code>, <code>{server.member_count}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>{channel}</code></td>
+                            <td>The channel where the command was used</td>
+                            <td><code>{channel.name}</code>, <code>{channel.mention}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>{params}</code></td>
+                            <td>Command parameters</td>
+                            <td><code>{params.0}</code>, <code>{params.all}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>{target}</code></td>
+                            <td>Mentioned user (if any)</td>
+                            <td><code>{target.name}</code>, <code>{target.mention}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>{time}</code></td>
+                            <td>Current time information</td>
+                            <td><code>{time.now}</code>, <code>{time.utc}</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>{random}</code></td>
+                            <td>Random value generators</td>
+                            <td><code>{random.number:1,100}</code>, <code>{random.choice:A,B,C}</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h2 id="conditional-logic">Conditional Logic</h2>
+            
+            <p>
+                Custom commands can include conditional logic to create different responses based on various factors:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create role-check {{
+  "if": "{user.has_role:Moderator}",
+  "then": "You are a moderator. You can access the staff commands.",
+  "else": "You are not a moderator. You don't have access to staff commands."
+}}</code></pre>
+            </div>
+            
+            <p>
+                You can also use nested conditions for more complex logic:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create member-status {{
+  "if": "{user.join_date:days} < 7",
+  "then": "Welcome, new member! You joined {user.join_date:relative}.",
+  "else": {
+    "if": "{user.has_role:Regular}",
+    "then": "Thanks for being a regular member!",
+    "else": "You've been around for a while, consider getting more involved!"
+  }
+}}</code></pre>
+            </div>
+            
+            <h2 id="data-storage">Data Storage and Retrieval</h2>
+            
+            <p>
+                Custom commands can store and retrieve data to create persistent functionality:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>// Create a counter command
+!astro cc create count {{
+  "data": {
+    "op": "increment",
+    "key": "counter",
+    "default": 0
+  },
+  "response": "This command has been used {data:counter} times."
+}}</code></pre>
+            </div>
+            
+            <p>
+                You can also store data per user:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>// Create a cookie command that gives cookies to users
+!astro cc create cookie {{
+  "if": "{params.0}",
+  "then": {
+    "data": {
+      "op": "increment",
+      "key": "cookies:{target.id}",
+      "default": 0,
+      "amount": 1
+    },
+    "response": "{user.name} gave a cookie to {target.name}! They now have {data:cookies:{target.id}} cookies."
+  },
+  "else": {
+    "data": {
+      "op": "get",
+      "key": "cookies:{user.id}",
+      "default": 0
+    },
+    "response": "{user.name}, you have {data:cookies:{user.id}} cookies."
+  }
+}}</code></pre>
+            </div>
+            
+            <h2 id="api-integration">API Integration</h2>
+            
+            <p>
+                One of the most powerful features of AstroBot's custom commands is the ability to integrate with external APIs:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create weather {{
+  "api": {
+    "url": "https://api.weatherapi.com/v1/current.json?key=YOUR_API_KEY&q={urlencode:{params.all}}&aqi=no",
+    "method": "GET"
+  },
+  "response": {
+    "embed": {
+      "title": "Weather for {api.location.name}, {api.location.country}",
+      "description": "Current conditions: {api.current.condition.text}",
+      "thumbnail": "https:{api.current.condition.icon}",
+      "fields": [
+        {
+          "name": "Temperature",
+          "value": "{api.current.temp_c}°C / {api.current.temp_f}°F",
+          "inline": true
+        },
+        {
+          "name": "Feels Like",
+          "value": "{api.current.feelslike_c}°C / {api.current.feelslike_f}°F",
+          "inline": true
+        },
+        {
+          "name": "Humidity",
+          "value": "{api.current.humidity}%",
+          "inline": true
+        },
+        {
+          "name": "Wind",
+          "value": "{api.current.wind_kph} km/h {api.current.wind_dir}",
+          "inline": true
+        }
+      ],
+      "footer": {
+        "text": "Last updated: {api.current.last_updated}"
+      }
+    }
+  }
+}}</code></pre>
+            </div>
+            
+            <div class="callout callout-warning">
+                <h5>API Keys Required</h5>
+                <p>For API integrations that require authentication, you'll need to add the API key to your bot settings or include it in the URL (as shown in the example). Never share commands with your API keys publicly.</p>
+            </div>
+            
+            <h2 id="command-management">Managing Custom Commands</h2>
+            
+            <p>
+                Here are the key commands for managing your custom commands:
+            </p>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>!astro cc list</code></td>
+                            <td>List all custom commands</td>
+                        </tr>
+                        <tr>
+                            <td><code>!astro cc info [command]</code></td>
+                            <td>View details about a specific command</td>
+                        </tr>
+                        <tr>
+                            <td><code>!astro cc edit [command] [new response]</code></td>
+                            <td>Edit an existing command</td>
+                        </tr>
+                        <tr>
+                            <td><code>!astro cc delete [command]</code></td>
+                            <td>Delete a custom command</td>
+                        </tr>
+                        <tr>
+                            <td><code>!astro cc export</code></td>
+                            <td>Export all custom commands to a JSON file</td>
+                        </tr>
+                        <tr>
+                            <td><code>!astro cc import</code></td>
+                            <td>Import custom commands from a JSON file</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h2 id="permissions">Command Permissions</h2>
+            
+            <p>
+                You can restrict who can use your custom commands:
+            </p>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>// Require a specific role to use a command
+!astro cc permission add admin-info require-role Administrator
+
+// Restrict a command from being used in certain channels
+!astro cc permission add fun-command deny-channel #serious-discussion</code></pre>
+            </div>
+            
+            <h2 id="advanced-examples">Advanced Command Examples</h2>
+            
+            <h3 id="poll-system">Poll System</h3>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create poll {{
+  "if": "{params.all}",
+  "then": {
+    "embed": {
+      "title": "📊 Poll: {params.all}",
+      "description": "React with 👍 for Yes or 👎 for No",
+      "footer": {
+        "text": "Poll created by {user.name}"
+      }
+    },
+    "reactions": ["👍", "👎"]
+  },
+  "else": "Please provide a poll question. Example: !astro poll Should we add a new channel?"
+}}</code></pre>
+            </div>
+            
+            <h3 id="reminder-system">Reminder System</h3>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create remind {{
+  "if": "{params.0} && {params.1}",
+  "then": {
+    "schedule": {
+      "delay": "{params.0}",
+      "message": "{user.mention}, reminder: {params.1:rest}"
+    },
+    "response": "I'll remind you about '{params.1:rest}' in {params.0}."
+  },
+  "else": "Please specify a time and message. Example: !astro remind 1h Check on the event"
+}}</code></pre>
+            </div>
+            
+            <h3 id="minecraft-server-status">Minecraft Server Status</h3>
+            
+            <div class="doc-example">
+                <pre class="doc-example-code"><code>!astro cc create mc-status {{
+  "api": {
+    "url": "https://api.mcsrvstat.us/2/{params.0:minecraft.example.com}",
+    "method": "GET"
+  },
+  "if": "{api.online}",
+  "then": {
+    "embed": {
+      "title": "✅ Minecraft Server Status",
+      "description": "Server is online! 🎮",
+      "thumbnail": "https://eu.mc-api.net/v3/server/favicon/{params.0:minecraft.example.com}",
+      "fields": [
+        {
+          "name": "Address",
+          "value": "{api.hostname} ({api.ip}:{api.port})",
+          "inline": true
+        },
+        {
+          "name": "Players",
+          "value": "{api.players.online}/{api.players.max}",
+          "inline": true
+        },
+        {
+          "name": "Version",
+          "value": "{api.version}",
+          "inline": true
+        },
+        {
+          "name": "MOTD",
+          "value": "{api.motd.clean:0}"
+        }
+      ]
+    }
+  },
+  "else": {
+    "embed": {
+      "title": "❌ Minecraft Server Status",
+      "description": "Server is offline or unreachable",
+      "color": "ff0000"
+    }
+  }
+}}</code></pre>
+            </div>
+            
+            <div class="doc-content-nav">
+                <div class="doc-nav-prev">
+                    <a href="{{ url_for('documentation_page', page_type='features', page_name='moderation') }}" class="text-decoration-none">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-arrow-left-circle me-2"></i>
+                            <div>
+                                <div class="doc-nav-direction">Previous</div>
+                                <div class="doc-nav-title">Moderation System</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="doc-nav-next">
+                    <a href="{{ url_for('documentation_page', page_type='features', page_name='ai_features') }}" class="text-decoration-none">
+                        <div class="d-flex align-items-center">
+                            <div class="text-end">
+                                <div class="doc-nav-direction">Next</div>
+                                <div class="doc-nav-title">AI Features</div>
+                            </div>
+                            <i class="bi bi-arrow-right-circle ms-2"></i>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Documentation Feedback -->
+            <div class="doc-feedback">
+                <div class="doc-feedback-title">Was this page helpful?</div>
+                <div class="doc-feedback-buttons">
+                    <button class="btn btn-sm btn-outline-success feedback-helpful" data-page="{{ request.path }}">
+                        <i class="bi bi-hand-thumbs-up"></i> Yes
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger feedback-not-helpful" data-page="{{ request.path }}">
+                        <i class="bi bi-hand-thumbs-down"></i> No
+                    </button>
+                </div>
+                <div class="doc-feedback-comment d-none">
+                    <textarea class="form-control mb-2" rows="3" placeholder="How can we improve this page?"></textarea>
+                    <button class="btn btn-primary btn-sm submit-feedback">Submit Feedback</button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Right sidebar - Table of Contents -->
+        <div class="d-none d-lg-block col-lg-2">
+            <div class="doc-toc">
+                <div class="doc-toc-title">On This Page</div>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#basic-commands">Basic Custom Commands</a>
+                        <ul>
+                            <li><a href="#command-parameters">Command Parameters</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#embeds">Creating Rich Embeds</a></li>
+                    <li><a href="#variables">Available Variables</a></li>
+                    <li><a href="#conditional-logic">Conditional Logic</a></li>
+                    <li><a href="#data-storage">Data Storage</a></li>
+                    <li><a href="#api-integration">API Integration</a></li>
+                    <li><a href="#command-management">Managing Commands</a></li>
+                    <li><a href="#permissions">Command Permissions</a></li>
+                    <li><a href="#advanced-examples">Advanced Examples</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle sidebar on mobile
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.querySelector('.doc-sidebar');
+        
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('show');
+            });
+        }
+        
+        // Documentation feedback system
+        const helpfulBtn = document.querySelector('.feedback-helpful');
+        const notHelpfulBtn = document.querySelector('.feedback-not-helpful');
+        const feedbackComment = document.querySelector('.doc-feedback-comment');
+        const submitFeedback = document.querySelector('.submit-feedback');
+        
+        helpfulBtn.addEventListener('click', function() {
+            helpfulBtn.classList.add('active');
+            notHelpfulBtn.classList.remove('active');
+            
+            // Submit positive feedback immediately
+            const pagePath = this.dataset.page;
+            submitDocFeedback(pagePath, true, '');
+        });
+        
+        notHelpfulBtn.addEventListener('click', function() {
+            notHelpfulBtn.classList.add('active');
+            helpfulBtn.classList.remove('active');
+            feedbackComment.classList.remove('d-none');
+        });
+        
+        submitFeedback.addEventListener('click', function() {
+            const pagePath = notHelpfulBtn.dataset.page;
+            const comment = feedbackComment.querySelector('textarea').value;
+            
+            if (comment.trim() !== '') {
+                submitDocFeedback(pagePath, false, comment);
+                feedbackComment.innerHTML = '<div class="alert alert-success">Thank you for your feedback!</div>';
+            }
+        });
+        
+        function submitDocFeedback(pagePath, helpful, comment) {
+            fetch('/api/documentation/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    page: pagePath,
+                    helpful: helpful,
+                    comment: comment
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.querySelector('.doc-feedback-buttons').innerHTML = 
+                        '<div class="alert alert-success py-2 mb-0">Thank you for your feedback!</div>';
+                    feedbackComment.classList.add('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting feedback:', error);
+            });
+        }
+        
+        // Add smooth scrolling to TOC links
+        document.querySelectorAll('.doc-toc a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 70,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Highlight current section based on scroll position
+        const headings = document.querySelectorAll('h2[id], h3[id]');
+        const tocLinks = document.querySelectorAll('.doc-toc a');
+        
+        function highlightTOC() {
+            let currentSection = '';
+            
+            headings.forEach(heading => {
+                const top = heading.getBoundingClientRect().top;
+                
+                if (top < 100) {
+                    currentSection = '#' + heading.id;
+                }
+            });
+            
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === currentSection) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        
+        window.addEventListener('scroll', highlightTOC);
+        highlightTOC(); // Initial call
+    });
+</script>
+{% endblock %}
