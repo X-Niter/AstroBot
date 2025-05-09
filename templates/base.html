@@ -31,142 +31,468 @@
     {% block styles %}{% endblock %}
 </head>
 <body class="theme-{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}" data-theme="{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <img src="{{ url_for('static', filename='img/astrobot-logo.svg') }}" alt="AstroBot Logo" height="30">
-                AstroBot AI
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}"><i class="bi bi-house-fill"></i> Dashboard</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-discord"></i> Discord
+    <nav x-data="{ mobileMenuOpen: false, 
+                  discordOpen: false, 
+                  minecraftOpen: false, 
+                  twitchOpen: false, 
+                  analyticsOpen: false, 
+                  userMenuOpen: false }" 
+         class="bg-gray-900 border-b border-gray-800 shadow-lg">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <!-- Logo and brand name -->
+                <div class="flex items-center">
+                    <a href="{{ url_for('index') }}" class="flex-shrink-0 flex items-center">
+                        <img class="h-8 w-auto mr-2" src="{{ url_for('static', filename='img/astrobot-logo.svg') }}" alt="AstroBot Logo">
+                        <span class="text-xl font-bold text-white bg-clip-text animate-float">AstroBot AI</span>
+                    </a>
+                    
+                    <!-- Desktop navigation links -->
+                    <div class="hidden md:ml-6 md:flex md:space-x-2">
+                        <a href="{{ url_for('index') }}" 
+                           class="px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center"
+                           data-tippy-content="Dashboard">
+                            <i class="bi bi-house-fill mr-1.5"></i> Dashboard
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('bot_settings') }}">Bot Settings</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('commands_dashboard') }}">Commands</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('permissions') }}">Permissions</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('discord_analytics') }}">Analytics</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-box"></i> Minecraft
+                        
+                        <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                            <button @click="open = !open" 
+                                class="px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center"
+                                data-tippy-content="Discord Bot Settings">
+                                <i class="bi bi-discord mr-1.5"></i> Discord
+                                <i class="bi bi-caret-down-fill ml-1 text-xs"></i>
+                            </button>
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-200" 
+                                 x-transition:enter-start="opacity-0 translate-y-1" 
+                                 x-transition:enter-end="opacity-100 translate-y-0" 
+                                 x-transition:leave="transition ease-in duration-150" 
+                                 x-transition:leave-start="opacity-100 translate-y-0" 
+                                 x-transition:leave-end="opacity-0 translate-y-1" 
+                                 class="absolute z-10 mt-2 w-48 rounded-md bg-gray-800 py-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                 x-cloak>
+                                <a href="{{ url_for('bot_settings') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Bot Settings</a>
+                                <a href="{{ url_for('commands_dashboard') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Commands</a>
+                                <a href="{{ url_for('permissions') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Permissions</a>
+                                <a href="{{ url_for('discord_analytics') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Analytics</a>
+                            </div>
+                        </div>
+                        
+                        <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                            <button @click="open = !open" 
+                                class="px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center"
+                                data-tippy-content="Minecraft Server Management">
+                                <i class="bi bi-box mr-1.5"></i> Minecraft
+                                <i class="bi bi-caret-down-fill ml-1 text-xs"></i>
+                            </button>
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-200" 
+                                 x-transition:enter-start="opacity-0 translate-y-1" 
+                                 x-transition:enter-end="opacity-100 translate-y-0" 
+                                 x-transition:leave="transition ease-in duration-150" 
+                                 x-transition:leave-start="opacity-100 translate-y-0" 
+                                 x-transition:leave-end="opacity-0 translate-y-1" 
+                                 class="absolute z-10 mt-2 w-48 rounded-md bg-gray-800 py-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                 x-cloak>
+                                <a href="{{ url_for('minecraft_servers') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Servers</a>
+                                <a href="{{ url_for('whitelist') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Whitelist</a>
+                                <a href="{{ url_for('console') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Console</a>
+                                <a href="{{ url_for('plugins') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Plugins &amp; Mods</a>
+                            </div>
+                        </div>
+                        
+                        <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                            <button @click="open = !open" 
+                                class="px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center"
+                                data-tippy-content="Twitch Integration">
+                                <i class="bi bi-twitch mr-1.5"></i> Twitch
+                                <i class="bi bi-caret-down-fill ml-1 text-xs"></i>
+                            </button>
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-200" 
+                                 x-transition:enter-start="opacity-0 translate-y-1" 
+                                 x-transition:enter-end="opacity-100 translate-y-0" 
+                                 x-transition:leave="transition ease-in duration-150" 
+                                 x-transition:leave-start="opacity-100 translate-y-0" 
+                                 x-transition:leave-end="opacity-0 translate-y-1" 
+                                 class="absolute z-10 mt-2 w-48 rounded-md bg-gray-800 py-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                 x-cloak>
+                                <a href="{{ url_for('twitch_integration') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Integration</a>
+                                <a href="{{ url_for('points_settings') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Points &amp; Rewards</a>
+                            </div>
+                        </div>
+                        
+                        <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                            <button @click="open = !open" 
+                                class="px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center"
+                                data-tippy-content="Analytics & Reports">
+                                <i class="bi bi-graph-up mr-1.5"></i> Analytics
+                                <i class="bi bi-caret-down-fill ml-1 text-xs"></i>
+                            </button>
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-200" 
+                                 x-transition:enter-start="opacity-0 translate-y-1" 
+                                 x-transition:enter-end="opacity-100 translate-y-0" 
+                                 x-transition:leave="transition ease-in duration-150" 
+                                 x-transition:leave-start="opacity-100 translate-y-0" 
+                                 x-transition:leave-end="opacity-0 translate-y-1" 
+                                 class="absolute z-10 mt-2 w-48 rounded-md bg-gray-800 py-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                 x-cloak>
+                                <a href="{{ url_for('analytics') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                                <a href="{{ url_for('commands_analytics') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Commands</a>
+                                <a href="{{ url_for('ai_analytics') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">AI Usage</a>
+                                <a href="{{ url_for('community_analytics') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Community</a>
+                                <a href="{{ url_for('moderation_analytics') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Moderation</a>
+                            </div>
+                        </div>
+                        
+                        <a href="{{ url_for('ai_generator') }}" 
+                           class="px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center"
+                           data-tippy-content="AI Generator">
+                            <i class="bi bi-cpu mr-1.5"></i> AI
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('minecraft_servers') }}">Servers</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('whitelist') }}">Whitelist</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('console') }}">Console</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('plugins') }}">Plugins &amp; Mods</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-twitch"></i> Twitch
+                        
+                        <a href="{{ url_for('documentation_index') }}" 
+                           class="px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center"
+                           data-tippy-content="Documentation">
+                            <i class="bi bi-book mr-1.5"></i> Docs
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('twitch_integration') }}">Integration</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('points_settings') }}">Points &amp; Rewards</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-graph-up"></i> Analytics
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('analytics') }}">Dashboard</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('commands_analytics') }}">Commands</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('ai_analytics') }}">AI Usage</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('community_analytics') }}">Community</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('moderation_analytics') }}">Moderation</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('ai_generator') }}"><i class="bi bi-cpu"></i> AI Generator</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('documentation_index') }}"><i class="bi bi-book"></i> Docs</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('feedback') }}"><i class="bi bi-chat-dots"></i> Feedback</a>
-                    </li>
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ url_for('account_settings') }}"><i class="bi bi-person"></i> Profile</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('api_settings') }}"><i class="bi bi-key"></i> API Keys</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('system_settings') }}"><i class="bi bi-gear"></i> Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Log Out</a></li>
-                        </ul>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('register') }}"><i class="bi bi-person-plus"></i> Register</a>
-                    </li>
+                    </div>
+                </div>
+                
+                <!-- Secondary Navigation Items -->
+                <div class="hidden md:flex items-center">
+                    <!-- Premium badge/indicator (if premium user) -->
+                    {% if current_user.is_authenticated and current_user.is_premium %}
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-400 to-yellow-500 text-black mr-4 shadow-lg animate-pulse-subtle">
+                        Premium
+                    </span>
                     {% endif %}
-                </ul>
+                    
+                    <!-- Feedback link -->
+                    <a href="{{ url_for('feedback') }}" 
+                       class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center mr-1"
+                       data-tippy-content="Send Feedback">
+                        <i class="bi bi-chat-dots mr-1.5"></i> Feedback
+                    </a>
+                    
+                    <!-- Theme toggle -->
+                    <button 
+                        id="theme-toggle" 
+                        class="relative inline-flex items-center p-2 rounded-full text-gray-400 hover:text-white focus:outline-none"
+                        data-tippy-content="Toggle Theme">
+                        <i class="bi bi-moon-stars text-lg theme-dark-icon"></i>
+                        <i class="bi bi-sun text-lg theme-light-icon hidden"></i>
+                        <span class="sr-only">Toggle theme</span>
+                    </button>
+                    
+                    <!-- User menu -->
+                    {% if current_user.is_authenticated %}
+                    <div class="relative ml-3" x-data="{ open: false }" @keydown.escape.window="open = false">
+                        <div>
+                            <button @click="open = !open" 
+                                    class="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-800" 
+                                    id="user-menu-button">
+                                <span class="sr-only">Open user menu</span>
+                                <div class="flex items-center py-2 pl-2 pr-4 rounded-full hover:bg-gray-700">
+                                    <i class="bi bi-person-circle text-xl mr-2"></i>
+                                    <span class="text-sm font-medium text-white">{{ current_user.username }}</span>
+                                    <i class="bi bi-chevron-down ml-1 text-xs"></i>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <!-- User dropdown menu, show/hide based on menu state -->
+                        <div x-show="open" 
+                             @click.away="open = false" 
+                             x-transition:enter="transition ease-out duration-100" 
+                             x-transition:enter-start="transform opacity-0 scale-95" 
+                             x-transition:enter-end="transform opacity-100 scale-100" 
+                             x-transition:leave="transition ease-in duration-75" 
+                             x-transition:leave-start="transform opacity-100 scale-100" 
+                             x-transition:leave-end="transform opacity-0 scale-95" 
+                             class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-gray-800 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" 
+                             x-cloak>
+                            <a href="{{ url_for('account_settings') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                                <i class="bi bi-person mr-2"></i> Profile
+                            </a>
+                            <a href="{{ url_for('api_settings') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                                <i class="bi bi-key mr-2"></i> API Keys
+                            </a>
+                            <a href="{{ url_for('system_settings') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                                <i class="bi bi-gear mr-2"></i> Settings
+                            </a>
+                            <div class="border-t border-gray-700 my-1"></div>
+                            <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-red-400">
+                                <i class="bi bi-box-arrow-right mr-2"></i> Log Out
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="flex space-x-2 ml-2">
+                        <a href="{{ url_for('login') }}" class="px-4 py-2 rounded-md text-sm font-medium text-white hover:bg-gray-700 flex items-center transition-colors duration-200">
+                            <i class="bi bi-box-arrow-in-right mr-1.5"></i> Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-light text-white flex items-center transition-colors duration-200 shadow">
+                            <i class="bi bi-person-plus mr-1.5"></i> Register
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="flex md:hidden">
+                    <button 
+                        @click="mobileMenuOpen = !mobileMenuOpen" 
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="h-6 w-6" x-show="!mobileMenuOpen" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
+                        <svg class="h-6 w-6" x-show="mobileMenuOpen" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-cloak>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu, show/hide based on menu state -->
+        <div x-show="mobileMenuOpen" class="md:hidden" x-cloak>
+            <div class="space-y-1 px-2 pb-3 pt-2">
+                <a href="{{ url_for('index') }}" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-gray-800">
+                    <i class="bi bi-house-fill mr-2"></i> Dashboard
+                </a>
+                
+                <div x-data="{ open: false }">
+                    <button @click="open = !open" class="w-full text-left flex justify-between items-center px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span><i class="bi bi-discord mr-2"></i> Discord</span>
+                        <i class="bi" :class="open ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </button>
+                    <div x-show="open" class="pl-4 space-y-1" x-collapse>
+                        <a href="{{ url_for('bot_settings') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Bot Settings</a>
+                        <a href="{{ url_for('commands_dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Commands</a>
+                        <a href="{{ url_for('permissions') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Permissions</a>
+                        <a href="{{ url_for('discord_analytics') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Analytics</a>
+                    </div>
+                </div>
+                
+                <div x-data="{ open: false }">
+                    <button @click="open = !open" class="w-full text-left flex justify-between items-center px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span><i class="bi bi-box mr-2"></i> Minecraft</span>
+                        <i class="bi" :class="open ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </button>
+                    <div x-show="open" class="pl-4 space-y-1" x-collapse>
+                        <a href="{{ url_for('minecraft_servers') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Servers</a>
+                        <a href="{{ url_for('whitelist') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Whitelist</a>
+                        <a href="{{ url_for('console') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Console</a>
+                        <a href="{{ url_for('plugins') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Plugins &amp; Mods</a>
+                    </div>
+                </div>
+                
+                <a href="{{ url_for('ai_generator') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                    <i class="bi bi-cpu mr-2"></i> AI Generator
+                </a>
+                
+                <a href="{{ url_for('documentation_index') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                    <i class="bi bi-book mr-2"></i> Documentation
+                </a>
+                
+                <a href="{{ url_for('feedback') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                    <i class="bi bi-chat-dots mr-2"></i> Feedback
+                </a>
+                
+                <div class="border-t border-gray-700 pt-2 mt-3">
+                    {% if current_user.is_authenticated %}
+                    <div class="px-2 pb-1">
+                        <p class="text-xs text-gray-500">Signed in as <span class="text-white font-medium">{{ current_user.username }}</span></p>
+                    </div>
+                    <a href="{{ url_for('account_settings') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <i class="bi bi-person mr-2"></i> Profile
+                    </a>
+                    <a href="{{ url_for('api_settings') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <i class="bi bi-key mr-2"></i> API Keys
+                    </a>
+                    <a href="{{ url_for('system_settings') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <i class="bi bi-gear mr-2"></i> Settings
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="block px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-gray-700">
+                        <i class="bi bi-box-arrow-right mr-2"></i> Log Out
+                    </a>
+                    {% else %}
+                    <div class="space-y-2 px-2 pt-2">
+                        <a href="{{ url_for('login') }}" class="block w-full px-3 py-2 rounded-md text-center font-medium text-white bg-gray-700 hover:bg-gray-600">
+                            <i class="bi bi-box-arrow-in-right mr-2"></i> Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="block w-full px-3 py-2 rounded-md text-center font-medium text-white bg-primary hover:bg-primary-light">
+                            <i class="bi bi-person-plus mr-2"></i> Register
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <!-- Flash messages with modern styling and animations -->
+        <div id="flash-messages" class="space-y-3 mb-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% set alert_bg = {
+                            'success': 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+                            'info': 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200',
+                            'warning': 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200',
+                            'danger': 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+                            'primary': 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200',
+                            'secondary': 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200'
+                        } %}
+                        {% set alert_icon = {
+                            'success': 'bi-check-circle-fill',
+                            'info': 'bi-info-circle-fill',
+                            'warning': 'bi-exclamation-triangle-fill',
+                            'danger': 'bi-x-circle-fill',
+                            'primary': 'bi-bell-fill',
+                            'secondary': 'bi-lightbulb-fill'
+                        } %}
+                        <div class="animate-slide-up rounded-lg border px-4 py-3 {{ alert_bg.get(category, alert_bg['info']) }}" role="alert">
+                            <div class="flex items-center">
+                                <i class="bi {{ alert_icon.get(category, alert_icon['info']) }} mr-3 text-lg"></i>
+                                <div class="flex-1">{{ message }}</div>
+                                <button type="button" class="ml-auto focus:outline-none" 
+                                        onclick="this.parentElement.parentElement.remove();">
+                                    <i class="bi bi-x text-lg"></i>
+                                    <span class="sr-only">Close</span>
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
 
-        {% block content %}{% endblock %}
+        <!-- Main content container with animations -->
+        <div class="animate-fade-in" style="animation-delay: 100ms;">
+            {% block content %}{% endblock %}
+        </div>
     </div>
 
-    <footer class="footer mt-5 py-3 bg-dark text-white">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4">
-                    <h5>AstroBot AI</h5>
-                    <p>Advanced Discord bot for Minecraft modding, server management, and community engagement with cutting-edge AI integration.</p>
+    <footer class="mt-5 py-6 bg-gray-900 text-white" x-data="{ showNewsletter: false }">
+        <div class="container px-4 mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+                <!-- Brand column -->
+                <div class="md:col-span-4 animate-fade-in">
+                    <div class="flex items-center mb-4">
+                        <img src="{{ url_for('static', filename='img/astrobot-logo.svg') }}" alt="AstroBot Logo" class="h-8 mr-3">
+                        <h4 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-light to-primary">AstroBot AI</h4>
+                    </div>
+                    <p class="text-gray-300 mb-4">Advanced Discord bot for Minecraft modding, server management, and community engagement with cutting-edge AI integration.</p>
+                    <div class="flex space-x-3 mt-4">
+                        <a href="#" class="transition-transform hover:scale-110 text-gray-400 hover:text-primary">
+                            <i class="fab fa-discord text-xl"></i>
+                        </a>
+                        <a href="#" class="transition-transform hover:scale-110 text-gray-400 hover:text-primary">
+                            <i class="fab fa-github text-xl"></i>
+                        </a>
+                        <a href="#" class="transition-transform hover:scale-110 text-gray-400 hover:text-primary">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="transition-transform hover:scale-110 text-gray-400 hover:text-primary">
+                            <i class="fab fa-youtube text-xl"></i>
+                        </a>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <h5>Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="{{ url_for('documentation_index') }}" class="text-white">Documentation</a></li>
-                        <li><a href="{{ url_for('feedback') }}" class="text-white">Feedback</a></li>
-                        <li><a href="#" class="text-white">Support</a></li>
-                        <li><a href="#" class="text-white">GitHub</a></li>
+                
+                <!-- Links column -->
+                <div class="md:col-span-3 animate-fade-in" style="animation-delay: 100ms;">
+                    <h5 class="text-lg font-semibold mb-4">Resources</h5>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="{{ url_for('documentation_index') }}" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                                <i class="bi bi-book mr-2"></i> Documentation
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('feedback') }}" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                                <i class="bi bi-chat-dots mr-2"></i> Feedback
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                                <i class="bi bi-question-circle mr-2"></i> Support
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                                <i class="bi bi-github mr-2"></i> GitHub
+                            </a>
+                        </li>
                     </ul>
                 </div>
-                <div class="col-md-4">
-                    <h5>Contact</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="https://discord.gg/astrobot" class="text-white"><i class="bi bi-discord"></i> Join our Discord</a></li>
-                        <li><a href="mailto:support@astrobotai.com" class="text-white"><i class="bi bi-envelope"></i> support@astrobotai.com</a></li>
+                
+                <!-- Contact column -->
+                <div class="md:col-span-3 animate-fade-in" style="animation-delay: 200ms;">
+                    <h5 class="text-lg font-semibold mb-4">Contact</h5>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="https://discord.gg/astrobot" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                                <i class="bi bi-discord mr-2"></i> Join our Discord
+                            </a>
+                        </li>
+                        <li>
+                            <a href="mailto:support@astrobotai.com" class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center">
+                                <i class="bi bi-envelope mr-2"></i> support@astrobotai.com
+                            </a>
+                        </li>
                     </ul>
+                </div>
+                
+                <!-- Newsletter column -->
+                <div class="md:col-span-2 animate-fade-in" style="animation-delay: 300ms;">
+                    <h5 class="text-lg font-semibold mb-4">Stay Updated</h5>
+                    <button 
+                        @click="showNewsletter = true" 
+                        class="py-2 px-4 bg-primary hover:bg-primary-light text-white rounded-md transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg flex items-center"
+                    >
+                        <i class="bi bi-envelope-check mr-2"></i> Subscribe
+                    </button>
+                    
+                    <!-- Newsletter modal -->
+                    <div x-cloak x-show="showNewsletter" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" @click.self="showNewsletter = false">
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full transform transition-all" x-show="showNewsletter" x-transition>
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-xl font-bold text-white">Join our newsletter</h4>
+                                <button @click="showNewsletter = false" class="text-gray-400 hover:text-white">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <p class="text-gray-300 mb-4">Get updates on new features, tutorials, and community events.</p>
+                            <form class="space-y-4">
+                                <div>
+                                    <label for="email" class="sr-only">Email</label>
+                                    <input type="email" id="email" class="form-input" placeholder="Your email address">
+                                </div>
+                                <button type="button" class="w-full btn-primary">
+                                    Subscribe
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <hr>
-            <div class="text-center">
-                <p>&copy; 2025 AstroBot AI. All rights reserved.</p>
+            
+            <hr class="my-6 border-gray-800">
+            
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm">
+                    &copy; 2025 AstroBot AI. All rights reserved.
+                </p>
+                <div class="flex space-x-4 mt-4 md:mt-0">
+                    <a href="#" class="text-xs text-gray-500 hover:text-gray-300">Privacy Policy</a>
+                    <a href="#" class="text-xs text-gray-500 hover:text-gray-300">Terms of Service</a>
+                    <a href="#" class="text-xs text-gray-500 hover:text-gray-300">Cookie Policy</a>
+                </div>
             </div>
         </div>
     </footer>
@@ -174,8 +500,17 @@
     <!-- Core libraries -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
+    <!-- Alpine.js for reactive UI -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    
+    <!-- HTMX for dynamic HTML without writing JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.11/dist/htmx.min.js"></script>
+    
     <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- ApexCharts for advanced charts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
     <!-- GSAP for advanced animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -183,11 +518,38 @@
     <!-- Socket.IO for real-time communication -->
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
     
+    <!-- Tippy.js for tooltips -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    
+    <!-- Swiper for modern carousels -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    
     <!-- Our utility library with helpers for the advanced libraries -->
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
     
+    <!-- Theme transitions library -->
+    <script src="{{ url_for('static', filename='js/theme-transitions.js') }}"></script>
+    
+    <!-- Theme toggle functionality -->
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
+    
     <!-- Main application JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize tooltips for any element with data-tippy-content
+            tippy('[data-tippy-content]');
+            
+            // Initialize Alpine.js components if needed
+            // This code runs after Alpine has initialized
+            document.addEventListener('alpine:initialized', () => {
+                console.log('Alpine.js initialized');
+            });
+        });
+    </script>
     
     <!-- Custom page scripts -->
     {% block scripts %}{% endblock %}
