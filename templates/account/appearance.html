@@ -18,15 +18,15 @@
         </div>
         
         <!-- Theme Settings -->
-        <div class="px-6 py-5 space-y-6" x-data="themeManager">
+        <div class="px-6 py-5 space-y-6" x-data>
             <div>
                 <h3 class="text-md font-medium text-gray-900 dark:text-white mb-3">Display Mode</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Light Theme -->
-                    <div @click="setPremiumTheme('light')" 
+                    <div @click="$store.theme.set('light')" 
                          class="cursor-pointer relative rounded-lg border-2 p-4 flex items-center space-x-4"
-                         :class="theme === 'light' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                         :class="$store.theme.current === 'light' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         <div class="flex-shrink-0 h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center">
                             <i class="bi bi-sun text-2xl text-yellow-500"></i>
                         </div>
@@ -38,15 +38,15 @@
                                 Classic light appearance
                             </p>
                         </div>
-                        <div x-show="theme === 'light'" class="flex-shrink-0 text-primary-500 dark:text-primary-400">
+                        <div x-show="$store.theme.current === 'light'" class="flex-shrink-0 text-primary-500 dark:text-primary-400">
                             <i class="bi bi-check-circle-fill text-xl"></i>
                         </div>
                     </div>
                     
                     <!-- Dark Theme -->
-                    <div @click="setPremiumTheme('dark')" 
+                    <div @click="$store.theme.set('dark')" 
                          class="cursor-pointer relative rounded-lg border-2 p-4 flex items-center space-x-4"
-                         :class="theme === 'dark' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                         :class="$store.theme.current === 'dark' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         <div class="flex-shrink-0 h-12 w-12 rounded-md bg-gray-800 flex items-center justify-center">
                             <i class="bi bi-moon-stars text-2xl text-indigo-300"></i>
                         </div>
@@ -58,7 +58,7 @@
                                 Easier on the eyes in low light
                             </p>
                         </div>
-                        <div x-show="theme === 'dark'" class="flex-shrink-0 text-primary-500 dark:text-primary-400">
+                        <div x-show="$store.theme.current === 'dark'" class="flex-shrink-0 text-primary-500 dark:text-primary-400">
                             <i class="bi bi-check-circle-fill text-xl"></i>
                         </div>
                     </div>
@@ -82,9 +82,9 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <!-- Space Theme -->
-                    <div @click="{% if current_user.is_premium %}setPremiumTheme('space'){% else %}window.location.href='{{ url_for('premium_plans') }}'{% endif %}" 
+                    <div @click="{% if current_user.is_premium %}$store.theme.set('space'){% else %}window.location.href='{{ url_for('premium_plans') }}'{% endif %}" 
                          class="cursor-pointer relative rounded-lg border-2 p-4 flex flex-col space-y-3"
-                         :class="theme === 'space' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                         :class="$store.theme.current === 'space' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         <div class="flex-shrink-0 h-24 w-full rounded-md bg-gradient-to-r from-indigo-800 to-purple-900 flex items-center justify-center overflow-hidden">
                             <div class="relative w-full h-full">
                                 <div class="absolute inset-0 opacity-50">
@@ -101,7 +101,7 @@
                         <div>
                             <p class="text-sm font-medium text-gray-900 dark:text-white flex justify-between">
                                 <span>Space Theme</span>
-                                <span x-show="theme === 'space'" class="text-primary-500 dark:text-primary-400">
+                                <span x-show="$store.theme.current === 'space'" class="text-primary-500 dark:text-primary-400">
                                     <i class="bi bi-check-circle-fill"></i>
                                 </span>
                             </p>
@@ -119,9 +119,9 @@
                     </div>
                     
                     <!-- Neon Theme -->
-                    <div @click="{% if current_user.is_premium %}setPremiumTheme('neon'){% else %}window.location.href='{{ url_for('premium_plans') }}'{% endif %}" 
+                    <div @click="{% if current_user.is_premium %}$store.theme.set('neon'){% else %}window.location.href='{{ url_for('premium_plans') }}'{% endif %}" 
                          class="cursor-pointer relative rounded-lg border-2 p-4 flex flex-col space-y-3"
-                         :class="theme === 'neon' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                         :class="$store.theme.current === 'neon' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         <div class="flex-shrink-0 h-24 w-full rounded-md bg-black flex items-center justify-center overflow-hidden">
                             <div class="relative w-full h-full">
                                 <div class="absolute inset-0">
@@ -138,7 +138,7 @@
                         <div>
                             <p class="text-sm font-medium text-gray-900 dark:text-white flex justify-between">
                                 <span>Neon Theme</span>
-                                <span x-show="theme === 'neon'" class="text-primary-500 dark:text-primary-400">
+                                <span x-show="$store.theme.current === 'neon'" class="text-primary-500 dark:text-primary-400">
                                     <i class="bi bi-check-circle-fill"></i>
                                 </span>
                             </p>
@@ -156,9 +156,9 @@
                     </div>
                     
                     <!-- High Contrast Theme -->
-                    <div @click="{% if current_user.is_premium %}setPremiumTheme('contrast'){% else %}window.location.href='{{ url_for('premium_plans') }}'{% endif %}" 
+                    <div @click="{% if current_user.is_premium %}$store.theme.set('contrast'){% else %}window.location.href='{{ url_for('premium_plans') }}'{% endif %}" 
                          class="cursor-pointer relative rounded-lg border-2 p-4 flex flex-col space-y-3"
-                         :class="theme === 'contrast' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                         :class="$store.theme.current === 'contrast' ? 'border-primary-500 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         <div class="flex-shrink-0 h-24 w-full rounded-md bg-black flex items-center justify-center overflow-hidden">
                             <div class="relative w-full h-full">
                                 <div class="absolute inset-0">
@@ -172,7 +172,7 @@
                         <div>
                             <p class="text-sm font-medium text-gray-900 dark:text-white flex justify-between">
                                 <span>High Contrast</span>
-                                <span x-show="theme === 'contrast'" class="text-primary-500 dark:text-primary-400">
+                                <span x-show="$store.theme.current === 'contrast'" class="text-primary-500 dark:text-primary-400">
                                     <i class="bi bi-check-circle-fill"></i>
                                 </span>
                             </p>

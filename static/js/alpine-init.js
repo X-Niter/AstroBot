@@ -43,6 +43,8 @@ document.addEventListener('alpine:init', () => {
     // Setup collapse plugin if available
     if (typeof Alpine.plugin === 'function' && typeof Alpine.collapse === 'object') {
         Alpine.plugin(Alpine.collapse);
+    } else {
+        console.log('Alpine collapse plugin not available - using auto import');
     }
     
     // Create a global store for application state
