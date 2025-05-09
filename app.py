@@ -78,7 +78,7 @@ except Exception as e:
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html', title="AstroBot Dashboard")
+    return render_template('index.html', title="Dashboard")
 
 @app.route('/api/status')
 def api_status():
@@ -90,6 +90,67 @@ def api_status():
         "api_version": "1.0.0",
         "server_time": datetime.datetime.now().isoformat()
     })
+
+# Minecraft management routes
+@app.route('/minecraft/servers')
+def minecraft_servers():
+    return render_template('minecraft/servers.html', title="Minecraft Servers")
+
+@app.route('/minecraft/whitelist')
+def whitelist():
+    return render_template('minecraft/whitelist.html', title="Whitelist Manager")
+
+@app.route('/minecraft/console')
+def console():
+    return render_template('minecraft/console.html', title="Console Commands")
+
+@app.route('/minecraft/plugins')
+def plugins():
+    return render_template('minecraft/plugins.html', title="Plugins & Mods")
+
+# Discord bot management routes
+@app.route('/discord/settings')
+def bot_settings():
+    return render_template('discord/settings.html', title="Bot Settings")
+
+@app.route('/discord/commands')
+def commands_dashboard():
+    return render_template('discord/commands.html', title="Commands")
+
+@app.route('/discord/permissions')
+def permissions():
+    return render_template('discord/permissions.html', title="Permissions")
+
+@app.route('/discord/analytics')
+def analytics():
+    return render_template('discord/analytics.html', title="Bot Analytics")
+
+# Twitch StreamSync routes
+@app.route('/twitch/integration')
+def twitch_integration():
+    return render_template('twitch/integration.html', title="Twitch Integration")
+
+@app.route('/twitch/points')
+def points_settings():
+    return render_template('twitch/points.html', title="Points & Rewards")
+
+# AI generation routes
+@app.route('/mods/ai-generator')
+def ai_generator():
+    return render_template('mods/ai_generator.html', title="AI Generation")
+
+# Settings routes
+@app.route('/settings/api-keys')
+def api_settings():
+    return render_template('settings/api_keys.html', title="API Keys")
+
+@app.route('/settings/system')
+def system_settings():
+    return render_template('settings/system.html', title="System Settings")
+
+@app.route('/settings/logs')
+def logs():
+    return render_template('settings/logs.html', title="System Logs")
 
 @app.route('/api/stats')
 def get_stats():

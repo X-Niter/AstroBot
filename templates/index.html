@@ -1,146 +1,305 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block extra_head %}
-<style>
-    .stat-card {
-        border-radius: 10px;
-        border: 1px solid #2a2a2a;
-        background-color: #1a1a1a;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-    .stat-icon {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
-    }
-    .bot-features {
-        background-color: #1a1a1a;
-        border-radius: 10px;
-        border: 1px solid #2a2a2a;
-        padding: 20px;
-    }
-    .feature-icon {
-        font-size: 1.5rem;
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        margin-right: 15px;
-    }
-    .ai-icon { background-color: rgba(0, 208, 255, 0.2); color: #00d0ff; }
-    .minecraft-icon { background-color: rgba(79, 206, 106, 0.2); color: #4fce6a; }
-    .twitch-icon { background-color: rgba(145, 70, 255, 0.2); color: #9146ff; }
-    .community-icon { background-color: rgba(50, 115, 220, 0.2); color: #3273dc; }
-</style>
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="jumbotron p-4 bg-dark border border-secondary rounded-3">
-            <h1 class="display-4">AstroBot Dashboard</h1>
-            <p class="lead">Monitor your Discord bot's activity and community engagement</p>
-            <hr class="my-4 border-secondary">
-            <p>This dashboard provides insights into your AstroBot Discord bot, showing community stats, mod reviews, and more.</p>
-            <a class="btn btn-primary" href="https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands" target="_blank">
-                <i class="fab fa-discord me-2"></i> Add Bot to Server
-            </a>
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <h1 class="fs-2 mb-4">
+                <i class="fas fa-tachometer-alt me-2"></i> AstroBot Dashboard
+            </h1>
+            <p class="text-muted">
+                Manage your Minecraft servers, Discord bot, and Twitch integration from a single dashboard.
+            </p>
         </div>
     </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-3 mb-3">
-        <div class="stat-card p-3 text-center h-100">
-            <div class="stat-icon text-primary">
-                <i class="fas fa-users"></i>
+    
+    <!-- Status Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stat-card stat-discord">
+                <div class="card-body">
+                    <div class="stat-icon">
+                        <i class="fab fa-discord"></i>
+                    </div>
+                    <div class="stat-value" id="discordServers">0</div>
+                    <div class="stat-label">Discord Servers</div>
+                </div>
             </div>
-            <h3 class="stat-value" id="user-count">-</h3>
-            <p class="stat-label text-muted">Community Members</p>
         </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card p-3 text-center h-100">
-            <div class="stat-icon text-success">
-                <i class="fas fa-star"></i>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stat-card stat-minecraft">
+                <div class="card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="stat-value" id="minecraftServers">0</div>
+                    <div class="stat-label">Minecraft Servers</div>
+                </div>
             </div>
-            <h3 class="stat-value" id="review-count">-</h3>
-            <p class="stat-label text-muted">Mod Reviews</p>
         </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card p-3 text-center h-100">
-            <div class="stat-icon text-warning">
-                <i class="fas fa-lightbulb"></i>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stat-card stat-twitch">
+                <div class="card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value" id="userCount">0</div>
+                    <div class="stat-label">Users</div>
+                </div>
             </div>
-            <h3 class="stat-value" id="suggestion-count">-</h3>
-            <p class="stat-label text-muted">Mod Suggestions</p>
         </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card p-3 text-center h-100">
-            <div class="stat-icon text-info">
-                <i class="fas fa-trophy"></i>
-            </div>
-            <h3 class="stat-value" id="top-score">-</h3>
-            <p class="stat-label text-muted">Top User Points</p>
-        </div>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-8 mb-3">
-        <h4 class="mb-3"><i class="fas fa-robot me-2"></i>Bot Features</h4>
-        <div class="bot-features">
-            <div class="d-flex mb-3 align-items-center">
-                <div class="feature-icon ai-icon">
-                    <i class="fas fa-brain"></i>
-                </div>
-                <div>
-                    <h5>AI Assistance</h5>
-                    <p class="mb-0">Get coding help, mod ideas, and tutorials powered by GPT-4o and Claude 3.5</p>
-                </div>
-            </div>
-            <div class="d-flex mb-3 align-items-center">
-                <div class="feature-icon minecraft-icon">
-                    <i class="fas fa-cube"></i>
-                </div>
-                <div>
-                    <h5>Minecraft Server Management</h5>
-                    <p class="mb-0">Monitor server status, manage whitelist, and execute commands remotely</p>
-                </div>
-            </div>
-            <div class="d-flex mb-3 align-items-center">
-                <div class="feature-icon twitch-icon">
-                    <i class="fab fa-twitch"></i>
-                </div>
-                <div>
-                    <h5>StreamSync Integration</h5>
-                    <p class="mb-0">Track Twitch streams, clips, and manage community support points</p>
-                </div>
-            </div>
-            <div class="d-flex align-items-center">
-                <div class="feature-icon community-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div>
-                    <h5>Community Tools</h5>
-                    <p class="mb-0">Share and discover mod reviews, suggestions, and community content</p>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stat-card stat-ai">
+                <div class="card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="stat-value" id="aiRequests">0</div>
+                    <div class="stat-label">AI Requests</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <h4 class="mb-3"><i class="fas fa-award me-2"></i>Top Contributors</h4>
-        <div class="list-group" id="top-users">
-            <div class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
-                <span>Loading...</span>
-                <span class="badge bg-primary rounded-pill">-</span>
+    
+    <div class="row">
+        <!-- Minecraft Servers Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-server me-2"></i> Minecraft Servers
+                    </h5>
+                    <a href="{{ url_for('minecraft_servers') }}" class="btn btn-sm btn-minecraft">
+                        <i class="fas fa-cog"></i> Manage
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="server-list" id="serverList">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-secondary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Loading server status...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Discord Bot Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fab fa-discord me-2"></i> Discord Bot
+                    </h5>
+                    <a href="{{ url_for('bot_settings') }}" class="btn btn-sm btn-discord">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3 text-center">
+                                    <i class="fas fa-server fa-2x text-muted"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Connected Servers</h6>
+                                    <p class="mb-0 fs-5 fw-bold" id="connectedServers">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3 text-center">
+                                    <i class="fas fa-terminal fa-2x text-muted"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Commands Used</h6>
+                                    <p class="mb-0 fs-5 fw-bold" id="commandsUsed">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3 text-center">
+                                    <i class="fas fa-heart fa-2x text-muted"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Uptime</h6>
+                                    <p class="mb-0 fs-5 fw-bold" id="botUptime">0h 0m</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3 text-center">
+                                    <i class="fas fa-memory fa-2x text-muted"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Memory Usage</h6>
+                                    <p class="mb-0 fs-5 fw-bold" id="memoryUsage">0 MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Community Stats -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i> Community Stats
+                    </h5>
+                    <a href="{{ url_for('analytics') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-chart-bar"></i> Full Analytics
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3 text-center">
+                                    <i class="fas fa-star fa-2x text-warning"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Mod Reviews</h6>
+                                    <p class="mb-0 fs-5 fw-bold" id="reviewCount">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3 text-center">
+                                    <i class="fas fa-lightbulb fa-2x text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Mod Suggestions</h6>
+                                    <p class="mb-0 fs-5 fw-bold" id="suggestionCount">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Users Leaderboard -->
+                    <h5 class="mb-3">Top Contributors</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>User</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topUsersList">
+                                <tr>
+                                    <td colspan="3" class="text-center">Loading users...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i> Recent Activity
+                    </h5>
+                    <a href="{{ url_for('logs') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-list"></i> View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="activity-list list-group list-group-flush" id="activityList">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-secondary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Loading activity feed...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Status -->
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-heartbeat me-2"></i> System Status
+                    </h5>
+                    <a href="{{ url_for('system_settings') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-wrench"></i> System Settings
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="system-status-card">
+                                <h6 class="mb-1">Web Dashboard</h6>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-indicator status-online me-2">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <span class="text-success">Online</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="system-status-card">
+                                <h6 class="mb-1">Discord Bot</h6>
+                                <div class="d-flex align-items-center" id="discordBotStatus">
+                                    <div class="status-indicator me-2">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <span id="discordBotStatusText">Checking...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="system-status-card">
+                                <h6 class="mb-1">Database</h6>
+                                <div class="d-flex align-items-center" id="databaseStatus">
+                                    <div class="status-indicator me-2">
+                                        <i class="fas fa-database"></i>
+                                    </div>
+                                    <span id="databaseStatusText">Checking...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="system-status-card">
+                                <h6 class="mb-1">Twitch Integration</h6>
+                                <div class="d-flex align-items-center" id="twitchStatus">
+                                    <div class="status-indicator me-2">
+                                        <i class="fab fa-twitch"></i>
+                                    </div>
+                                    <span id="twitchStatusText">Checking...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -149,55 +308,251 @@
 
 {% block extra_scripts %}
 <script>
-    // Fetch stats from the API
-    async function fetchStats() {
-        try {
-            const response = await fetch('/api/stats');
-            if (!response.ok) {
-                throw new Error('Failed to fetch stats');
-            }
-            const data = await response.json();
-            
-            // Update the stats
-            document.getElementById('user-count').textContent = data.user_count;
-            document.getElementById('review-count').textContent = data.review_count;
-            document.getElementById('suggestion-count').textContent = data.suggestion_count;
-            
-            // Update top score if there are any users
-            if (data.top_users && data.top_users.length > 0) {
-                document.getElementById('top-score').textContent = data.top_users[0].points;
-            } else {
-                document.getElementById('top-score').textContent = '0';
-            }
-            
-            // Update top users list
-            const topUsersList = document.getElementById('top-users');
-            topUsersList.innerHTML = '';
-            
-            if (data.top_users && data.top_users.length > 0) {
-                data.top_users.forEach((user, index) => {
-                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-                    
-                    const listItem = document.createElement('div');
-                    listItem.className = 'list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center';
-                    listItem.innerHTML = `
-                        <span>${medal} User ${user.discord_id.substring(0, 5)}...</span>
-                        <span class="badge bg-primary rounded-pill">${user.points} pts</span>
-                    `;
-                    topUsersList.appendChild(listItem);
-                });
-            } else {
-                const listItem = document.createElement('div');
-                listItem.className = 'list-group-item bg-dark text-light border-secondary';
-                listItem.textContent = 'No users found';
-                topUsersList.appendChild(listItem);
-            }
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-        }
+    // Load statistics from API
+    function loadStats() {
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('userCount').textContent = formatNumber(data.user_count);
+                document.getElementById('reviewCount').textContent = formatNumber(data.review_count);
+                document.getElementById('suggestionCount').textContent = formatNumber(data.suggestion_count);
+                
+                // Update database status
+                const dbStatus = document.getElementById('databaseStatus');
+                const dbStatusText = document.getElementById('databaseStatusText');
+                
+                if (data.connection_status === "connected") {
+                    dbStatus.querySelector('.status-indicator').classList.add('status-online');
+                    dbStatus.querySelector('.status-indicator').classList.remove('status-offline');
+                    dbStatusText.textContent = "Connected";
+                    dbStatusText.className = "text-success";
+                } else {
+                    dbStatus.querySelector('.status-indicator').classList.add('status-offline');
+                    dbStatus.querySelector('.status-indicator').classList.remove('status-online');
+                    dbStatusText.textContent = "Disconnected";
+                    dbStatusText.className = "text-danger";
+                }
+                
+                // Update top users
+                const topUsersList = document.getElementById('topUsersList');
+                topUsersList.innerHTML = '';
+                
+                if (data.top_users.length === 0) {
+                    topUsersList.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No users found</td></tr>`;
+                } else {
+                    data.top_users.forEach((user, index) => {
+                        topUsersList.innerHTML += `
+                            <tr>
+                                <td>#${index + 1}</td>
+                                <td><i class="fab fa-discord text-muted me-2"></i>${user.discord_id}</td>
+                                <td>${formatNumber(user.points)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading stats:', error);
+                // Display error message
+                document.getElementById('userCount').textContent = '0';
+                document.getElementById('reviewCount').textContent = '0';
+                document.getElementById('suggestionCount').textContent = '0';
+                
+                // Set database status to offline
+                const dbStatus = document.getElementById('databaseStatus');
+                const dbStatusText = document.getElementById('databaseStatusText');
+                dbStatus.querySelector('.status-indicator').classList.add('status-offline');
+                dbStatus.querySelector('.status-indicator').classList.remove('status-online');
+                dbStatusText.textContent = "Disconnected";
+                dbStatusText.className = "text-danger";
+                
+                // Update top users with error message
+                document.getElementById('topUsersList').innerHTML = `
+                    <tr><td colspan="3" class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Error loading user data
+                    </td></tr>
+                `;
+            });
     }
     
-    // Fetch stats when the page loads
-    document.addEventListener('DOMContentLoaded', fetchStats);
+    // Get system status
+    function loadSystemStatus() {
+        fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                // Update Discord Bot Status
+                const discordBotStatus = document.getElementById('discordBotStatus');
+                const discordBotStatusText = document.getElementById('discordBotStatusText');
+                
+                if (data.bot_running) {
+                    discordBotStatus.querySelector('.status-indicator').classList.add('status-online');
+                    discordBotStatus.querySelector('.status-indicator').classList.remove('status-offline');
+                    discordBotStatusText.textContent = "Online";
+                    discordBotStatusText.className = "text-success";
+                } else {
+                    discordBotStatus.querySelector('.status-indicator').classList.add('status-offline');
+                    discordBotStatus.querySelector('.status-indicator').classList.remove('status-online');
+                    discordBotStatusText.textContent = "Offline";
+                    discordBotStatusText.className = "text-danger";
+                }
+                
+                // Update Twitch Status - This is a placeholder, would need real API
+                const twitchStatus = document.getElementById('twitchStatus');
+                const twitchStatusText = document.getElementById('twitchStatusText');
+                
+                // For demo purposes - would normally check actual Twitch API connection
+                twitchStatus.querySelector('.status-indicator').classList.add('status-online');
+                twitchStatus.querySelector('.status-indicator').classList.remove('status-offline');
+                twitchStatusText.textContent = "Connected";
+                twitchStatusText.className = "text-success";
+            })
+            .catch(error => {
+                console.error('Error loading system status:', error);
+                
+                // Set all statuses to offline
+                const discordBotStatus = document.getElementById('discordBotStatus');
+                const discordBotStatusText = document.getElementById('discordBotStatusText');
+                discordBotStatus.querySelector('.status-indicator').classList.add('status-offline');
+                discordBotStatus.querySelector('.status-indicator').classList.remove('status-online');
+                discordBotStatusText.textContent = "Offline";
+                discordBotStatusText.className = "text-danger";
+                
+                const twitchStatus = document.getElementById('twitchStatus');
+                const twitchStatusText = document.getElementById('twitchStatusText');
+                twitchStatus.querySelector('.status-indicator').classList.add('status-offline');
+                twitchStatus.querySelector('.status-indicator').classList.remove('status-online');
+                twitchStatusText.textContent = "Disconnected";
+                twitchStatusText.className = "text-danger";
+            });
+    }
+    
+    // Load Minecraft Servers (placeholder)
+    function loadMinecraftServers() {
+        // This would normally come from an API endpoint
+        const serverList = document.getElementById('serverList');
+        
+        // Display placeholder data
+        serverList.innerHTML = `
+            <div class="list-group list-group-flush">
+                <div class="list-group-item bg-transparent text-light border-secondary server-card server-status-online">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Survival Server</h5>
+                            <p class="mb-1 text-muted">play.example.com</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="status-indicator status-online mb-1">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="text-success">Online</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="badge bg-secondary">Players: 0/24</span>
+                        <a href="{{ url_for('console') }}" class="btn btn-sm btn-outline-light">Console</a>
+                    </div>
+                </div>
+                <div class="list-group-item bg-transparent text-light border-secondary server-card server-status-offline">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Creative Server</h5>
+                            <p class="mb-1 text-muted">creative.example.com</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="status-indicator status-offline mb-1">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="text-danger">Offline</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="badge bg-secondary">Players: 0/0</span>
+                        <button class="btn btn-sm btn-success">Start Server</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Update the server count stat
+        document.getElementById('minecraftServers').textContent = "2";
+    }
+    
+    // Load Discord Stats
+    function loadDiscordStats() {
+        // This would normally come from an API endpoint
+        document.getElementById('discordServers').textContent = "1";
+        document.getElementById('connectedServers').textContent = "1";
+        document.getElementById('commandsUsed').textContent = "56";
+        document.getElementById('botUptime').textContent = "48h 12m";
+        document.getElementById('memoryUsage').textContent = "128 MB";
+        document.getElementById('aiRequests').textContent = "25";
+    }
+    
+    // Load Activity Feed
+    function loadActivityFeed() {
+        // This would normally come from an API endpoint
+        const activityList = document.getElementById('activityList');
+        
+        // Display placeholder data
+        activityList.innerHTML = `
+            <div class="list-group-item bg-transparent text-light border-secondary d-flex align-items-start">
+                <div class="me-3">
+                    <i class="fas fa-code-branch text-success"></i>
+                </div>
+                <div>
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">Bot updated to v1.0.0</h6>
+                        <small class="text-muted">Just now</small>
+                    </div>
+                    <p class="mb-1 text-muted">System updated the bot to version 1.0.0</p>
+                </div>
+            </div>
+            <div class="list-group-item bg-transparent text-light border-secondary d-flex align-items-start">
+                <div class="me-3">
+                    <i class="fas fa-user-plus text-info"></i>
+                </div>
+                <div>
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">New user joined</h6>
+                        <small class="text-muted">2 hours ago</small>
+                    </div>
+                    <p class="mb-1 text-muted">User12345 has joined the Discord server</p>
+                </div>
+            </div>
+            <div class="list-group-item bg-transparent text-light border-secondary d-flex align-items-start">
+                <div class="me-3">
+                    <i class="fas fa-server text-warning"></i>
+                </div>
+                <div>
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">Minecraft server restarted</h6>
+                        <small class="text-muted">5 hours ago</small>
+                    </div>
+                    <p class="mb-1 text-muted">Survival server was automatically restarted</p>
+                </div>
+            </div>
+            <div class="list-group-item bg-transparent text-light border-secondary d-flex align-items-start">
+                <div class="me-3">
+                    <i class="fas fa-robot text-primary"></i>
+                </div>
+                <div>
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">AI command requested</h6>
+                        <small class="text-muted">1 day ago</small>
+                    </div>
+                    <p class="mb-1 text-muted">User generated a Minecraft mod idea with AI</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Run all data loading functions
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStats();
+        loadSystemStatus();
+        loadMinecraftServers();
+        loadDiscordStats();
+        loadActivityFeed();
+    });
 </script>
 {% endblock %}
