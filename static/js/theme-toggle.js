@@ -1,101 +1,143 @@
 /**
- * Theme Toggle Module
- * Handles theme switching between light and dark modes
- * Works with premium themes as well
+ * Enhanced Theme Toggle System
+ * Provides smooth transitions between themes and saves user preferences
  */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Get references to elements
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    const lightIcon = document.querySelector('.theme-light-icon');
-    const darkIcon = document.querySelector('.theme-dark-icon');
+document.addEventListener('DOMContentLoaded', () => {
+    // Get theme preference from data attribute or localStorage
+    const savedTheme = localStorage.getItem('theme-preference') || 
+                      document.body.getAttribute('data-theme') || 
+                      'dark';
     
-    if (!themeToggleBtn) return;
-
-    // Initialize icons based on current theme
-    const currentTheme = document.body.dataset.theme || 'dark';
-    updateThemeIcons(currentTheme);
+    // Apply the saved theme immediately on page load
+    applyTheme(savedTheme);
     
-    // Add click event listener to toggle button
-    themeToggleBtn.addEventListener('click', function() {
-        const currentTheme = document.body.dataset.theme || 'dark';
-        const isLightTheme = currentTheme === 'light';
-        
-        // Determine new theme
-        let newTheme;
-        if (isLightTheme) {
-            // Switch to dark or last used dark theme
-            const lastDarkTheme = localStorage.getItem('last_dark_theme') || 'dark';
-            newTheme = lastDarkTheme;
-        } else {
-            // Store current dark theme before switching to light
-            if (currentTheme !== 'light') {
-                localStorage.setItem('last_dark_theme', currentTheme);
+    // Set up event listeners for theme toggle buttons
+    const themeToggles = document.querySelectorAll('[data-theme-toggle]');
+    
+    themeToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            // Apply the new theme with transition
+            applyThemeWithTransition(newTheme);
+            
+            // Save the preference to localStorage
+            localStorage.setItem('theme-preference', newTheme);
+            
+            // Update the data attribute for consistency
+            document.body.setAttribute('data-theme', newTheme);
+            
+            // For logged-in users, save the preference to the server
+            if (document.body.getAttribute('data-user-authenticated') === 'true') {
+                saveThemePreference(newTheme);
             }
-            newTheme = 'light';
-        }
-        
-        // Use the updateThemeWithAnimations function for a smooth transition
-        if (window.updateThemeWithAnimations) {
-            window.updateThemeWithAnimations(newTheme);
-        } else {
-            window.updateTheme(newTheme);
-        }
-        
-        // Update theme icons
-        updateThemeIcons(newTheme);
-        
-        // Send theme preference to server if user is logged in
-        if (document.body.dataset.userAuthenticated === 'true') {
-            sendThemePreference(newTheme);
-        }
+        });
     });
     
-    /**
-     * Updates the visibility of theme icons based on current theme
-     * @param {string} theme - The current theme name
-     */
-    function updateThemeIcons(theme) {
-        if (theme === 'light') {
-            darkIcon.classList.add('hidden');
-            lightIcon.classList.remove('hidden');
-        } else {
-            lightIcon.classList.add('hidden');
-            darkIcon.classList.remove('hidden');
-        }
-    }
+    // Handle premium theme selection
+    const themeSelectors = document.querySelectorAll('[data-theme-select]');
     
-    /**
-     * Sends the user's theme preference to the server
-     * @param {string} theme - The theme preference to save
-     */
-    function sendThemePreference(theme) {
-        fetch('/update_theme_preference', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCSRFToken()
-            },
-            body: JSON.stringify({ theme: theme })
-        })
-        .then(response => {
-            if (!response.ok) {
-                console.error('Failed to save theme preference');
+    themeSelectors.forEach(selector => {
+        selector.addEventListener('click', function() {
+            const selectedTheme = this.getAttribute('data-theme-value');
+            
+            // Apply the new theme with transition
+            applyThemeWithTransition(selectedTheme);
+            
+            // Save the preference to localStorage
+            localStorage.setItem('theme-preference', selectedTheme);
+            
+            // Update the data attribute for consistency
+            document.body.setAttribute('data-theme', selectedTheme);
+            
+            // For logged-in users, save the preference to the server
+            if (document.body.getAttribute('data-user-authenticated') === 'true') {
+                saveThemePreference(selectedTheme);
             }
-        })
-        .catch(error => {
-            console.error('Error saving theme preference:', error);
         });
-    }
+    });
 });
 
-// Add shortcut keys for theme toggling (Alt+T)
-document.addEventListener('keydown', function(event) {
-    // Alt+T for theme toggle
-    if (event.altKey && event.key === 't') {
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        if (themeToggleBtn) {
-            themeToggleBtn.click();
-        }
+/**
+ * Apply a theme to the document body without transition
+ * @param {string} theme - The theme to apply
+ */
+function applyTheme(theme) {
+    // Remove any existing theme classes
+    document.body.classList.remove('light', 'dark', 'theme-space', 'theme-neon', 'theme-contrast');
+    
+    // Apply the new theme class
+    if (theme === 'light') {
+        document.body.classList.add('light');
+    } else if (theme.startsWith('theme-')) {
+        document.body.classList.add('dark');
+        document.body.classList.add(theme);
+    } else {
+        document.body.classList.add('dark');
     }
-});
+    
+    // Update theme icons visibility
+    updateThemeIcons(theme);
+}
+
+/**
+ * Apply a theme with a smooth transition effect
+ * @param {string} theme - The theme to apply
+ */
+function applyThemeWithTransition(theme) {
+    // Add transition class
+    document.body.classList.add('theme-transition');
+    
+    // Apply the theme
+    applyTheme(theme);
+    
+    // Remove transition class after transition completes
+    setTimeout(() => {
+        document.body.classList.remove('theme-transition');
+    }, 500);
+}
+
+/**
+ * Update theme toggle icons visibility based on current theme
+ * @param {string} theme - The current theme
+ */
+function updateThemeIcons(theme) {
+    const sunIcons = document.querySelectorAll('.theme-icon-sun');
+    const moonIcons = document.querySelectorAll('.theme-icon-moon');
+    
+    if (theme === 'light') {
+        sunIcons.forEach(icon => icon.classList.add('hidden'));
+        moonIcons.forEach(icon => icon.classList.remove('hidden'));
+    } else {
+        sunIcons.forEach(icon => icon.classList.remove('hidden'));
+        moonIcons.forEach(icon => icon.classList.add('hidden'));
+    }
+}
+
+/**
+ * Save theme preference to server via AJAX
+ * @param {string} theme - The theme preference to save
+ */
+function saveThemePreference(theme) {
+    fetch('/update_theme_preference', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ theme_preference: theme })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Theme preference saved successfully');
+        } else {
+            console.error('Failed to save theme preference');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving theme preference:', error);
+    });
+}

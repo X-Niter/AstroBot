@@ -19,11 +19,7 @@
     <!-- Tailwind and Custom Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
-    {% if current_user.is_authenticated and current_user.theme_preference in ['space', 'neon', 'contrast'] %}
-    <!-- Premium themes for authenticated users -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/' + current_user.theme_preference + '.css') }}">
-    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes.css') }}">
     
     <!-- Swiper Carousel -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">

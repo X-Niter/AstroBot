@@ -1,343 +1,362 @@
 /**
- * AstroBot AI - Utility Functions
- * Contains shared functionality for Chart.js, Socket.IO, and GSAP animations
+ * AstroBot Utilities
+ * Collection of helper functions for the AstroBot web dashboard
  */
 
-// -----------------------------
-// Chart.js Utilities
-// -----------------------------
+// Create global namespace for our utilities
+window.AstroBotUtils = window.AstroBotUtils || {};
 
 /**
- * Creates and returns a Chart.js configuration with AstroBot theme styling
- * @param {string} type - Chart type (line, bar, doughnut, etc.)
- * @param {Object} data - Chart data object with labels and datasets
- * @param {Object} options - Additional chart options
- * @returns {Object} Chart.js configuration object
+ * Socket.IO utilities for real-time communication
  */
-function createChartConfig(type, data, options = {}) {
-  // Default theme colors that match our application themes
-  const defaultColors = {
-    light: {
-      primary: '#007bff',
-      secondary: '#6c757d',
-      success: '#28a745',
-      danger: '#dc3545',
-      background: '#ffffff',
-      text: '#212529'
-    },
-    dark: {
-      primary: '#375a7f',
-      secondary: '#444444',
-      success: '#00bc8c',
-      danger: '#e74c3c',
-      background: '#222222',
-      text: '#ffffff'
-    },
-    space: {
-      primary: '#6f42c1',
-      secondary: '#20c997',
-      success: '#17a2b8',
-      danger: '#fd7e14',
-      background: '#121212',
-      text: '#e1e1e1'
-    },
-    neon: {
-      primary: '#ff00ff',
-      secondary: '#00ffff',
-      success: '#00ff00',
-      danger: '#ff0000',
-      background: '#1e1e24',
-      text: '#ffffff'
-    },
-    contrast: {
-      primary: '#ffcc00',
-      secondary: '#ffffff',
-      success: '#00ff00',
-      danger: '#ff0000',
-      background: '#000000',
-      text: '#ffffff'
-    }
-  };
-
-  // Get current theme
-  const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
-  const colors = defaultColors[currentTheme];
-
-  // Apply theme-specific styling to chart
-  const themeOptions = {
-    color: colors.text,
-    backgroundColor: colors.background,
-    borderColor: colors.primary,
-    plugins: {
-      legend: {
-        labels: {
-          color: colors.text
-        }
-      },
-      tooltip: {
-        backgroundColor: colors.background,
-        titleColor: colors.text,
-        bodyColor: colors.text,
-        borderColor: colors.primary,
-        borderWidth: 1
-      }
-    },
-    scales: {
-      x: {
-        grid: {
-          color: colors.text + '22' // Add transparency
-        },
-        ticks: {
-          color: colors.text
-        }
-      },
-      y: {
-        grid: {
-          color: colors.text + '22' // Add transparency
-        },
-        ticks: {
-          color: colors.text
-        }
-      }
-    }
-  };
-
-  // Merge default options with user options
-  const mergedOptions = {...themeOptions, ...options};
-
-  return {
-    type,
-    data,
-    options: mergedOptions
-  };
-}
-
-/**
- * Creates a responsive Chart.js chart that adapts to theme changes
- * @param {string} canvasId - HTML canvas element ID
- * @param {string} type - Chart type (line, bar, doughnut, etc.)
- * @param {Object} data - Chart data object with labels and datasets
- * @param {Object} options - Additional chart options
- * @returns {Chart} The created Chart.js instance
- */
-function createResponsiveChart(canvasId, type, data, options = {}) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) {
-    console.error(`Canvas element with ID "${canvasId}" not found`);
-    return null;
-  }
-
-  const config = createChartConfig(type, data, options);
-  const chart = new Chart(canvas, config);
-
-  // Update chart when theme changes
-  document.addEventListener('theme-changed', () => {
-    chart.destroy();
-    const newConfig = createChartConfig(type, data, options);
-    new Chart(canvas, newConfig);
-  });
-
-  return chart;
-}
-
-// -----------------------------
-// Socket.IO Utilities
-// -----------------------------
-
-/**
- * Creates and configures a Socket.IO connection
- * @param {string} namespace - Optional Socket.IO namespace
- * @returns {Socket} Configured Socket.IO connection
- */
-function createSocketConnection(namespace = '') {
-  const socket = io(namespace, {
-    transports: ['websocket'],
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000
-  });
-
-  socket.on('connect', () => {
-    console.log('Socket.IO connected!');
-    // Dispatch event that components can listen for
-    document.dispatchEvent(new CustomEvent('socket-connected'));
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Socket.IO disconnected');
-    document.dispatchEvent(new CustomEvent('socket-disconnected'));
-  });
-
-  socket.on('connect_error', (err) => {
-    console.error('Socket.IO connection error:', err);
-  });
-
-  return socket;
-}
-
-/**
- * Utility function to create event listeners for Socket.IO events
- * @param {Socket} socket - Socket.IO connection
- * @param {Object} eventHandlers - Map of event names to handler functions
- */
-function setupSocketEventHandlers(socket, eventHandlers) {
-  if (!socket) {
-    console.error('Socket connection is required');
-    return;
-  }
-
-  // Register all event handlers
-  Object.entries(eventHandlers).forEach(([event, handler]) => {
-    socket.on(event, handler);
-  });
-
-  // Return an unsubscribe function
-  return function unsubscribe() {
-    Object.keys(eventHandlers).forEach(event => {
-      socket.off(event);
-    });
-  };
-}
-
-// -----------------------------
-// GSAP Animation Utilities
-// -----------------------------
-
-/**
- * Creates a staggered entrance animation for multiple elements
- * @param {string} selector - CSS selector for target elements
- * @param {Object} options - Animation options
- */
-function animateEntrance(selector, options = {}) {
-  const defaults = {
-    y: 20,
-    opacity: 0,
-    duration: 0.5,
-    stagger: 0.1,
-    ease: 'power2.out',
-    delay: 0.2
-  };
-
-  const config = {...defaults, ...options};
-  
-  return gsap.from(selector, config);
-}
-
-/**
- * Animates transitions between pages or sections
- * @param {string} outSelector - Elements to animate out
- * @param {string} inSelector - Elements to animate in
- * @param {Function} callback - Function to call after out animation completes
- */
-function animatePageTransition(outSelector, inSelector, callback) {
-  // Timeline for sequence control
-  const tl = gsap.timeline();
-  
-  // Animate out current elements
-  tl.to(outSelector, {
-    opacity: 0,
-    y: -20,
-    duration: 0.3,
-    stagger: 0.05,
-    ease: 'power1.in'
-  });
-  
-  // Execute callback (like loading new content)
-  tl.call(() => {
-    if (typeof callback === 'function') {
-      callback();
-    }
-  });
-  
-  // Animate in new elements
-  tl.from(inSelector, {
-    opacity: 0,
-    y: 20,
-    duration: 0.4,
-    stagger: 0.1,
-    ease: 'power2.out'
-  });
-  
-  return tl;
-}
-
-/**
- * Adds hover animation effects to elements
- * @param {string} selector - CSS selector for elements
- * @param {Object} hoverOptions - GSAP options for hover state
- */
-function addHoverEffects(selector, hoverOptions = {}) {
-  const elements = document.querySelectorAll(selector);
-  
-  const defaults = {
-    scale: 1.05,
-    duration: 0.3,
-    ease: 'power1.out'
-  };
-  
-  const config = {...defaults, ...hoverOptions};
-  
-  elements.forEach(element => {
-    element.addEventListener('mouseenter', () => {
-      gsap.to(element, config);
-    });
-    
-    element.addEventListener('mouseleave', () => {
-      gsap.to(element, {
-        scale: 1,
-        duration: config.duration,
-        ease: config.ease
-      });
-    });
-  });
-}
-
-/**
- * Creates a notification animation
- * @param {HTMLElement} element - Element to animate
- * @param {Object} options - Animation options
- */
-function animateNotification(element, options = {}) {
-  const defaults = {
-    y: -20,
-    opacity: 1,
-    duration: 0.5,
-    ease: 'elastic.out(1, 0.5)',
-    onComplete: () => {
-      setTimeout(() => {
-        gsap.to(element, {
-          opacity: 0,
-          y: -10,
-          duration: 0.3,
-          ease: 'power3.in',
-          onComplete: () => element.remove()
+AstroBotUtils.socket = {
+    /**
+     * Create a socket connection
+     * @returns {Socket} Socket.IO connection
+     */
+    createSocketConnection: function() {
+        // Create socket connection with auto-reconnect
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000
         });
-      }, 3000);
+        
+        // Setup default event handlers
+        socket.on('connect', function() {
+            console.log('Socket connected');
+            
+            // Add connected class to body for styling
+            document.body.classList.add('socket-connected');
+            
+            // Show connection indicator if it exists
+            const indicator = document.getElementById('connection-indicator');
+            if (indicator) {
+                indicator.classList.remove('bg-danger');
+                indicator.classList.add('bg-success');
+                indicator.setAttribute('data-tippy-content', 'Connected to server');
+            }
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('Socket disconnected');
+            
+            // Remove connected class from body
+            document.body.classList.remove('socket-connected');
+            
+            // Update connection indicator
+            const indicator = document.getElementById('connection-indicator');
+            if (indicator) {
+                indicator.classList.remove('bg-success');
+                indicator.classList.add('bg-danger');
+                indicator.setAttribute('data-tippy-content', 'Disconnected from server');
+            }
+        });
+        
+        socket.on('error', function(error) {
+            console.error('Socket error:', error);
+        });
+        
+        return socket;
+    },
+    
+    /**
+     * Setup event handlers for socket events
+     * @param {Socket} socket - Socket.IO connection
+     * @param {Object} handlers - Event handlers mapping
+     */
+    setupSocketEventHandlers: function(socket, handlers) {
+        if (!socket) return;
+        
+        // Register all provided event handlers
+        for (const event in handlers) {
+            if (handlers.hasOwnProperty(event)) {
+                socket.on(event, handlers[event]);
+            }
+        }
     }
-  };
-  
-  const config = {...defaults, ...options};
-  
-  return gsap.fromTo(element, 
-    { y: 0, opacity: 0 },
-    config
-  );
-}
+};
 
-// Export utilities
-window.AstroBotUtils = {
-  charts: {
-    createChartConfig,
-    createResponsiveChart
-  },
-  socket: {
-    createSocketConnection,
-    setupSocketEventHandlers
-  },
-  animation: {
-    animateEntrance,
-    animatePageTransition,
-    addHoverEffects,
-    animateNotification
-  }
+/**
+ * Chart utilities for data visualization
+ */
+AstroBotUtils.charts = {
+    /**
+     * Create a responsive Chart.js chart
+     * @param {string} selector - CSS selector for canvas element
+     * @param {string} type - Chart type (line, bar, pie, etc.)
+     * @param {Object} data - Chart data
+     * @param {Object} options - Chart options
+     * @returns {Chart} Chart.js instance
+     */
+    createChart: function(selector, type, data, options = {}) {
+        const ctx = document.querySelector(selector);
+        if (!ctx) return null;
+        
+        // Set default options for all charts
+        const defaultOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text-color')
+                    }
+                },
+                tooltip: {
+                    backgroundColor: getComputedStyle(document.body).getPropertyValue('--card-bg'),
+                    titleColor: getComputedStyle(document.body).getPropertyValue('--text-color'),
+                    bodyColor: getComputedStyle(document.body).getPropertyValue('--text-color'),
+                    borderColor: getComputedStyle(document.body).getPropertyValue('--border-color'),
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: getComputedStyle(document.body).getPropertyValue('--border-color')
+                    },
+                    ticks: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text-color')
+                    }
+                },
+                y: {
+                    grid: {
+                        color: getComputedStyle(document.body).getPropertyValue('--border-color')
+                    },
+                    ticks: {
+                        color: getComputedStyle(document.body).getPropertyValue('--text-color')
+                    }
+                }
+            }
+        };
+        
+        // Merge options
+        const mergedOptions = { ...defaultOptions, ...options };
+        
+        // Create and return the chart
+        return new Chart(ctx, {
+            type: type,
+            data: data,
+            options: mergedOptions
+        });
+    },
+    
+    /**
+     * Update chart theme based on current app theme
+     * @param {Chart} chart - Chart.js instance to update
+     */
+    updateChartTheme: function(chart) {
+        if (!chart) return;
+        
+        // Get current theme colors
+        const textColor = getComputedStyle(document.body).getPropertyValue('--text-color');
+        const borderColor = getComputedStyle(document.body).getPropertyValue('--border-color');
+        const cardBg = getComputedStyle(document.body).getPropertyValue('--card-bg');
+        
+        // Update legend colors
+        chart.options.plugins.legend.labels.color = textColor;
+        
+        // Update tooltip colors
+        chart.options.plugins.tooltip.backgroundColor = cardBg;
+        chart.options.plugins.tooltip.titleColor = textColor;
+        chart.options.plugins.tooltip.bodyColor = textColor;
+        chart.options.plugins.tooltip.borderColor = borderColor;
+        
+        // Update axis colors
+        if (chart.options.scales) {
+            if (chart.options.scales.x) {
+                chart.options.scales.x.grid.color = borderColor;
+                chart.options.scales.x.ticks.color = textColor;
+            }
+            if (chart.options.scales.y) {
+                chart.options.scales.y.grid.color = borderColor;
+                chart.options.scales.y.ticks.color = textColor;
+            }
+        }
+        
+        // Apply the updates
+        chart.update();
+    }
+};
+
+/**
+ * UI utilities for animations and effects
+ */
+AstroBotUtils.ui = {
+    /**
+     * Animate element with GSAP
+     * @param {string} selector - CSS selector for target element
+     * @param {Object} properties - Animation properties
+     * @param {Object} options - Animation options
+     * @returns {gsap.timeline} GSAP animation timeline
+     */
+    animate: function(selector, properties, options = {}) {
+        return gsap.to(selector, {
+            ...properties,
+            ...options
+        });
+    },
+    
+    /**
+     * Create a staggered animation for multiple elements
+     * @param {string} selector - CSS selector for target elements
+     * @param {Object} properties - Animation properties
+     * @param {number} stagger - Stagger amount in seconds
+     * @param {Object} options - Animation options
+     * @returns {gsap.timeline} GSAP animation timeline
+     */
+    staggerAnimate: function(selector, properties, stagger = 0.1, options = {}) {
+        return gsap.to(selector, {
+            ...properties,
+            stagger: stagger,
+            ...options
+        });
+    },
+    
+    /**
+     * Create a typing effect with GSAP
+     * @param {string} selector - CSS selector for target element
+     * @param {string} text - Text to type
+     * @param {number} speed - Typing speed (chars per second)
+     * @returns {gsap.timeline} GSAP animation timeline
+     */
+    typeText: function(selector, text, speed = 30) {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        
+        // Clear the element
+        element.textContent = '';
+        
+        // Create a timeline
+        const tl = gsap.timeline();
+        
+        // Split the text into characters
+        const chars = text.split('');
+        
+        // Type each character
+        chars.forEach((char, index) => {
+            tl.add(() => {
+                element.textContent += char;
+            }, index / speed);
+        });
+        
+        return tl;
+    }
+};
+
+/**
+ * Form utilities for validation and submission
+ */
+AstroBotUtils.forms = {
+    /**
+     * Initialize form validation
+     * @param {string} formSelector - CSS selector for the form
+     * @param {Function} submitCallback - Function to call on successful submission
+     */
+    initFormValidation: function(formSelector, submitCallback) {
+        const form = document.querySelector(formSelector);
+        if (!form) return;
+        
+        form.addEventListener('submit', function(event) {
+            // Stop form from submitting normally
+            event.preventDefault();
+            
+            // Check form validity
+            if (form.checkValidity()) {
+                // If valid, call the callback with form data
+                const formData = new FormData(form);
+                submitCallback(formData, form);
+            } else {
+                // If invalid, trigger validation UI
+                form.classList.add('was-validated');
+            }
+        });
+    },
+    
+    /**
+     * Submit form data via AJAX
+     * @param {string} url - Endpoint URL
+     * @param {FormData} formData - Form data to submit
+     * @param {Function} successCallback - Function to call on successful submission
+     * @param {Function} errorCallback - Function to call on error
+     */
+    submitFormAjax: function(url, formData, successCallback, errorCallback) {
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (successCallback) successCallback(data);
+        })
+        .catch(error => {
+            if (errorCallback) errorCallback(error);
+        });
+    }
+};
+
+/**
+ * Session and authentication utilities
+ */
+AstroBotUtils.auth = {
+    /**
+     * Get the current user's information
+     * @returns {Object|null} User info or null if not authenticated
+     */
+    getCurrentUser: function() {
+        // Get user info from data attribute
+        const isAuthenticated = document.body.getAttribute('data-user-authenticated') === 'true';
+        if (!isAuthenticated) return null;
+        
+        // User is authenticated, build user info object
+        // In a real app, this might come from a script tag with JSON data
+        const userDataElement = document.getElementById('current-user-data');
+        if (userDataElement) {
+            try {
+                return JSON.parse(userDataElement.textContent);
+            } catch (e) {
+                console.error('Error parsing user data', e);
+                return { authenticated: true };
+            }
+        }
+        
+        return { authenticated: true };
+    },
+    
+    /**
+     * Check if the current user has a specific permission
+     * @param {string} permission - Permission to check
+     * @returns {boolean} Whether the user has the permission
+     */
+    hasPermission: function(permission) {
+        const user = this.getCurrentUser();
+        if (!user) return false;
+        
+        // Check user permissions
+        if (user.permissions && Array.isArray(user.permissions)) {
+            return user.permissions.includes(permission);
+        }
+        
+        return false;
+    },
+    
+    /**
+     * Check if the current user is premium
+     * @returns {boolean} Whether the user has premium status
+     */
+    isPremiumUser: function() {
+        const user = this.getCurrentUser();
+        return user && user.is_premium === true;
+    }
 };
