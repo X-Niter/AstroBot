@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Account Settings</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Account Settings</li>
+    </ol>
+    
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-user-cog me-1"></i>
+                    Profile Settings
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" value="{{ current_user.username }}" disabled>
+                            <div class="form-text text-muted">Username cannot be changed</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" value="{{ current_user.email }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="discord" class="form-label">Discord Account</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="discord" value="{{ current_user.discord_id }}" disabled>
+                                {% if current_user.discord_id %}
+                                <button class="btn btn-outline-primary" type="button">Unlink</button>
+                                {% else %}
+                                <a href="{{ url_for('link_discord') }}" class="btn btn-primary">Link Discord</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-lock me-1"></i>
+                    Security Settings
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="current-password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="current-password">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new-password">
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm-password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm-password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Change Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-gem me-1"></i>
+                    Premium Status
+                </div>
+                <div class="card-body">
+                    {% if current_user.is_premium %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Premium Active</strong>
+                        <p class="mt-2 mb-0">Since: {{ current_user.premium_since.strftime('%B %d, %Y') if current_user.premium_since else 'Unknown' }}</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('user_premium_features') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-cog me-1"></i> Manage Premium Features
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Standard Account</strong>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('premium_plans') }}" class="btn btn-primary">
+                            <i class="fas fa-gem me-1"></i> Upgrade to Premium
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-palette me-1"></i>
+                    Theme Settings
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Theme</label>
+                        <h5 id="current-theme-display" class="mb-3">
+                            {{ current_theme|capitalize }} Theme
+                        </h5>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Available Themes</label>
+                        <div class="row g-2">
+                            {% for theme in themes %}
+                            <div class="col-6">
+                                <div class="card h-100 theme-card {% if theme.id == current_theme %}border-primary{% endif %} {% if theme.premium and not current_user.is_premium %}theme-locked{% endif %}"
+                                     data-theme-id="{{ theme.id }}">
+                                    <div class="card-body py-2 px-3">
+                                        <h6 class="card-title d-flex align-items-center mb-1">
+                                            {{ theme.name }}
+                                            {% if theme.premium %}
+                                            <span class="ms-auto"><i class="fas fa-gem text-primary small"></i></span>
+                                            {% endif %}
+                                        </h6>
+                                        <p class="card-text small text-muted mb-0">{{ theme.description }}</p>
+                                    </div>
+                                    <div class="theme-preview {{ theme.id }}-preview"></div>
+                                    {% if theme.premium and not current_user.is_premium %}
+                                    <div class="theme-premium-overlay">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Premium</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .theme-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        overflow: hidden;
+    }
+    
+    .theme-card:hover:not(.theme-locked) {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .theme-preview {
+        height: 20px;
+    }
+    
+    .light-preview {
+        background: linear-gradient(to right, #f8f9fa, #e9ecef, #dee2e6);
+    }
+    
+    .dark-preview {
+        background: linear-gradient(to right, #212529, #343a40, #495057);
+    }
+    
+    .space-preview {
+        background: linear-gradient(to right, #0d1117, #161b22);
+        background-image: radial-gradient(white 1px, transparent 0);
+        background-size: 20px 20px;
+    }
+    
+    .neon-preview {
+        background: #151515;
+        background-image: linear-gradient(to right, transparent 50%, rgba(255, 0, 255, 0.2) 50%, transparent 100%),
+                      linear-gradient(to right, transparent 50%, rgba(0, 255, 255, 0.2) 50%, transparent 100%);
+    }
+    
+    .contrast-preview {
+        background: linear-gradient(to right, #000000, #ffffff);
+    }
+    
+    .theme-locked {
+        opacity: 0.7;
+        position: relative;
+    }
+    
+    .theme-premium-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .theme-premium-overlay i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Theme selection functionality
+        const themeCards = document.querySelectorAll('.theme-card:not(.theme-locked)');
+        
+        themeCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const themeId = this.dataset.themeId;
+                updateTheme(themeId);
+            });
+        });
+        
+        function updateTheme(theme) {
+            fetch('/api/update-theme', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ theme: theme })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update UI to show selected theme
+                    document.querySelectorAll('.theme-card').forEach(card => {
+                        card.classList.remove('border-primary');
+                    });
+                    
+                    const selectedCard = document.querySelector(`.theme-card[data-theme-id="${theme}"]`);
+                    if (selectedCard) {
+                        selectedCard.classList.add('border-primary');
+                    }
+                    
+                    // Update theme display name
+                    document.getElementById('current-theme-display').textContent = theme.charAt(0).toUpperCase() + theme.slice(1) + ' Theme';
+                    
+                    // Show success message
+                    alert('Theme updated successfully!');
+                    
+                    // Reload the page to apply the new theme
+                    window.location.reload();
+                } else {
+                    // Show error message
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+    });
+</script>
+{% endblock %}

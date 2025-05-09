@@ -6,10 +6,106 @@
     <title>{% block title %}AstroBot AI{% endblock %} - {{ title }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% if current_user.is_authenticated %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/' + current_user.theme_preference + '.css') }}">
+    {% else %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/light.css') }}">
+    {% endif %}
     {% block styles %}{% endblock %}
+    
+    <style>
+        /* Base Theme Variables */
+        :root {
+            --primary-bg: #ffffff;
+            --secondary-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --muted-text: #6c757d;
+            --border-color: #dee2e6;
+            --primary-color: #3453d1;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #0dcaf0;
+            --nav-bg: #212529;
+            --nav-text: #f8f9fa;
+            --footer-bg: #212529;
+            --footer-text: #f8f9fa;
+        }
+        
+        /* Theme-specific variables will be in their respective CSS files */
+        
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+        }
+        
+        .navbar {
+            background-color: var(--nav-bg) !important;
+        }
+        
+        .navbar-dark .navbar-nav .nav-link {
+            color: var(--nav-text);
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .card-header {
+            background-color: var(--secondary-bg);
+            border-color: var(--border-color);
+        }
+        
+        .text-muted {
+            color: var(--muted-text) !important;
+        }
+        
+        .footer {
+            background-color: var(--footer-bg) !important;
+            color: var(--footer-text);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-color);
+            filter: brightness(90%);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .border-primary {
+            border-color: var(--primary-color) !important;
+        }
+        
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+        
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+    </style>
 </head>
-<body>
+<body class="theme-{{ current_user.theme_preference if current_user.is_authenticated else 'light' }}"
+>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">

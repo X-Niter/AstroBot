@@ -3,6 +3,7 @@ import logging
 import threading
 from bot import setup_bot
 from app import app  # Import for gunicorn to work
+import routes  # Import the new routes
 
 # Configure logging
 logging.basicConfig(
