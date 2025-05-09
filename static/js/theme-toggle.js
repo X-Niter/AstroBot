@@ -1,143 +1,124 @@
 /**
- * Enhanced Theme Toggle System
- * Provides smooth transitions between themes and saves user preferences
+ * AstroBot AI - Theme Toggle Script
+ * 
+ * Manages the theme toggle button functionality.
+ * This script is a simpler version of the ThemeManager
+ * specifically for the toggle button in the navigation.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Get theme preference from data attribute or localStorage
-    const savedTheme = localStorage.getItem('theme-preference') || 
-                      document.body.getAttribute('data-theme') || 
-                      'dark';
+  const themeToggle = document.getElementById('theme-toggle');
+  const moonIcon = document.querySelector('.theme-dark-icon');
+  const sunIcon = document.querySelector('.theme-light-icon');
+  const htmlElement = document.documentElement;
+  
+  // Function to toggle between light and dark theme
+  function toggleTheme() {
+    // Check if we're in dark mode
+    const isDarkMode = htmlElement.classList.contains('dark');
     
-    // Apply the saved theme immediately on page load
-    applyTheme(savedTheme);
-    
-    // Set up event listeners for theme toggle buttons
-    const themeToggles = document.querySelectorAll('[data-theme-toggle]');
-    
-    themeToggles.forEach(toggle => {
-        toggle.addEventListener('click', function() {
-            const currentTheme = document.body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            // Apply the new theme with transition
-            applyThemeWithTransition(newTheme);
-            
-            // Save the preference to localStorage
-            localStorage.setItem('theme-preference', newTheme);
-            
-            // Update the data attribute for consistency
-            document.body.setAttribute('data-theme', newTheme);
-            
-            // For logged-in users, save the preference to the server
-            if (document.body.getAttribute('data-user-authenticated') === 'true') {
-                saveThemePreference(newTheme);
-            }
-        });
-    });
-    
-    // Handle premium theme selection
-    const themeSelectors = document.querySelectorAll('[data-theme-select]');
-    
-    themeSelectors.forEach(selector => {
-        selector.addEventListener('click', function() {
-            const selectedTheme = this.getAttribute('data-theme-value');
-            
-            // Apply the new theme with transition
-            applyThemeWithTransition(selectedTheme);
-            
-            // Save the preference to localStorage
-            localStorage.setItem('theme-preference', selectedTheme);
-            
-            // Update the data attribute for consistency
-            document.body.setAttribute('data-theme', selectedTheme);
-            
-            // For logged-in users, save the preference to the server
-            if (document.body.getAttribute('data-user-authenticated') === 'true') {
-                saveThemePreference(selectedTheme);
-            }
-        });
-    });
-});
-
-/**
- * Apply a theme to the document body without transition
- * @param {string} theme - The theme to apply
- */
-function applyTheme(theme) {
-    // Remove any existing theme classes
-    document.body.classList.remove('light', 'dark', 'theme-space', 'theme-neon', 'theme-contrast');
-    
-    // Apply the new theme class
-    if (theme === 'light') {
-        document.body.classList.add('light');
-    } else if (theme.startsWith('theme-')) {
-        document.body.classList.add('dark');
-        document.body.classList.add(theme);
-    } else {
-        document.body.classList.add('dark');
+    // If we're in dark mode, switch to light
+    if (isDarkMode) {
+      htmlElement.classList.remove('dark');
+      moonIcon.classList.add('hidden');
+      sunIcon.classList.remove('hidden');
+      localStorage.setItem('theme', 'light');
+      
+      // Remove any premium theme class if present
+      const themeClasses = Array.from(htmlElement.classList).filter(cls => cls.startsWith('theme-'));
+      themeClasses.forEach(cls => htmlElement.classList.remove(cls));
+      
+      // Update data attributes
+      document.body.setAttribute('data-theme', 'light');
+    }
+    // If we're in light mode, switch to dark
+    else {
+      htmlElement.classList.add('dark');
+      moonIcon.classList.remove('hidden');
+      sunIcon.classList.add('hidden');
+      localStorage.setItem('theme', 'dark');
+      
+      // Remove any premium theme class if present
+      const themeClasses = Array.from(htmlElement.classList).filter(cls => cls.startsWith('theme-'));
+      themeClasses.forEach(cls => htmlElement.classList.remove(cls));
+      
+      // Update data attributes
+      document.body.setAttribute('data-theme', 'dark');
     }
     
-    // Update theme icons visibility
-    updateThemeIcons(theme);
-}
-
-/**
- * Apply a theme with a smooth transition effect
- * @param {string} theme - The theme to apply
- */
-function applyThemeWithTransition(theme) {
-    // Add transition class
-    document.body.classList.add('theme-transition');
-    
-    // Apply the theme
-    applyTheme(theme);
-    
-    // Remove transition class after transition completes
-    setTimeout(() => {
+    // Dispatch custom event for other components to react
+    window.dispatchEvent(new CustomEvent('theme-changed', { 
+      detail: { 
+        theme: isDarkMode ? 'light' : 'dark',
+        isDark: !isDarkMode
+      } 
+    }));
+  }
+  
+  // Set up event listener for theme toggle click
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      // Apply transition class to body for smooth theme change
+      document.body.classList.add('theme-transition');
+      
+      // Toggle the theme
+      toggleTheme();
+      
+      // Remove transition class after transition completes
+      setTimeout(() => {
         document.body.classList.remove('theme-transition');
-    }, 500);
-}
-
-/**
- * Update theme toggle icons visibility based on current theme
- * @param {string} theme - The current theme
- */
-function updateThemeIcons(theme) {
-    const sunIcons = document.querySelectorAll('.theme-icon-sun');
-    const moonIcons = document.querySelectorAll('.theme-icon-moon');
-    
-    if (theme === 'light') {
-        sunIcons.forEach(icon => icon.classList.add('hidden'));
-        moonIcons.forEach(icon => icon.classList.remove('hidden'));
-    } else {
-        sunIcons.forEach(icon => icon.classList.remove('hidden'));
-        moonIcons.forEach(icon => icon.classList.add('hidden'));
-    }
-}
-
-/**
- * Save theme preference to server via AJAX
- * @param {string} theme - The theme preference to save
- */
-function saveThemePreference(theme) {
-    fetch('/update_theme_preference', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ theme_preference: theme })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('Theme preference saved successfully');
-        } else {
-            console.error('Failed to save theme preference');
-        }
-    })
-    .catch(error => {
-        console.error('Error saving theme preference:', error);
+      }, 400); // Duration should match CSS transition
     });
-}
+  }
+  
+  // Initialize theme based on stored preference or OS preference
+  function initializeTheme() {
+    const storedTheme = localStorage.getItem('theme');
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const currentTheme = storedTheme || (prefersDarkMode ? 'dark' : 'light');
+    
+    if (currentTheme === 'dark') {
+      htmlElement.classList.add('dark');
+      if (moonIcon && sunIcon) {
+        moonIcon.classList.remove('hidden');
+        sunIcon.classList.add('hidden');
+      }
+    } else {
+      htmlElement.classList.remove('dark');
+      if (moonIcon && sunIcon) {
+        moonIcon.classList.add('hidden');
+        sunIcon.classList.remove('hidden');
+      }
+    }
+    
+    // Check for premium themes
+    const premiumThemes = ['space', 'neon', 'contrast'];
+    if (premiumThemes.includes(currentTheme)) {
+      htmlElement.classList.add(`theme-${currentTheme}`);
+      htmlElement.classList.add('dark'); // Premium themes are dark by default
+    }
+  }
+  
+  // Initialize theme on page load
+  initializeTheme();
+  
+  // Listen for OS theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    const storedTheme = localStorage.getItem('theme');
+    if (!storedTheme) {
+      if (e.matches) {
+        htmlElement.classList.add('dark');
+        if (moonIcon && sunIcon) {
+          moonIcon.classList.remove('hidden');
+          sunIcon.classList.add('hidden');
+        }
+      } else {
+        htmlElement.classList.remove('dark');
+        if (moonIcon && sunIcon) {
+          moonIcon.classList.add('hidden');
+          sunIcon.classList.remove('hidden');
+        }
+      }
+    }
+  });
+});

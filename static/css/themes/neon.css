@@ -1,32 +1,34 @@
 /**
  * Neon Theme - Premium
- * A vibrant, cyberpunk-inspired interface with neon highlights
+ * A vibrant cyberpunk-inspired theme with glowing elements
  */
 
 :root.theme-neon,
 .theme-neon {
   --primary-color: #ff00cc;
   --primary-color-rgb: 255, 0, 204;
-  --primary-color-light: #ff33d6;
-  --primary-color-dark: #cc00a3;
+  --primary-color-light: #ff5ce0;
+  --primary-color-dark: #cc009e;
   
   --secondary-color: #00ffcc;
   --secondary-color-rgb: 0, 255, 204;
+  --secondary-color-light: #33ffe0;
+  --secondary-color-dark: #00ccaa;
   
   --accent-color: #3300ff;
-  --accent-color-light: #5533ff;
-  --accent-color-dark: #2700cc;
+  --accent-color-light: #673dff;
+  --accent-color-dark: #2600cc;
   
   /* Base UI colors */
-  --primary-bg: #000000;
-  --secondary-bg: #111111;
-  --card-bg: #1a1a1a;
-  --nav-bg: #000000;
-  --footer-bg: #000000;
+  --primary-bg: #0a0a0a;
+  --secondary-bg: #161616;
+  --card-bg: #1e1e1e;
+  --nav-bg: #0a0a0a;
+  --footer-bg: #0a0a0a;
   
   /* Text colors */
   --text-color: #ffffff;
-  --muted-text: #cccccc;
+  --muted-text: #b3b3b3;
   --heading-color: #ffffff;
   
   /* Border and shadow */
@@ -35,16 +37,10 @@
   --shadow-color: rgba(255, 0, 204, 0.3);
   
   /* Status colors */
-  --success-color: #00ff00;
-  --warning-color: #ffff00;
-  --danger-color: #ff3333;
-  --info-color: #00ffff;
-  
-  /* Custom neon theme highlights */
-  --neon-pink: #ff00cc;
-  --neon-blue: #0099ff;
-  --neon-green: #00ff99;
-  --neon-yellow: #ffff00;
+  --success-color: #00ff99;
+  --warning-color: #ffcc00;
+  --danger-color: #ff3300;
+  --info-color: #0099ff;
   
   /* Form elements */
   --input-bg: #222222;
@@ -60,303 +56,327 @@
   --button-secondary-text: #000000;
 }
 
-/* Background effect for neon theme */
+/* Neon text effect */
+.theme-neon h1,
+.theme-neon h2,
+.theme-neon h3,
+.theme-neon .display-text {
+  text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color), 0 0 30px var(--primary-color);
+  color: #fff;
+}
+
+/* Subtle background grid */
 .theme-neon body::before {
-  content: "";
+  content: '';
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: -1;
-  background: linear-gradient(135deg, #000000 0%, #150023 100%);
-  opacity: 1;
-  pointer-events: none;
-}
-
-/* Grid effect for neon theme */
-.theme-neon .grid-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
   background-image: 
-    linear-gradient(to right, rgba(255, 0, 204, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 255, 204, 0.1) 1px, transparent 1px);
+    linear-gradient(rgba(10, 10, 10, 0.7) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 10, 10, 0.7) 1px, transparent 1px);
   background-size: 20px 20px;
   opacity: 0.2;
-  z-index: -2;
   pointer-events: none;
 }
 
-/* Neon glow effects for elements */
-.theme-neon .btn-primary,
-.theme-neon a.btn-primary,
-.theme-neon .nav-link.active {
-  box-shadow: 0 0 10px var(--neon-pink), 0 0 20px rgba(255, 0, 204, 0.5);
-  text-shadow: 0 0 5px var(--neon-pink);
-  transition: all 0.3s ease;
-}
-
-.theme-neon .btn-primary:hover,
-.theme-neon a.btn-primary:hover {
-  box-shadow: 0 0 15px var(--neon-pink), 0 0 30px rgba(255, 0, 204, 0.7);
-}
-
-.theme-neon .btn-secondary,
-.theme-neon a.btn-secondary {
-  box-shadow: 0 0 10px var(--neon-green), 0 0 20px rgba(0, 255, 204, 0.5);
-  text-shadow: 0 0 5px var(--neon-green);
-}
-
-.theme-neon .btn-secondary:hover,
-.theme-neon a.btn-secondary:hover {
-  box-shadow: 0 0 15px var(--neon-green), 0 0 30px rgba(0, 255, 204, 0.7);
-}
-
-/* Card styling with neon effect */
+/* Card with neon glow */
 .theme-neon .card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 0 10px rgba(255, 0, 204, 0.2);
-  backdrop-filter: blur(10px);
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.15);
+  transition: all 0.3s ease;
 }
 
 .theme-neon .card:hover {
-  box-shadow: 0 0 15px rgba(255, 0, 204, 0.3), 0 0 30px rgba(255, 0, 204, 0.1);
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.4);
+  transform: translateY(-5px);
 }
 
 .theme-neon .card-header {
-  background-color: rgba(26, 26, 26, 0.8);
-  border-bottom: 1px solid var(--border-color);
+  background-color: #222;
+  border-bottom: 1px solid #333;
 }
 
-/* Heading with neon effect */
-.theme-neon h1, .theme-neon h2, .theme-neon h3 {
-  color: var(--text-color);
-  text-shadow: 0 0 5px var(--neon-pink), 0 0 10px rgba(255, 0, 204, 0.5);
+.theme-neon .card-footer {
+  background-color: #222;
+  border-top: 1px solid #333;
 }
 
-/* Form styling with neon accents */
-.theme-neon input.form-control,
-.theme-neon textarea.form-control,
-.theme-neon select.form-select {
-  background-color: var(--input-bg);
-  border: 1px solid var(--input-border);
-  color: var(--input-text);
+/* Neon buttons with glow effect */
+.theme-neon .btn-primary {
+  background: var(--primary-color);
+  border: none;
+  box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5);
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.theme-neon .btn-primary:hover,
+.theme-neon .btn-primary:focus {
+  background: var(--primary-color-light);
+  box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.8);
+  transform: translateY(-2px);
+}
+
+.theme-neon .btn-primary::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 40px;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(30deg);
+  transition: all 0.6s ease;
+  filter: blur(5px);
+}
+
+.theme-neon .btn-primary:hover::before {
+  left: 200%;
+}
+
+.theme-neon .btn-secondary {
+  background: var(--secondary-color);
+  color: #000;
+  border: none;
+  box-shadow: 0 0 10px rgba(var(--secondary-color-rgb), 0.5);
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.theme-neon .btn-secondary:hover,
+.theme-neon .btn-secondary:focus {
+  background: var(--secondary-color-light);
+  box-shadow: 0 0 20px rgba(var(--secondary-color-rgb), 0.8);
+  transform: translateY(-2px);
+}
+
+.theme-neon .btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 40px;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: rotate(30deg);
+  transition: all 0.6s ease;
+  filter: blur(5px);
+}
+
+.theme-neon .btn-secondary:hover::before {
+  left: 200%;
+}
+
+/* Glowing form elements */
+.theme-neon .form-control {
+  background-color: #222;
+  border: 1px solid #444;
+  color: #fff;
   transition: all 0.3s ease;
 }
 
-.theme-neon input.form-control:focus,
-.theme-neon textarea.form-control:focus,
-.theme-neon select.form-select:focus {
-  background-color: rgba(34, 34, 34, 0.9);
-  border-color: var(--neon-pink);
-  box-shadow: 0 0 0 0.25rem rgba(255, 0, 204, 0.25), 0 0 5px rgba(255, 0, 204, 0.5);
+.theme-neon .form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.25);
+  background-color: #2a2a2a;
 }
 
-.theme-neon input::placeholder,
-.theme-neon textarea::placeholder {
-  color: var(--input-placeholder);
+.theme-neon .form-control::placeholder {
+  color: #999;
 }
 
-/* Table styling with neon accents */
-.theme-neon .table {
-  color: var(--text-color);
-}
-
-.theme-neon .table-striped tbody tr:nth-of-type(odd) {
-  background-color: rgba(26, 26, 26, 0.4);
-}
-
-.theme-neon .table th,
-.theme-neon .table td {
-  border-color: var(--border-color);
-}
-
-.theme-neon .table thead th {
-  background-color: rgba(26, 26, 26, 0.8);
-  color: var(--heading-color);
-  text-shadow: 0 0 3px var(--neon-pink);
-}
-
-/* Navigation styling with neon effect */
+/* Navigation with hover effects */
 .theme-neon nav.navbar {
-  background-color: var(--nav-bg);
-  border-bottom: 1px solid var(--neon-pink);
-  box-shadow: 0 0 10px rgba(255, 0, 204, 0.3);
+  background-color: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid #333;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .theme-neon .nav-link {
-  color: var(--text-color);
+  color: #fff;
+  position: relative;
   transition: all 0.3s ease;
+}
+
+.theme-neon .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--primary-color);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px var(--primary-color);
+}
+
+.theme-neon .nav-link:hover::after,
+.theme-neon .nav-link.active::after {
+  width: 100%;
 }
 
 .theme-neon .nav-link:hover,
 .theme-neon .nav-link:focus {
-  color: var(--neon-pink);
-  text-shadow: 0 0 5px var(--neon-pink);
+  color: var(--primary-color);
 }
 
 .theme-neon .nav-link.active {
-  color: var(--neon-pink);
-  text-shadow: 0 0 5px var(--neon-pink);
-  position: relative;
+  color: var(--primary-color);
 }
 
-.theme-neon .nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: var(--neon-pink);
-  box-shadow: 0 0 8px var(--neon-pink);
+/* Table with neon accents */
+.theme-neon .table {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
 }
 
-/* Footer styling */
-.theme-neon footer {
-  background-color: var(--footer-bg);
-  border-top: 1px solid var(--neon-pink);
-  box-shadow: 0 0 10px rgba(255, 0, 204, 0.3);
+.theme-neon .table thead th {
+  background-color: #222;
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
 }
 
-/* Badge styling with neon glow */
-.theme-neon .badge.bg-primary {
-  background-color: var(--neon-pink) !important;
-  box-shadow: 0 0 8px rgba(255, 0, 204, 0.5);
-  text-shadow: 0 0 3px var(--neon-pink);
+.theme-neon .table tbody tr {
+  border-bottom: 1px solid #333;
+  transition: all 0.2s ease;
 }
 
-.theme-neon .badge.bg-secondary {
-  background-color: var(--neon-green) !important;
-  box-shadow: 0 0 8px rgba(0, 255, 204, 0.5);
-  text-shadow: 0 0 3px var(--neon-green);
+.theme-neon .table tbody tr:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
 }
 
-.theme-neon .badge.bg-success {
-  background-color: var(--success-color) !important;
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
-  text-shadow: 0 0 3px var(--success-color);
+/* Badge with neon glow */
+.theme-neon .badge {
+  background-color: var(--primary-color);
+  box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5);
 }
 
-.theme-neon .badge.bg-warning {
-  background-color: var(--warning-color) !important;
-  box-shadow: 0 0 8px rgba(255, 255, 0, 0.5);
-  text-shadow: 0 0 3px var(--warning-color);
+.theme-neon .badge-secondary {
+  background-color: var(--secondary-color);
+  color: #000;
+  box-shadow: 0 0 10px rgba(var(--secondary-color-rgb), 0.5);
 }
 
-.theme-neon .badge.bg-danger {
-  background-color: var(--danger-color) !important;
-  box-shadow: 0 0 8px rgba(255, 51, 51, 0.5);
-  text-shadow: 0 0 3px var(--danger-color);
+.theme-neon .badge-success {
+  background-color: var(--success-color);
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 255, 153, 0.5);
 }
 
-.theme-neon .badge.bg-info {
-  background-color: var(--info-color) !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-  text-shadow: 0 0 3px var(--info-color);
+.theme-neon .badge-warning {
+  background-color: var(--warning-color);
+  color: #000;
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
 }
 
-/* Modal styling with neon accents */
-.theme-neon .modal-content {
-  background-color: var(--card-bg);
-  border: 1px solid var(--neon-pink);
-  box-shadow: 0 0 20px rgba(255, 0, 204, 0.3);
+.theme-neon .badge-danger {
+  background-color: var(--danger-color);
+  box-shadow: 0 0 10px rgba(255, 51, 0, 0.5);
 }
 
-.theme-neon .modal-header {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.theme-neon .modal-footer {
-  border-top: 1px solid var(--border-color);
-}
-
-/* Alert styling with neon glow */
+/* Alert boxes with neon borders */
 .theme-neon .alert {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-}
-
-.theme-neon .alert-primary {
-  border-left: 4px solid var(--neon-pink);
-  box-shadow: 0 0 10px rgba(255, 0, 204, 0.2);
+  background-color: #1e1e1e;
+  border-left: 4px solid var(--primary-color);
+  box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .theme-neon .alert-success {
-  border-left: 4px solid var(--success-color);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  border-left-color: var(--success-color);
+  box-shadow: 0 0 10px rgba(0, 255, 153, 0.3);
 }
 
 .theme-neon .alert-warning {
-  border-left: 4px solid var(--warning-color);
-  box-shadow: 0 0 10px rgba(255, 255, 0, 0.2);
+  border-left-color: var(--warning-color);
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
 }
 
 .theme-neon .alert-danger {
-  border-left: 4px solid var(--danger-color);
-  box-shadow: 0 0 10px rgba(255, 51, 51, 0.2);
+  border-left-color: var(--danger-color);
+  box-shadow: 0 0 10px rgba(255, 51, 0, 0.3);
 }
 
 .theme-neon .alert-info {
-  border-left: 4px solid var(--info-color);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  border-left-color: var(--info-color);
+  box-shadow: 0 0 10px rgba(0, 153, 255, 0.3);
 }
 
-/* Progress bar with neon glow */
-.theme-neon .progress {
-  background-color: var(--input-bg);
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5) inset;
+/* Footer with neon top border */
+.theme-neon footer {
+  background-color: rgba(10, 10, 10, 0.95);
+  border-top: 1px solid var(--primary-color);
+  box-shadow: 0 -4px 20px rgba(var(--primary-color-rgb), 0.15);
 }
 
-.theme-neon .progress-bar {
-  background-color: var(--neon-pink);
-  box-shadow: 0 0 8px rgba(255, 0, 204, 0.5);
+/* Scrollbar styling */
+.theme-neon ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* Tooltip styling with neon effect */
-.theme-neon .tooltip .tooltip-inner {
-  background-color: var(--card-bg);
-  border: 1px solid var(--neon-pink);
-  color: var(--text-color);
-  box-shadow: 0 0 10px rgba(255, 0, 204, 0.3);
+.theme-neon ::-webkit-scrollbar-track {
+  background: #1e1e1e;
 }
 
-.theme-neon .bs-tooltip-top .tooltip-arrow::before {
-  border-top-color: var(--neon-pink);
+.theme-neon ::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+  box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.5);
 }
 
-.theme-neon .bs-tooltip-bottom .tooltip-arrow::before {
-  border-bottom-color: var(--neon-pink);
+.theme-neon ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color-light);
 }
 
-.theme-neon .bs-tooltip-start .tooltip-arrow::before {
-  border-left-color: var(--neon-pink);
+/* Animations */
+@keyframes neonPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }
 
-.theme-neon .bs-tooltip-end .tooltip-arrow::before {
-  border-right-color: var(--neon-pink);
+@keyframes borderFlicker {
+  0% { border-color: rgba(var(--primary-color-rgb), 1); }
+  50% { border-color: rgba(var(--primary-color-rgb), 0.5); }
+  100% { border-color: rgba(var(--primary-color-rgb), 1); }
 }
 
-/* Custom premium indicators with neon effect */
+.theme-neon .neon-pulse {
+  animation: neonPulse 2s infinite;
+}
+
+.theme-neon .border-flicker {
+  animation: borderFlicker 2s infinite;
+  border: 2px solid var(--primary-color);
+}
+
+/* Premium feature indicator */
 .theme-neon .premium-feature-indicator {
-  background: linear-gradient(135deg, #ff00cc 0%, #00ffcc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background-color: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
   font-weight: bold;
-  text-shadow: 0 0 5px rgba(255, 0, 204, 0.5);
-  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5);
+  animation: neonPulse 4s infinite;
 }
 
 .theme-neon .premium-feature-indicator::after {
   content: '★';
   margin-left: 0.3rem;
-  color: var(--neon-pink);
-  -webkit-text-fill-color: var(--neon-pink);
-  text-shadow: 0 0 5px rgba(255, 0, 204, 0.7);
 }

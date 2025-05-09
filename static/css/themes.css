@@ -1,240 +1,182 @@
 /**
- * Modern Theme System
- * Provides clean separation between light and dark modes with smooth transitions
+ * AstroBot AI - Theme Collection
+ * This file combines all theme stylesheets
  */
 
-/* Base Theme Variables for Light Mode (Default) */
+/* Base theme variables - Light mode is default */
 :root {
+  /* Primary color */
   --primary-color: #5865F2;
   --primary-color-rgb: 88, 101, 242;
   --primary-color-light: #7984F5;
-  --primary-color-dark: #454FBF;
+  --primary-color-dark: #4752C4;
   
+  /* Secondary color */
   --secondary-color: #36393F;
   --secondary-color-rgb: 54, 57, 63;
+  --secondary-color-light: #40444B;
+  --secondary-color-dark: #2F3136;
   
+  /* Status colors */
   --success-color: #57F287;
   --success-color-rgb: 87, 242, 135;
   --warning-color: #FEE75C;
   --warning-color-rgb: 254, 231, 92;
   --danger-color: #ED4245;
   --danger-color-rgb: 237, 66, 69;
-  --info-color: #5865F2;
-  --info-color-rgb: 88, 101, 242;
+  --info-color: #00B0F4;
+  --info-color-rgb: 0, 176, 244;
   
-  --premium-gold: #FFD700;
-  --premium-gold-rgb: 255, 215, 0;
-  
-  /* Light theme variables */
-  --primary-bg: #FFFFFF;
+  /* Light theme defaults */
+  --primary-bg: #F9F9F9;
   --secondary-bg: #F2F3F5;
   --card-bg: #FFFFFF;
   --text-color: #2E3338;
-  --muted-text: #6A7480;
+  --muted-text: #72767D;
+  --heading-color: #23262A;
   --border-color: #E3E5E8;
+  --border-hover: #C4C9CC;
+  
+  /* Form elements */
   --input-bg: #FFFFFF;
+  --input-border: #DBDDE1;
   --input-text: #2E3338;
+  --input-placeholder: #B9BBBE;
   --label-color: #4F545C;
   
-  /* Light theme grays */
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
+  /* UI elements */
+  --nav-bg: #FFFFFF;
+  --nav-text: #2E3338;
+  --footer-bg: #F2F3F5;
+  --footer-text: #72767D;
+  
+  /* Premium */
+  --premium-gold: #FFD700;
+  --premium-gold-rgb: 255, 215, 0;
+  
+  /* Transition timing */
+  --theme-transition-duration: 0.4s;
 }
 
-/* Dark Mode Theme */
+/* Dark Theme */
+:root.dark,
 .dark {
-  --primary-bg: #121212;
-  --secondary-bg: #1e1e1e;
-  --card-bg: #2d2d2d;
-  --text-color: #e0e0e0;
-  --muted-text: #a0a0a0;
-  --border-color: #444444;
-  --input-bg: #2d2d2d;
-  --input-text: #e0e0e0;
-  --label-color: #e0e0e0;
+  --primary-bg: #36393F;
+  --secondary-bg: #2F3136;
+  --card-bg: #40444B;
+  --text-color: #DCDDDE;
+  --muted-text: #A3A6AA;
+  --heading-color: #FFFFFF;
+  --border-color: #202225;
+  --border-hover: #4F545C;
   
-  /* Complete color system overrides for dark mode */
-  --gray-50: #18191a;
-  --gray-100: #1e1e1e;
-  --gray-200: #252525;
-  --gray-300: #333333;
-  --gray-400: #4d4d4d;
-  --gray-500: #707070;
-  --gray-600: #888888;
-  --gray-700: #a0a0a0;
-  --gray-800: #d4d4d4;
-  --gray-900: #f5f5f5;
+  /* Form elements */
+  --input-bg: #40444B;
+  --input-border: #4F545C;
+  --input-text: #DCDDDE;
+  --input-placeholder: #72767D;
+  --label-color: #B9BBBE;
   
-  /* Status colors for dark mode */
-  --success-color: #2fb344;
-  --warning-color: #f9cb15;
-  --danger-color: #e34c4c;
-  --info-color: #0ea5e9;
-  
-  /* Text and background adjustments */
-  --nav-bg: #0f0f0f;
-  --footer-bg: #0f0f0f;
-  --border-color: rgba(255, 255, 255, 0.1);
+  /* UI elements */
+  --nav-bg: #2F3136;
+  --nav-text: #DCDDDE;
+  --footer-bg: #2F3136;
+  --footer-text: #A3A6AA;
 }
 
-/* Premium Theme - Space */
-.theme-space {
-  --primary-color: #4d76ff;
-  --primary-color-rgb: 77, 118, 255;
-  --primary-color-light: #6a8fff;
-  --primary-color-dark: #3a5fd9;
-  
-  --secondary-color: #1a1a2e;
-  --secondary-color-rgb: 26, 26, 46;
-  
-  --accent-color: #7d4cdb;
-  
-  --primary-bg: #0f0f1a;
-  --secondary-bg: #16162c;
-  --card-bg: #1e1e32;
-  --text-color: #e6e6ff;
-  --muted-text: #adb5bd;
-  
-  --border-color: #2e2e50;
-  --nav-bg: #080815;
-  --footer-bg: #080815;
+/* Theme transition helpers */
+.theme-transition {
+  transition: background-color var(--theme-transition-duration) ease, 
+              color var(--theme-transition-duration) ease, 
+              border-color var(--theme-transition-duration) ease, 
+              box-shadow var(--theme-transition-duration) ease;
 }
 
-/* Premium Theme - Neon */
-.theme-neon {
-  --primary-color: #ff00cc;
-  --primary-color-rgb: 255, 0, 204;
-  --primary-color-light: #ff33d6;
-  --primary-color-dark: #cc00a3;
-  
-  --secondary-color: #00ffcc;
-  --secondary-color-rgb: 0, 255, 204;
-  
-  --accent-color: #3300ff;
-  
-  --primary-bg: #000000;
-  --secondary-bg: #111111;
-  --card-bg: #1a1a1a;
-  --text-color: #ffffff;
-  --muted-text: #cccccc;
-  
-  --border-color: #333333;
-  --nav-bg: #000000;
-  --nav-text: #ffffff;
-  --footer-bg: #000000;
-  --footer-text: #ffffff;
+/* Import premium themes */
+@import url('themes/space.css');
+@import url('themes/neon.css');
+@import url('themes/contrast.css');
+
+/* Theme color indicators in dropdowns/settings */
+.theme-indicator {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  margin-right: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  vertical-align: text-bottom;
 }
 
-/* Premium Theme - Contrast */
-.theme-contrast {
-  --primary-color: #ffff00;
-  --primary-color-rgb: 255, 255, 0;
-  --primary-color-light: #ffff33;
-  --primary-color-dark: #cccc00;
-  
-  --secondary-color: #ffffff;
-  --secondary-color-rgb: 255, 255, 255;
-  
-  --accent-color: #00aaff;
-  
-  --primary-bg: #000000;
-  --secondary-bg: #000000;
-  --card-bg: #0a0a0a;
-  --text-color: #ffffff;
-  --muted-text: #dddddd;
-  
-  --border-color: #333333;
-  --nav-bg: #000000;
-  --footer-bg: #000000;
+.theme-indicator-light {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F2F3F5 100%);
 }
 
-/* Theme Transition System */
-.theme-transition,
-.theme-transition *,
-.theme-transition *:before,
-.theme-transition *:after {
-  transition: all 0.4s ease !important;
-  transition-delay: 0 !important;
+.theme-indicator-dark {
+  background: linear-gradient(135deg, #36393F 0%, #2F3136 100%);
 }
 
-/* Applied Styles */
-body {
-  background-color: var(--primary-bg);
-  color: var(--text-color);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+.theme-indicator-space {
+  background: linear-gradient(135deg, #4d76ff 0%, #1e2254 100%);
 }
 
-.bg-primary { background-color: var(--primary-color) !important; }
-.bg-secondary { background-color: var(--secondary-color) !important; }
-.bg-success { background-color: var(--success-color) !important; }
-.bg-warning { background-color: var(--warning-color) !important; }
-.bg-danger { background-color: var(--danger-color) !important; }
-.bg-info { background-color: var(--info-color) !important; }
-
-.text-primary { color: var(--primary-color) !important; }
-.text-secondary { color: var(--secondary-color) !important; }
-.text-success { color: var(--success-color) !important; }
-.text-warning { color: var(--warning-color) !important; }
-.text-danger { color: var(--danger-color) !important; }
-.text-info { color: var(--info-color) !important; }
-
-.border-primary { border-color: var(--primary-color) !important; }
-.border-secondary { border-color: var(--secondary-color) !important; }
-.border-success { border-color: var(--success-color) !important; }
-.border-warning { border-color: var(--warning-color) !important; }
-.border-danger { border-color: var(--danger-color) !important; }
-.border-info { border-color: var(--info-color) !important; }
-
-/* Animation classes */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-in-out;
+.theme-indicator-neon {
+  background: linear-gradient(135deg, #ff00cc 0%, #00ffcc 100%);
 }
 
-.animate-slide-up {
-  animation: slideUp 0.5s ease-out;
+.theme-indicator-contrast {
+  background: linear-gradient(135deg, #ffff00 0%, #000000 100%);
 }
 
-.animate-slide-down {
-  animation: slideDown 0.5s ease-out;
+/* Premium theme badge */
+.premium-theme-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, var(--premium-gold) 0%, #FFB347 100%);
+  color: #000000;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 
-.animate-pulse-subtle {
-  animation: pulseSubtle 2s infinite;
+.premium-theme-badge::before {
+  content: '★';
+  margin-right: 0.25rem;
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+/* Theme toggler button */
+.theme-toggle-btn {
+  width: 3rem;
+  height: 1.5rem;
+  background-color: var(--secondary-bg);
+  border-radius: 9999px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border: 1px solid var(--border-color);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.dark .theme-toggle-btn {
+  background-color: var(--primary-color);
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.theme-toggle-btn::after {
+  content: '';
+  position: absolute;
+  width: 1.125rem;
+  height: 1.125rem;
+  background-color: #FFFFFF;
+  border-radius: 9999px;
+  top: 0.15rem;
+  left: 0.15rem;
+  transition: transform 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-@keyframes slideDown {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes pulseSubtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+.dark .theme-toggle-btn::after {
+  transform: translateX(1.5rem);
 }
