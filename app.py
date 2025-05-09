@@ -295,6 +295,13 @@ def api_status():
         "server_time": datetime.now().isoformat()
     })
 
+@app.route('/account/appearance')
+@login_required
+def account_appearance():
+    """User appearance settings page"""
+    return render_template('account/appearance.html', title="Appearance Settings")
+
+
 @app.route('/update_theme_preference', methods=['POST'])
 @login_required
 def update_theme_preference():
@@ -308,16 +315,29 @@ def update_theme_preference():
     theme = data['theme']
     
     # Validate theme - only allow specific themes
-    allowed_themes = ['light', 'dark', 'theme-space', 'theme-neon', 'theme-contrast']
+    # Note: The model stores the themes without 'theme-' prefix
+    # but some frontend code uses 'theme-' prefix, so we normalize it
+    allowed_themes = ['light', 'dark', 'space', 'neon', 'contrast', 
+                     'theme-space', 'theme-neon', 'theme-contrast']
+    
     if theme not in allowed_themes:
         return jsonify({'status': 'error', 'message': 'Invalid theme selection'}), 400
+    
+    # Normalize theme value to remove 'theme-' prefix if present
+    if theme.startswith('theme-'):
+        theme = theme.replace('theme-', '')
     
     try:
         # Update user's theme preference
         current_user.theme_preference = theme
         db.session.commit()
         
-        return jsonify({'status': 'success', 'message': 'Theme preference updated'})
+        return jsonify({
+            'status': 'success', 
+            'message': 'Theme preference updated',
+            'theme': theme,
+            'isPremium': current_user.is_premium
+        })
     except Exception as e:
         logger.error(f"Error updating theme preference: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
