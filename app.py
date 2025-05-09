@@ -295,6 +295,33 @@ def api_status():
         "server_time": datetime.now().isoformat()
     })
 
+@app.route('/update_theme_preference', methods=['POST'])
+@login_required
+def update_theme_preference():
+    """Update the user's theme preference"""
+    from models import WebsiteUser
+    
+    data = request.json
+    if not data or 'theme' not in data:
+        return jsonify({'status': 'error', 'message': 'No theme data provided'}), 400
+    
+    theme = data['theme']
+    
+    # Validate theme - only allow specific themes
+    allowed_themes = ['light', 'dark', 'theme-space', 'theme-neon', 'theme-contrast']
+    if theme not in allowed_themes:
+        return jsonify({'status': 'error', 'message': 'Invalid theme selection'}), 400
+    
+    try:
+        # Update user's theme preference
+        current_user.theme_preference = theme
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': 'Theme preference updated'})
+    except Exception as e:
+        logger.error(f"Error updating theme preference: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 # Minecraft management routes
 @app.route('/minecraft/servers')
 def minecraft_servers():
