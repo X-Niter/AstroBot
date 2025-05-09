@@ -105,8 +105,8 @@
             <div class="card-header">
                 <h5 class="mb-0">Activity Over Time</h5>
             </div>
-            <div class="card-body">
-                <canvas id="activity-chart" height="250"></canvas>
+            <div class="card-body" style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="activity-chart"></canvas>
             </div>
         </div>
     </div>
@@ -117,8 +117,8 @@
             <div class="card-header">
                 <h5 class="mb-0">Top Commands</h5>
             </div>
-            <div class="card-body">
-                <canvas id="commands-chart" height="250"></canvas>
+            <div class="card-body" style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="commands-chart"></canvas>
             </div>
         </div>
     </div>
@@ -129,8 +129,8 @@
             <div class="card-header">
                 <h5 class="mb-0">Hourly Activity Heatmap</h5>
             </div>
-            <div class="card-body">
-                <canvas id="heatmap-chart" height="250"></canvas>
+            <div class="card-body" style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="heatmap-chart"></canvas>
             </div>
         </div>
     </div>
@@ -141,8 +141,8 @@
             <div class="card-header">
                 <h5 class="mb-0">AI Model Usage</h5>
             </div>
-            <div class="card-body">
-                <canvas id="ai-usage-chart" height="250"></canvas>
+            <div class="card-body" style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="ai-usage-chart"></canvas>
             </div>
         </div>
     </div>
@@ -156,7 +156,7 @@
                     <i class="bi bi-arrow-clockwise"></i> Refresh
                 </button>
             </div>
-            <div class="card-body">
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                 <div class="table-responsive">
                     <table class="table table-hover" id="active-servers-table">
                         <thead>
@@ -350,8 +350,14 @@
         });
     });
     
-    // Initialize all charts
+    // Initialize all charts with proper responsive sizing
     function initializeCharts() {
+        // Set default Chart.js options for all charts
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+        Chart.defaults.plugins.title.display = true;
+        Chart.defaults.plugins.tooltip.enabled = true;
+        
         // Activity Over Time Chart
         const activityChartCtx = document.getElementById('activity-chart').getContext('2d');
         const activityChartData = {
