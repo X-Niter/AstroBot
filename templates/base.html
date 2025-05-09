@@ -3,207 +3,404 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} | AstroBot Dashboard</title>
+    <title>{{ title or 'AstroBot AI' }}</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary: #007bff;
+            --secondary: #6c757d;
+            --success: #00d26a;
+            --info: #3273dc;
+            --warning: #ffdd57;
+            --danger: #ff3860;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --darker: #212529;
+            --discord: #5865F2;
+            --minecraft: #4fce6a;
+            --twitch: #9146ff;
+            --ai: #00d0ff;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1d21;
+            color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .navbar {
+            background-color: #222529;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sidebar {
+            background-color: #222529;
+            min-width: 250px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        
+        .sidebar-sticky {
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 56px);
+            padding-top: 0.5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .sidebar .nav-link {
+            color: #adb5bd;
+            padding: 0.625rem 1.25rem;
+            margin: 0.125rem 0;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: var(--primary);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+        
+        .sidebar .sidebar-heading {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+            padding: 1rem 1.25rem 0.5rem;
+            font-weight: 600;
+        }
+        
+        .content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+        
+        .card {
+            background-color: #2d3238;
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: #343a40;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.25rem;
+        }
+        
+        .breadcrumb {
+            background-color: transparent;
+            padding: 0.75rem 0;
+        }
+        
+        .breadcrumb-item + .breadcrumb-item::before {
+            color: #6c757d;
+        }
+        
+        .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item.active {
+            color: #adb5bd;
+        }
+        
+        .table {
+            color: #f8f9fa;
+            background-color: transparent;
+        }
+        
+        .table thead th {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: none;
+            background-color: #343a40;
+        }
+        
+        .table td, .table th {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem;
+            vertical-align: middle;
+        }
+        
+        .form-control, .form-select {
+            background-color: #343a40;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f8f9fa;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: #3a4046;
+            color: #f8f9fa;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        .btn-outline-light {
+            color: #f8f9fa;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-outline-light:hover, .btn-outline-light:focus {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-outline-light.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Extra styles for specific pages */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .stat-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                min-width: auto;
+            }
+            
+            .sidebar-sticky {
+                position: relative;
+                height: auto;
+            }
+            
+            .content {
+                padding: 1rem;
+            }
+        }
+    </style>
     
-    {% block extra_head %}{% endblock %}
+    {% block extra_styles %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100 bg-dark text-light">
-    <!-- Top Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+            <a class="navbar-brand" href="/">
                 <i class="fas fa-robot me-2"></i>
-                <span>AstroBot</span>
+                AstroBot AI
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == url_for('index') %}active{% endif %}" href="{{ url_for('index') }}">
-                            <i class="fas fa-home"></i> <span class="d-none d-sm-inline">Dashboard</span>
-                        </a>
+                        <a class="nav-link" href="#"><i class="fas fa-bell"></i></a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-server"></i> <span class="d-none d-sm-inline">Minecraft</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark">
-                            <li><a class="dropdown-item" href="{{ url_for('minecraft_servers') }}">Server Status</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('whitelist') }}">Whitelist Manager</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('console') }}">Console Commands</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('plugins') }}">Plugins & Mods</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-cog"></i></a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fab fa-discord"></i> <span class="d-none d-sm-inline">Discord</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark">
-                            <li><a class="dropdown-item" href="{{ url_for('bot_settings') }}">Bot Settings</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('commands_dashboard') }}">Commands</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('permissions') }}">Permissions</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('analytics') }}">Analytics</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fab fa-twitch"></i> <span class="d-none d-sm-inline">StreamSync</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark">
-                            <li><a class="dropdown-item" href="{{ url_for('twitch_integration') }}">Twitch Integration</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('leaderboard') }}">Community Leaderboard</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('points_settings') }}">Points & Rewards</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-cubes"></i> <span class="d-none d-sm-inline">Mods</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark">
-                            <li><a class="dropdown-item" href="{{ url_for('reviews') }}">Mod Reviews</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('suggestions') }}">Mod Suggestions</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('ai_generator') }}">AI Generation</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-cog"></i> <span class="d-none d-sm-inline">Settings</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark">
-                            <li><a class="dropdown-item" href="{{ url_for('api_settings') }}">API Keys</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('system_settings') }}">System Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logs') }}">Logs</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-user-circle"></i></a>
                     </li>
                 </ul>
-                <div class="d-flex ms-3">
-                    <div class="status-indicator" id="botStatusIndicator" title="Bot Status">
-                        <i class="fas fa-circle"></i>
-                    </div>
-                    <div class="status-indicator ms-2" id="dbStatusIndicator" title="Database Status">
-                        <i class="fas fa-database"></i>
-                    </div>
-                </div>
             </div>
         </div>
     </nav>
-
-    <!-- Page Content Area -->
-    <div class="container-fluid flex-grow-1 my-4">
+    
+    <div class="container-fluid">
         <div class="row">
-            <!-- Breadcrumb navigation -->
-            <div class="col-12 mb-3">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                                <i class="fas fa-home"></i> Dashboard
+                            </a>
+                        </li>
+
+                        <div class="sidebar-heading">Discord Bot</div>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/discord/settings' %}active{% endif %}" href="/discord/settings">
+                                <i class="fas fa-cogs"></i> Bot Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/discord/commands' %}active{% endif %}" href="/discord/commands">
+                                <i class="fas fa-terminal"></i> Commands
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/discord/permissions' %}active{% endif %}" href="/discord/permissions">
+                                <i class="fas fa-user-lock"></i> Permissions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/discord/analytics' %}active{% endif %}" href="/discord/analytics">
+                                <i class="fas fa-chart-bar"></i> Discord Analytics
+                            </a>
+                        </li>
+
+                        <div class="sidebar-heading">Minecraft</div>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/minecraft/servers' %}active{% endif %}" href="/minecraft/servers">
+                                <i class="fas fa-server"></i> Servers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/minecraft/whitelist' %}active{% endif %}" href="/minecraft/whitelist">
+                                <i class="fas fa-list-check"></i> Whitelist
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/minecraft/console' %}active{% endif %}" href="/minecraft/console">
+                                <i class="fas fa-terminal"></i> Console
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/minecraft/plugins' %}active{% endif %}" href="/minecraft/plugins">
+                                <i class="fas fa-puzzle-piece"></i> Plugins
+                            </a>
+                        </li>
+                        
+                        <div class="sidebar-heading">Twitch</div>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/twitch/integration' %}active{% endif %}" href="/twitch/integration">
+                                <i class="fab fa-twitch"></i> Integration
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/twitch/points' %}active{% endif %}" href="/twitch/points">
+                                <i class="fas fa-coins"></i> Points
+                            </a>
+                        </li>
+                        
+                        <div class="sidebar-heading">AI Features</div>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/mods/ai-generator' %}active{% endif %}" href="/mods/ai-generator">
+                                <i class="fas fa-magic"></i> AI Generator
+                            </a>
+                        </li>
+                        
+                        <div class="sidebar-heading">Analytics</div>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/analytics' %}active{% endif %}" href="/analytics">
+                                <i class="fas fa-chart-line"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/analytics/commands' %}active{% endif %}" href="/analytics/commands">
+                                <i class="fas fa-terminal"></i> Commands
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/analytics/ai' %}active{% endif %}" href="/analytics/ai">
+                                <i class="fas fa-brain"></i> AI Usage
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/analytics/community' %}active{% endif %}" href="/analytics/community">
+                                <i class="fas fa-users"></i> Community
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/analytics/moderation' %}active{% endif %}" href="/analytics/moderation">
+                                <i class="fas fa-shield-alt"></i> Moderation
+                            </a>
+                        </li>
+                        
+                        <div class="sidebar-heading">Community</div>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/leaderboard' %}active{% endif %}" href="/leaderboard">
+                                <i class="fas fa-trophy"></i> Leaderboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/reviews' %}active{% endif %}" href="/reviews">
+                                <i class="fas fa-star"></i> Reviews
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/suggestions' %}active{% endif %}" href="/suggestions">
+                                <i class="fas fa-lightbulb"></i> Suggestions
+                            </a>
+                        </li>
+                        
+                        <div class="sidebar-heading">Settings</div>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/settings/api-keys' %}active{% endif %}" href="/settings/api-keys">
+                                <i class="fas fa-key"></i> API Keys
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/settings/system' %}active{% endif %}" href="/settings/system">
+                                <i class="fas fa-cogs"></i> System
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/settings/logs' %}active{% endif %}" href="/settings/logs">
+                                <i class="fas fa-file-alt"></i> Logs
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 content">
                 <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb bg-dark-subtle p-2 rounded">
-                        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
                         {% block breadcrumb %}{% endblock %}
                     </ol>
                 </nav>
-            </div>
-            
-            <!-- Page Content -->
-            <div class="col-12">
-                {% if error_message %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error_message }}
-                </div>
-                {% endif %}
-                
-                {% if success_message %}
-                <div class="alert alert-success" role="alert">
-                    {{ success_message }}
-                </div>
-                {% endif %}
                 
                 {% block content %}{% endblock %}
-            </div>
+            </main>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="footer py-3 bg-dark border-top border-secondary">
-        <div class="container text-center">
-            <span class="text-muted">© 2025 AstroBot - Minecraft & Twitch Discord Bot</span>
-            <div class="mt-2">
-                <a href="https://discord.com" class="text-muted me-3" target="_blank"><i class="fab fa-discord"></i></a>
-                <a href="https://github.com" class="text-muted me-3" target="_blank"><i class="fab fa-github"></i></a>
-                <a href="https://twitch.tv" class="text-muted" target="_blank"><i class="fab fa-twitch"></i></a>
-            </div>
-            <div class="text-muted mt-2 small">Version 1.0.0</div>
-        </div>
-    </footer>
     
-    <!-- Bootstrap Bundle with Popper -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- jQuery (for AJAX requests) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
+    <!-- Custom JS -->
     <script>
-        // Check system status
-        function checkSystemStatus() {
-            fetch('/api/status')
-                .then(response => response.json())
-                .then(data => {
-                    // Update Bot Status Indicator
-                    const botIndicator = document.getElementById('botStatusIndicator');
-                    if (data.bot_running) {
-                        botIndicator.classList.add('status-online');
-                        botIndicator.classList.remove('status-offline');
-                        botIndicator.title = 'Bot Status: Online';
-                    } else {
-                        botIndicator.classList.add('status-offline');
-                        botIndicator.classList.remove('status-online');
-                        botIndicator.title = 'Bot Status: Offline';
-                    }
-                    
-                    // Update Database Status Indicator
-                    const dbIndicator = document.getElementById('dbStatusIndicator');
-                    if (data.mongodb_connected) {
-                        dbIndicator.classList.add('status-online');
-                        dbIndicator.classList.remove('status-offline');
-                        dbIndicator.title = 'Database Status: Connected';
-                    } else {
-                        dbIndicator.classList.add('status-offline');
-                        dbIndicator.classList.remove('status-online');
-                        dbIndicator.title = 'Database Status: Disconnected';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking system status:', error);
-                    // Set both indicators to offline on error
-                    document.getElementById('botStatusIndicator').classList.add('status-offline');
-                    document.getElementById('botStatusIndicator').classList.remove('status-online');
-                    document.getElementById('dbStatusIndicator').classList.add('status-offline');
-                    document.getElementById('dbStatusIndicator').classList.remove('status-online');
-                });
-        }
-        
-        // Call initially and then every 30 seconds
-        checkSystemStatus();
-        setInterval(checkSystemStatus, 30000);
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
     </script>
     
     {% block extra_scripts %}{% endblock %}
