@@ -758,14 +758,18 @@ EOF
             esac
           fi
           
-          # Build site
-          mkdocs build --verbose --site-dir _site
+          # Build site with MkDocs
+          mkdocs build --verbose
+      
+      # Create a .nojekyll file to prevent GitHub from using Jekyll
+      - name: Create .nojekyll file
+        run: touch site/.nojekyll
       
       # Deploy to GitHub Pages
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: _site
+          path: site  # MkDocs default output directory
           
   deploy-docs:
     name: Deploy to GitHub Pages

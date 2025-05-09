@@ -114,18 +114,29 @@ EOF
           make html
         continue-on-error: true
 
-      # Deploy to GitHub Pages (use built files or docs)
+      # Deploy to GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      # Install MkDocs for documentation
+      - name: Install MkDocs
+        run: pip install mkdocs mkdocs-material
+
+      # Build MkDocs site
+      - name: Build MkDocs site
+        run: mkdocs build --verbose
+
+      # Deploy the site
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.4.3
         with:
           branch: gh-pages  # The branch the action should deploy to
-          folder: build     # The folder the action should deploy
-          # Fallback options based on what might have been generated
+          folder: site      # MkDocs builds to the site directory
           clean: true
           clean-exclude: |
             .github
             .gitignore
-          target-folder: docs  # Deploy to docs folder on gh-pages branch
+            .nojekyll
       
       # Post deployment status comment on PRs
       - name: Post deployment status
