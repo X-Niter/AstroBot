@@ -591,13 +591,13 @@ jobs:
                       main_package = 'src'
                   
                   new_pyproject = f"""[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+                  requires = ["setuptools>=61.0"]
+                  build-backend = "setuptools.build_meta"
 
-[project]
-name = "{os.path.basename(os.getcwd())}"
-version = "0.1.0"
-authors = [
+                  [project]
+                  name = "{os.path.basename(os.getcwd())}"
+                  version = "0.1.0"
+                  authors = [
     {{name = "AstroBot Team", email = "info@astrobot.com"}},
 ]
 description = "AstroBot AI Discord Bot for Minecraft and Twitch"

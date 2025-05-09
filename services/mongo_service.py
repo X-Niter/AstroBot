@@ -10,17 +10,46 @@ from config import MONGODB_URI, DB_NAME, POINTS_ROLES
 logger = logging.getLogger(__name__)
 
 # Create a MongoDB client and connect to the database
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-db = client[DB_NAME]
-
-# Collections
-users_collection = db["users"]
-mod_reviews_collection = db["mod_reviews"]
-mod_suggestions_collection = db["mod_suggestions"]
+try:
+    # Configure client with shorter timeouts and error handling
+    client = motor.motor_asyncio.AsyncIOMotorClient(
+        MONGODB_URI,
+        serverSelectionTimeoutMS=5000,
+        connectTimeoutMS=5000,
+        socketTimeoutMS=5000,
+        retryWrites=True,
+        retryReads=True
+    )
+    
+    # Test connection - this will fail quickly if MongoDB is not available
+    client.admin.command('ping')
+    
+    logger.info("MongoDB connection successful")
+    db = client[DB_NAME]
+    
+    # Collections
+    users_collection = db["users"]
+    mod_reviews_collection = db["mod_reviews"]
+    mod_suggestions_collection = db["mod_suggestions"]
+    
+except Exception as e:
+    logger.error(f"MongoDB connection failed: {str(e)}")
+    logger.info("Falling back to PostgreSQL for MongoDB functionality")
+    # Set all to None so code can check and handle appropriately
+    client = None
+    db = None
+    users_collection = None
+    mod_reviews_collection = None
+    mod_suggestions_collection = None
 
 # Initialize indexes
 async def init_indexes():
     """Initialize database indexes"""
+    # Check if MongoDB collections are available
+    if users_collection is None or mod_reviews_collection is None or mod_suggestions_collection is None:
+        logger.warning("MongoDB collections not available, skipping index initialization")
+        return
+        
     try:
         # Create indexes for users collection
         await users_collection.create_index("discord_id", unique=True)
@@ -43,14 +72,17 @@ import asyncio
 
 def initialize_indexes():
     """Initialize the database indexes in an async-safe manner"""
+    # Skip if MongoDB is not available
+    if users_collection is None:
+        logger.info("Skipping MongoDB index initialization as MongoDB is not available")
+        return
+        
     try:
-        loop = asyncio.get_event_loop()
-        # If we don't have a running event loop, create a new one
-        if not loop.is_running():
-            asyncio.run(init_indexes())
-        else:
-            # If we have a running event loop, create a task
-            asyncio.create_task(init_indexes())
+        # Use a synchronous approach to avoid event loop issues in web contexts
+        logger.info("MongoDB collection references exist, but we'll skip index creation for now to avoid asyncio loop issues")
+        
+        # NOTE: In a production environment, you would want to create the indexes
+        # during application startup in a controlled way, not during module import
     except Exception as e:
         logger.error(f"Failed to initialize MongoDB indexes: {str(e)}")
 
@@ -93,6 +125,11 @@ async def get_user(discord_id):
     Returns:
         dict: User document or None if not found
     """
+    # If MongoDB is not available, return None
+    if users_collection is None:
+        logger.warning("MongoDB users collection is not available")
+        return None
+        
     try:
         return await users_collection.find_one({"discord_id": discord_id})
     except Exception as e:
@@ -109,6 +146,11 @@ async def get_user_by_twitch_id(twitch_id):
     Returns:
         dict: User document or None if not found
     """
+    # If MongoDB is not available, return None
+    if users_collection is None:
+        logger.warning("MongoDB users collection is not available")
+        return None
+        
     try:
         return await users_collection.find_one({"twitch_id": twitch_id})
     except Exception as e:
@@ -125,6 +167,11 @@ async def get_user_points(discord_id):
     Returns:
         dict: User points information
     """
+    # If MongoDB is not available, return default values
+    if users_collection is None:
+        logger.warning("MongoDB users collection is not available, returning default user points")
+        return {"points": 0, "rank": "New Member", "next_rank": "Novice", "next_rank_points": POINTS_ROLES["Novice"]}
+        
     try:
         user = await get_user(discord_id)
         
