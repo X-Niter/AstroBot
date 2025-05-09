@@ -190,9 +190,19 @@ class CustomCommand(db.Model):
     
     def get_response_data(self):
         """Get response data as dictionary"""
-        if self.response_type == "embed":
+        # Extract scalar value from SQLAlchemy expression
+        response_type = self.response_type
+        if hasattr(response_type, 'scalar'):
+            response_type = response_type.scalar()
+            
+        if response_type == "embed":
             try:
-                return json.loads(self.response_data)
+                # Cast the SQLAlchemy column to a string first
+                response_data = self.response_data
+                if hasattr(response_data, 'scalar'):
+                    response_data = response_data.scalar()
+                response_str = str(response_data) if response_data else "{}"
+                return json.loads(response_str)
             except:
                 return {"title": "Error", "description": "Invalid embed data"}
         return self.response_data
@@ -267,7 +277,8 @@ class WebsiteUser(UserMixin, db.Model):
     password_hash = Column(String(256), nullable=False)
     discord_id = Column(String(20), unique=True, nullable=True)
     is_admin = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
+    theme_preference = Column(String(20), default='system', nullable=False)  # system, light, dark, space, neon, contrast
+    bio = Column(Text, nullable=True)
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -279,7 +290,14 @@ class WebsiteUser(UserMixin, db.Model):
         if self.theme_preference in ['light']:
             return 'light'
         return 'dark'  # dark, space, neon, and contrast all use dark as base
-    bio = Column(Text, nullable=True)
+        
+    # Store the active status in a column with a different name to avoid conflict with UserMixin
+    active = Column(Boolean, default=True)
+    
+    @property
+    def is_active(self):
+        """Return the active status for Flask-Login (required by UserMixin)"""
+        return bool(self.active)
     
     # Relationships
     feedback = relationship("Feedback", back_populates="user")
@@ -297,7 +315,9 @@ class WebsiteUser(UserMixin, db.Model):
         
     def check_password(self, password):
         """Check password against hash"""
-        return check_password_hash(self.password_hash, password)
+        # Convert SQLAlchemy column to string first
+        password_hash_str = str(self.password_hash) if self.password_hash else ""
+        return check_password_hash(password_hash_str, password)
     
     def has_premium_feature(self, feature_key):
         """Check if user has a specific premium feature"""
@@ -531,7 +551,9 @@ class WebhookIntegration(db.Model):
         """Get settings as dictionary"""
         if self.settings:
             try:
-                return json.loads(self.settings)
+                # Cast the SQLAlchemy column to a string first
+                settings_str = str(self.settings)
+                return json.loads(settings_str)
             except:
                 return {}
         return {}
@@ -558,7 +580,9 @@ class WebhookEvent(db.Model):
         """Get payload as dictionary"""
         if self.payload:
             try:
-                return json.loads(self.payload)
+                # Cast the SQLAlchemy column to a string first
+                payload_str = str(self.payload)
+                return json.loads(payload_str)
             except:
                 return {}
         return {}
@@ -661,13 +685,17 @@ class ServerConfiguration(db.Model):
     def get_selected_features(self):
         """Get selected features as list"""
         try:
-            return json.loads(self.selected_features)
+            # Cast the SQLAlchemy column to a string first
+            features_str = str(self.selected_features) if self.selected_features else "[]"
+            return json.loads(features_str)
         except:
             return []
     
     def get_feature_settings(self):
         """Get feature settings as dictionary"""
         try:
-            return json.loads(self.feature_settings)
+            # Cast the SQLAlchemy column to a string first
+            settings_str = str(self.feature_settings) if self.feature_settings else "{}"
+            return json.loads(settings_str)
         except:
             return {}

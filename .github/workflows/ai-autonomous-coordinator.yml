@@ -17,6 +17,12 @@ on:
           - test-improvements
           - documentation
           - workflow-health
+          - python-structure
+      auto_fix:
+        description: 'Automatically create PR for fixes'
+        required: false
+        default: 'true'
+        type: boolean
   issues:
     types: [opened, reopened, edited, labeled]
   issue_comment:
@@ -380,6 +386,80 @@ jobs:
           import time
           from datetime import datetime, timedelta
 
+          def check_python_project_structure():
+              """Check Python project structure for common issues that might cause build failures"""
+              try:
+                  issues_found = []
+                  
+                  # Check if pyproject.toml exists
+                  if not os.path.exists("pyproject.toml"):
+                      issues_found.append({
+                          "file": "pyproject.toml",
+                          "issue_type": "missing_pyproject",
+                          "description": "Missing pyproject.toml file for Python project",
+                          "suggest_fix": "Create a pyproject.toml file with proper configuration"
+                      })
+                      return issues_found
+                  
+                  # Read pyproject.toml content
+                  with open("pyproject.toml", 'r') as f:
+                      content = f.read()
+                  
+                  # Check for packages or py-modules definition
+                  if "[tool.setuptools]" not in content and "packages =" not in content and "py-modules =" not in content:
+                      issues_found.append({
+                          "file": "pyproject.toml",
+                          "issue_type": "undefined_packages",
+                          "description": "No packages or py-modules defined in pyproject.toml",
+                          "suggest_fix": "Add [tool.setuptools] section with packages list or py-modules"
+                      })
+                  
+                  # Check for potential directory structure issues
+                  directories = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
+                  python_files = [f for f in os.listdir('.') if f.endswith('.py')]
+                  
+                  # Check if there are multiple potential package directories
+                  potential_packages = [d for d in directories if any(os.path.isfile(os.path.join(d, f)) for f in ['__init__.py'])]
+                  
+                  if len(potential_packages) > 1 and "packages =" not in content:
+                      issues_found.append({
+                          "file": "pyproject.toml",
+                          "issue_type": "multiple_packages",
+                          "description": f"Multiple potential package directories found: {', '.join(potential_packages)}",
+                          "suggest_fix": "Explicitly specify packages in pyproject.toml"
+                      })
+                  
+                  # Check for src layout
+                  if os.path.isdir('src') and "src_layout" not in content and "find_namespace:" not in content:
+                      issues_found.append({
+                          "file": "pyproject.toml",
+                          "issue_type": "src_layout_not_configured",
+                          "description": "src directory found but src_layout not configured",
+                          "suggest_fix": "Add proper src_layout configuration or package discovery"
+                      })
+                  
+                  # Check if setup.py exists alongside pyproject.toml
+                  if os.path.exists("setup.py"):
+                      with open("setup.py", 'r') as f:
+                          setup_content = f.read()
+                          
+                      if "packages=" in setup_content and "packages =" not in content:
+                          issues_found.append({
+                              "file": "pyproject.toml",
+                              "issue_type": "duplicate_package_config",
+                              "description": "Packages specified in setup.py but not in pyproject.toml",
+                              "suggest_fix": "Move package configuration from setup.py to pyproject.toml"
+                          })
+                  
+                  return issues_found
+              except Exception as e:
+                  print(f"Error checking Python project structure: {str(e)}")
+                  return [{
+                      "file": "pyproject.toml",
+                      "issue_type": "error_checking",
+                      "description": f"Error checking Python project structure: {str(e)}"
+                  }]
+                  
           def check_workflow_health():
               """Check GitHub workflow files for potential issues"""
               try:
@@ -598,6 +678,60 @@ jobs:
               task_type = os.environ.get("TASK_TYPE", "code-health")
               print(f"Running periodic scan with task type: {task_type}")
               
+              # Check for Python project structure issues if requested
+              if task_type == "python-structure" or task_type == "all":
+                  print("Checking Python project structure...")
+                  python_issues = check_python_project_structure()
+                  
+                  if python_issues:
+                      print(f"Found {len(python_issues)} Python project issues:")
+                      for issue in python_issues:
+                          print(f"  - {issue['file']}: {issue['issue_type']} - {issue['description']}")
+                      
+                      # Create a report
+                      os.makedirs(".github/reports", exist_ok=True)
+                      with open(".github/reports/python-structure-issues.json", "w") as f:
+                          json.dump(python_issues, f, indent=2)
+                      
+                      # Create issue with recommendations
+                      auto_fix = os.environ.get("AUTO_FIX", "true").lower() == "true"
+                      if auto_fix:
+                          # Generate a fix PR
+                          issue_body = "## Python Project Structure Issues\n\n"
+                          issue_body += "The autonomous system has detected issues with the Python project structure that may cause build failures:\n\n"
+                          
+                          for issue in python_issues:
+                              issue_body += f"- **{issue['file']}**: {issue['issue_type']} - {issue['description']}\n"
+                              if "suggest_fix" in issue:
+                                  issue_body += f"  - Suggestion: {issue['suggest_fix']}\n"
+                          
+                          issue_body += "\nA pull request will be created automatically to fix these issues."
+                          
+                          # Create issue
+                          os.system(f'gh issue create --title "Python Project Structure Issues" --body "{issue_body}" --label "auto-fix,python-structure"')
+                          
+                          # Create a PR with a fix
+                          workflows.append({
+                              "name": "auto-fix-code-issues.yml",
+                              "priority": 1,
+                              "inputs": {
+                                  "fix_type": "python-structure",
+                                  "auto_create_pr": "true"
+                              }
+                          })
+                      else:
+                          # Just create an issue with recommendations
+                          issue_body = "## Python Project Structure Issues\n\n"
+                          issue_body += "The autonomous system has detected issues with the Python project structure that may cause build failures:\n\n"
+                          
+                          for issue in python_issues:
+                              issue_body += f"- **{issue['file']}**: {issue['issue_type']} - {issue['description']}\n"
+                              if "suggest_fix" in issue:
+                                  issue_body += f"  - Suggestion: {issue['suggest_fix']}\n"
+                          
+                          # Create issue
+                          os.system(f'gh issue create --title "Python Project Structure Issues" --body "{issue_body}" --label "needs-attention,python-structure"')
+                  
               # Check for workflow health issues if requested or during scheduled runs
               if task_type == "workflow-health" or task_type == "all":
                   print("Checking workflow health...")

@@ -1,7 +1,11 @@
 [project]
-name = "repl-nix-workspace"
+name = "astrobot-ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "AstroBot AI - Discord bot for Minecraft server management with AI capabilities"
+authors = [
+    {name = "AstroFrame Team"}
+]
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.51.0",
@@ -26,3 +30,11 @@ dependencies = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.6.12",
 ]
+
+[tool.setuptools]
+packages = ["commands", "services", "utils"]
+py-modules = ["app", "bot", "main", "models", "forms", "routes", "socket_events", "config"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

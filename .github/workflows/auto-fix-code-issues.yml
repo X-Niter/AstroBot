@@ -25,6 +25,15 @@ on:
           - tests
           - models
           - database
+          - python-structure
+      auto_create_pr:
+        description: 'Automatically create PR for fixes'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   detect-and-fix-code-issues:
@@ -64,8 +73,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "FIX_TYPE=${{ github.event.inputs.fix_type }}" >> $GITHUB_ENV
+            echo "AUTO_CREATE_PR=${{ github.event.inputs.auto_create_pr }}" >> $GITHUB_ENV
           else
             echo "FIX_TYPE=all" >> $GITHUB_ENV
+            echo "AUTO_CREATE_PR=true" >> $GITHUB_ENV
           fi
       
       # Check for recent issues
@@ -510,6 +521,232 @@ jobs:
               
               return results
 
+          def fix_python_structure():
+              """Fix Python project structure issues like pyproject.toml configuration"""
+              results = []
+              
+              # Create diagnostics directory if it doesn't exist
+              os.makedirs('.github/reports', exist_ok=True)
+              
+              # Detect Python packages directory structure
+              package_dirs = []
+              src_dirs = []
+              
+              # Check for common package directories
+              for dir_name in os.listdir('.'):
+                  if os.path.isdir(dir_name) and not dir_name.startswith('.') and not dir_name in ['venv', 'tests', 'docs']:
+                      # Check if directory contains Python files
+                      has_py_files = False
+                      has_init_py = False
+                      
+                      for root, _, files in os.walk(dir_name):
+                          for file in files:
+                              if file.endswith('.py'):
+                                  has_py_files = True
+                                  if file == '__init__.py':
+                                      has_init_py = True
+                      
+                      if has_py_files:
+                          package_dirs.append(dir_name)
+                          if has_init_py:
+                              src_dirs.append(dir_name)
+              
+              # Check for standard src layout
+              has_src_dir = 'src' in package_dirs
+              has_pyproject_toml = os.path.exists('pyproject.toml')
+              has_setup_py = os.path.exists('setup.py')
+              
+              # Read pyproject.toml if it exists
+              pyproject_content = None
+              if has_pyproject_toml:
+                  pyproject_content = read_file('pyproject.toml')
+              
+              # Read setup.py if it exists
+              setup_py_content = None
+              if has_setup_py:
+                  setup_py_content = read_file('setup.py')
+              
+              # Store detected issues
+              issues = {
+                  "package_directories": package_dirs,
+                  "src_directories": src_dirs,
+                  "has_src_layout": has_src_dir,
+                  "has_pyproject_toml": has_pyproject_toml,
+                  "has_setup_py": has_setup_py,
+                  "detected_problems": []
+              }
+              
+              # Check for common problems
+              
+              # Problem 1: Missing pyproject.toml
+              if not has_pyproject_toml and len(package_dirs) > 0:
+                  issues["detected_problems"].append({
+                      "type": "missing_pyproject_toml",
+                      "description": "Project has Python packages but no pyproject.toml file"
+                  })
+                  
+                  # Create a basic pyproject.toml file based on detected packages
+                  main_package = package_dirs[0]
+                  if has_src_dir:
+                      main_package = 'src'
+                  
+                  new_pyproject = f"""[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{os.path.basename(os.getcwd())}"
+version = "0.1.0"
+authors = [
+    {{name = "AstroBot Team", email = "info@astrobot.com"}},
+]
+description = "AstroBot AI Discord Bot for Minecraft and Twitch"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/astroframe/astrobot"
+"Bug Tracker" = "https://github.com/astroframe/astrobot/issues"
+"""
+
+                  # Add packages configuration section
+                  if has_src_dir:
+                      new_pyproject += """
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+"""
+                  else:
+                      packages_list = ", ".join([f'"{pkg}"' for pkg in package_dirs])
+                      new_pyproject += f"""
+[tool.setuptools]
+packages = [{packages_list}]
+"""
+
+                  if write_file('pyproject.toml', new_pyproject):
+                      results.append({
+                          "file": "pyproject.toml",
+                          "issue": "Missing pyproject.toml configuration",
+                          "fix": f"Created pyproject.toml with auto-detected packages: {', '.join(package_dirs)}",
+                          "fixed": True
+                      })
+              
+              # Problem 2: pyproject.toml exists but packages are not configured
+              elif has_pyproject_toml and pyproject_content and len(package_dirs) > 0:
+                  packages_configured = False
+                  
+                  # Check if packages are configured in pyproject.toml
+                  if "packages = [" in pyproject_content or "package-dir" in pyproject_content or "[tool.setuptools.packages.find]" in pyproject_content:
+                      packages_configured = True
+                  
+                  if not packages_configured:
+                      issues["detected_problems"].append({
+                          "type": "unconfigured_packages",
+                          "description": f"pyproject.toml exists but detected packages {package_dirs} are not configured"
+                      })
+                      
+                      # Appropriate section to add packages configuration
+                      if has_src_dir:
+                          package_config = """
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+"""
+                      else:
+                          packages_list = ", ".join([f'"{pkg}"' for pkg in package_dirs])
+                          package_config = f"""
+[tool.setuptools]
+packages = [{packages_list}]
+"""
+                      
+                      # Add the configuration to pyproject.toml
+                      new_pyproject = pyproject_content + package_config
+                      
+                      if write_file('pyproject.toml', new_pyproject):
+                          results.append({
+                              "file": "pyproject.toml",
+                              "issue": "Packages not configured in pyproject.toml",
+                              "fix": f"Updated pyproject.toml to include packages: {', '.join(package_dirs)}",
+                              "fixed": True
+                          })
+              
+              # Problem 3: Both setup.py and pyproject.toml exist (potential conflicts)
+              if has_pyproject_toml and has_setup_py:
+                  # Check for modern pyproject.toml with [project] section
+                  has_project_section = pyproject_content and "[project]" in pyproject_content
+                  
+                  # Check if setup.py looks like it has complete package configuration
+                  setup_py_has_packages = setup_py_content and "setup(" in setup_py_content and "packages" in setup_py_content
+                  
+                  if has_project_section and setup_py_has_packages:
+                      issues["detected_problems"].append({
+                          "type": "duplicate_configuration",
+                          "description": "Both pyproject.toml with [project] section and setup.py with packages configuration exist"
+                      })
+                      
+                      # Create a backup of setup.py
+                      backup_path = 'setup.py.bak'
+                      if write_file(backup_path, setup_py_content):
+                          # Create a minimal setup.py that defers to pyproject.toml
+                          minimal_setup_py = """#!/usr/bin/env python3
+# This setup.py defers to pyproject.toml for package configuration
+from setuptools import setup
+
+if __name__ == "__main__":
+    setup()
+"""
+                          if write_file('setup.py', minimal_setup_py):
+                              results.append({
+                                  "file": "setup.py",
+                                  "issue": "Duplicate configuration in setup.py and pyproject.toml",
+                                  "fix": "Created backup at setup.py.bak and simplified setup.py to defer to pyproject.toml",
+                                  "fixed": True
+                              })
+              
+              # Problem 4: src layout detected but not properly configured
+              if 'src' in package_dirs and has_pyproject_toml and pyproject_content:
+                  src_layout_configured = "package-dir" in pyproject_content and "src" in pyproject_content
+                  
+                  if not src_layout_configured:
+                      issues["detected_problems"].append({
+                          "type": "unconfigured_src_layout",
+                          "description": "src directory detected but not properly configured in pyproject.toml"
+                      })
+                      
+                      # Add src layout configuration
+                      src_config = """
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+"""
+                      # Add to pyproject.toml if these sections don't exist
+                      if "[tool.setuptools]" not in pyproject_content:
+                          new_pyproject = pyproject_content + src_config
+                          
+                          if write_file('pyproject.toml', new_pyproject):
+                              results.append({
+                                  "file": "pyproject.toml",
+                                  "issue": "Src layout not configured in pyproject.toml",
+                                  "fix": "Updated pyproject.toml to use src-layout configuration",
+                                  "fixed": True
+                              })
+              
+              # Save detected issues to a file
+              write_file('.github/reports/python-structure-issues.json', json.dumps(issues, indent=2))
+              
+              return results
+                  
           def fix_database_issues():
               """Fix database connection issues"""
               results = []
@@ -596,6 +833,17 @@ jobs:
                   system_content += " Fix SQLAlchemy or ORM model definitions, addressing type issues, property overrides, and undefined references."
               elif issue_type == "database":
                   system_content += " Fix database integration and connection issues while ensuring proper error handling and fallbacks."
+              elif issue_type == "python_structure":
+                  system_content += """
+                  Fix Python project structure configuration issues in pyproject.toml or setup.py, including:
+                  1. Adding proper package definitions for setuptools
+                  2. Configuring package discovery for single-package or multi-package projects
+                  3. Handling src layout configuration
+                  4. Ensuring proper dependencies and build system requirements
+                  5. Resolving conflicts between setup.py and pyproject.toml configurations
+                  
+                  Preserve existing package metadata like name, version, description, etc.
+                  """
               
               user_content = f"""
               ## File to Fix: {file_path}
@@ -733,6 +981,12 @@ jobs:
                   all_fixes.extend(database_fixes)
                   print(f"Applied {len(database_fixes)} database fixes")
               
+              # Fix Python project structure issues
+              if fix_type in ["all", "python-structure"]:
+                  python_structure_fixes = fix_python_structure()
+                  all_fixes.extend(python_structure_fixes)
+                  print(f"Applied {len(python_structure_fixes)} Python structure fixes")
+              
               # Create report
               report = create_report(all_fixes)
               
@@ -791,7 +1045,7 @@ jobs:
       
       # Create pull request with fixes
       - name: Create pull request
-        if: env.FIXES_APPLIED == 'true'
+        if: env.FIXES_APPLIED == 'true' && env.AUTO_CREATE_PR == 'true'
         run: |
           # Create branch for fixes
           BRANCH_NAME="auto-fix-$(date +%Y%m%d-%H%M%S)"
@@ -823,9 +1077,34 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+      # Create commit without PR when fixes were applied but PR creation is disabled
+      - name: Commit changes without PR
+        if: env.FIXES_APPLIED == 'true' && env.AUTO_CREATE_PR != 'true'
+        run: |
+          # Commit all changes to main branch
+          git config user.name "GitHub Auto-Fix Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "fix: Apply automated fixes for code issues
+
+          This commit contains automated fixes for code issues:
+          * Fixes: ${{ env.FIX_COUNT }} issues addressed
+          * Fixed by: Auto-Fix Code Issues workflow"
+          
+          # Create summary file for GitHub Actions
+          echo "## Auto-Fix Summary" > $GITHUB_STEP_SUMMARY
+          echo "Applied ${{ env.FIX_COUNT }} fixes directly to the main branch." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For details, see the [auto-fix report](.github/reports/auto-fix-report.md)" >> $GITHUB_STEP_SUMMARY
+          
+          # Push to main branch if not in workflows mode
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            git push origin main
+          fi
+      
       # Create issue if no fixes could be applied but issues were detected
       - name: Create issue for unresolved issues
-        if: env.FIXES_APPLIED != 'true' && (env.SYNTAX_ERRORS == 'true' || env.DEPLOYMENT_ISSUES == 'true' || env.MODEL_ISSUES == 'true' || env.MONGODB_ISSUES == 'true' || env.TEST_ISSUES == 'true')
+        if: env.FIXES_APPLIED != 'true' && (env.SYNTAX_ERRORS == 'true' || env.DEPLOYMENT_ISSUES == 'true' || env.MODEL_ISSUES == 'true' || env.MONGODB_ISSUES == 'true' || env.TEST_ISSUES == 'true' || env.FIX_TYPE == 'python-structure')
         run: |
           # Create issue title
           ISSUE_TITLE="🔍 Auto-Fix: Detected issues requiring manual review"
@@ -891,6 +1170,26 @@ jobs:
             echo "Test failures were detected. The Auto-Fix workflow was unable to automatically fix these issues." >> issue_body.md
             echo "" >> issue_body.md
             echo "Please run the tests locally to see the detailed error messages." >> issue_body.md
+            echo "" >> issue_body.md
+          fi
+          
+          if [ "${{ env.FIX_TYPE }}" == "python-structure" ]; then
+            echo "### Python Project Structure Issues" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Issues were detected in the Python project structure. The Auto-Fix workflow was unable to automatically fix these issues." >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Common issues include:" >> issue_body.md
+            echo "- Missing package definitions in pyproject.toml" >> issue_body.md
+            echo "- Incorrect src layout configuration" >> issue_body.md
+            echo "- Multiple package directories without proper configuration" >> issue_body.md
+            echo "- Conflict between setup.py and pyproject.toml" >> issue_body.md
+            echo "" >> issue_body.md
+            if [ -f .github/reports/python-structure-issues.json ]; then
+              echo "Detected issues:" >> issue_body.md
+              echo "\`\`\`json" >> issue_body.md
+              cat .github/reports/python-structure-issues.json >> issue_body.md
+              echo "\`\`\`" >> issue_body.md
+            fi
             echo "" >> issue_body.md
           fi
           
