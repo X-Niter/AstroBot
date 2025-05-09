@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Theme initialization - check for premium themes
+    initializeTheme();
+
     // Initialize tooltips
     const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltips.forEach(tooltip => {
@@ -83,4 +86,146 @@ document.addEventListener('DOMContentLoaded', function() {
         element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
         observer.observe(element);
     });
+
+    // Theme switcher in settings
+    const themeSwitchers = document.querySelectorAll('.theme-switcher');
+    themeSwitchers.forEach(switcher => {
+        switcher.addEventListener('click', function(e) {
+            e.preventDefault();
+            const theme = this.dataset.theme;
+            if (theme) {
+                updateTheme(theme);
+                // Send to server via fetch (for logged in users)
+                if (this.dataset.savePreference === 'true') {
+                    fetch('/api/preferences/theme', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: JSON.stringify({ theme: theme })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('Theme updated successfully!', 'success');
+                        } else {
+                            showToast('Failed to update theme preference', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating theme preference:', error);
+                    });
+                }
+            }
+        });
+    });
 });
+
+/**
+ * Initialize the theme based on user preferences
+ */
+function initializeTheme() {
+    const body = document.body;
+    const themePreference = body.dataset.theme || 'dark';
+    const htmlElement = document.documentElement;
+    
+    // Apply the appropriate Bootstrap theme
+    if (themePreference === 'light') {
+        htmlElement.setAttribute('data-bs-theme', 'light');
+    } else {
+        htmlElement.setAttribute('data-bs-theme', 'dark');
+    }
+    
+    // Apply custom theme CSS for premium themes
+    if (['space', 'neon', 'contrast'].includes(themePreference)) {
+        applyCustomThemeCSS(themePreference);
+    }
+}
+
+/**
+ * Update the theme based on selection
+ */
+function updateTheme(theme) {
+    const body = document.body;
+    const htmlElement = document.documentElement;
+    
+    // Update data-theme attribute
+    body.dataset.theme = theme;
+    body.className = body.className.replace(/theme-\w+/g, `theme-${theme}`);
+    
+    // Update Bootstrap's data-bs-theme
+    if (theme === 'light') {
+        htmlElement.setAttribute('data-bs-theme', 'light');
+    } else {
+        htmlElement.setAttribute('data-bs-theme', 'dark');
+    }
+    
+    // Remove any previously injected theme stylesheets
+    const existingThemeStyle = document.getElementById('dynamic-theme-style');
+    if (existingThemeStyle) {
+        existingThemeStyle.remove();
+    }
+    
+    // Apply custom theme CSS for premium themes
+    if (['space', 'neon', 'contrast'].includes(theme)) {
+        applyCustomThemeCSS(theme);
+    }
+}
+
+/**
+ * Apply custom theme CSS 
+ */
+function applyCustomThemeCSS(theme) {
+    const link = document.createElement('link');
+    link.id = 'dynamic-theme-style';
+    link.rel = 'stylesheet';
+    link.href = `/static/css/themes/${theme}.css`;
+    document.head.appendChild(link);
+}
+
+/**
+ * Get CSRF token from meta tag
+ */
+function getCSRFToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
+
+/**
+ * Show toast notification
+ */
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+    
+    const toastId = 'toast-' + Date.now();
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.id = toastId;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    
+    document.getElementById('toast-container').appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Auto-remove after it's hidden
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}

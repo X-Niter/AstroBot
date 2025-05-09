@@ -46,12 +46,48 @@ def update_theme():
         return jsonify({
             'status': 'success',
             'message': f'Theme updated to {theme}',
-            'theme': theme
+            'theme': theme,
+            'bs_theme': current_user.bs_theme
         })
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating theme: {str(e)}")
         return jsonify({'status': 'error', 'message': f'Error: {str(e)}'}), 500
+
+
+# Alias for compatibility with newer JavaScript code
+@app.route('/api/preferences/theme', methods=['POST'])
+@login_required
+def api_theme_preferences():
+    """Alias for update_theme with newer API format"""
+    data = request.json
+    if not data or 'theme' not in data:
+        return jsonify({'success': False, 'message': 'Invalid request'}), 400
+    
+    theme = data['theme']
+    # Validate theme
+    valid_themes = ['light', 'dark', 'space', 'neon', 'contrast']
+    if theme not in valid_themes:
+        return jsonify({'success': False, 'message': 'Invalid theme'}), 400
+    
+    # Check if theme is premium and user has access
+    premium_themes = ['space', 'neon', 'contrast']
+    if theme in premium_themes and not current_user.is_premium:
+        return jsonify({'success': False, 'message': 'Premium required for this theme'}), 403
+    
+    try:
+        current_user.theme_preference = theme
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Theme updated to {theme}',
+            'theme': theme,
+            'bs_theme': current_user.bs_theme
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating theme: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 @app.route('/update/appearance', methods=['POST'])
 @login_required
