@@ -360,7 +360,7 @@ jobs:
                       # Handle inputs as a JSON string
                       inputs_json = json.dumps(workflow.get('inputs', {}))
                       env_file.write(f"WORKFLOW_{i}_INPUTS={inputs_json}\n")
-          EOF
+EOF
           
           # Run the Python script
           python analyze_event.py
