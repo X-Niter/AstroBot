@@ -136,6 +136,8 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Load utilities and helpers -->
+<script src="{{ url_for('static', filename='js/dashboard-utils.js') }}"></script>
 <!-- Load the React dashboard component -->
 <script type="text/babel" src="{{ url_for('static', filename='js/analytics-dashboard.js') }}"></script>
 <script>

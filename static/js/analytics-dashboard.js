@@ -145,8 +145,9 @@ const getSampleData = () => {
 const Dashboard = () => {
   const [timeRange, setTimeRange] = React.useState(7);
   const [data, setData] = React.useState(getSampleData());
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
   const [theme, setTheme] = React.useState('light');
+  const [initialLoad, setInitialLoad] = React.useState(true);
   
   // Get current theme from body class
   React.useEffect(() => {
@@ -171,37 +172,54 @@ const Dashboard = () => {
     
     observer.observe(document.body, { attributes: true });
     
+    // Simulate loading data
+    setTimeout(() => {
+      setLoading(false);
+      setInitialLoad(false);
+    }, 1500);
+    
     return () => observer.disconnect();
   }, []);
   
   // Connect to socket.io for real-time updates
   React.useEffect(() => {
+    // Don't try to connect during initial load
+    if (initialLoad) return;
+    
     // Check if socket is available
-    if (window.astrobotSocket) {
-      // Listen for updates
-      window.astrobotSocket.on('stats_update', (newData) => {
-        setData(prevData => ({
-          ...prevData,
-          stats: {
-            users: newData.users,
-            commands: newData.commands,
-            aiPrompts: newData.ai_prompts,
-            modActions: newData.mod_actions
-          }
-        }));
-      });
-      
-      // Join analytics channel
-      window.astrobotSocket.emit('join_channel', 'analytics');
+    if (typeof window !== 'undefined' && window.astrobotSocket) {
+      try {
+        // Listen for updates
+        window.astrobotSocket.on('stats_update', (newData) => {
+          setData(prevData => ({
+            ...prevData,
+            stats: {
+              users: newData.users,
+              commands: newData.commands,
+              aiPrompts: newData.ai_prompts,
+              modActions: newData.mod_actions
+            }
+          }));
+        });
+        
+        // Join analytics channel
+        window.astrobotSocket.emit('join_channel', 'analytics');
+      } catch (err) {
+        console.log('Socket initialization error:', err);
+      }
     }
     
     // Cleanup on unmount
     return () => {
-      if (window.astrobotSocket) {
-        window.astrobotSocket.off('stats_update');
+      if (typeof window !== 'undefined' && window.astrobotSocket) {
+        try {
+          window.astrobotSocket.off('stats_update');
+        } catch (err) {
+          console.log('Socket cleanup error:', err);
+        }
       }
     };
-  }, []);
+  }, [initialLoad]);
   
   // Function to update time range
   const handleTimeRangeChange = (days) => {
