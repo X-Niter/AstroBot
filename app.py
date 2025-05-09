@@ -411,6 +411,7 @@ def server_index():
 def bot_customization(server_id):
     """Customize bot appearance for a specific server (premium feature)"""
     from models import DiscordServer, BotCustomization
+    from datetime import datetime
     
     # Get the server
     server = DiscordServer.query.filter_by(server_id=server_id).first_or_404()
@@ -787,6 +788,7 @@ def update_premium_feature():
         return redirect(url_for('index'))
     
     try:
+        from models import PremiumFeature
         feature_id = request.form.get('feature_id')
         name = request.form.get('name')
         feature_key = request.form.get('feature_key')
@@ -833,6 +835,7 @@ def toggle_feature():
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
     
     try:
+        from models import PremiumFeature
         feature = PremiumFeature.query.get(data['feature_id'])
         if not feature:
             return jsonify({'status': 'error', 'message': 'Feature not found'}), 404
@@ -861,6 +864,7 @@ def delete_feature():
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
     
     try:
+        from models import PremiumFeature, UserPremiumFeature
         feature = PremiumFeature.query.get(data['feature_id'])
         if not feature:
             return jsonify({'status': 'error', 'message': 'Feature not found'}), 404
