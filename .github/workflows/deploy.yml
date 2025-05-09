@@ -52,13 +52,15 @@ jobs:
         run: |
           # Create a static site generator script if it doesn't exist
           if [ ! -f freeze.py ]; then
-            echo 'from flask_frozen import Freezer
+            cat > freeze.py << 'EOF'
+from flask_frozen import Freezer
 from app import app
 
 freezer = Freezer(app)
 
 if __name__ == "__main__":
-    freezer.freeze()' > freeze.py
+    freezer.freeze()
+EOF
           fi
           
           # Run the static site generator
@@ -83,7 +85,8 @@ if __name__ == "__main__":
             sed -i 's/# import sys/import sys/g' docs/conf.py
             sed -i "s/# sys.path.insert(0, os.path.abspath('.'))/sys.path.insert(0, os.path.abspath('..'))/g" docs/conf.py
             
-            echo "Welcome to AstroBot's documentation!
+            cat > docs/index.rst << 'EOF'
+Welcome to AstroBot's documentation!
 ================================
 
 AstroBot is a sophisticated Discord bot leveraging advanced AI technologies to enhance 
@@ -99,9 +102,10 @@ adaptive interfaces.
 Indices and tables
 ==================
 
-* :ref:\`genindex\`
-* :ref:\`modindex\`
-* :ref:\`search\`" > docs/index.rst
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+EOF
           fi
           
           # Generate API documentation

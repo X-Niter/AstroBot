@@ -74,63 +74,63 @@ jobs:
           
           # Create mkdocs.yml if it doesn't exist
           if [ ! -f "mkdocs.yml" ]; then
-            cat > mkdocs.yml << EOL
-            site_name: AstroBot Documentation
-            site_description: Documentation for AstroBot - AI-Powered Discord Bot for Minecraft and Twitch
-            site_author: AstroBot Team
-            copyright: Copyright &copy; $(date +%Y) AstroBot Team
-            
-            theme:
-              name: material
-              palette:
-                # Palette toggle for light mode
-                - scheme: default
-                  primary: indigo
-                  accent: indigo
-                  toggle:
-                    icon: material/brightness-7
-                    name: Switch to dark mode
-                # Palette toggle for dark mode
-                - scheme: slate
-                  primary: blue
-                  accent: blue
-                  toggle:
-                    icon: material/brightness-4
-                    name: Switch to light mode
-              features:
-                - navigation.instant
-                - navigation.tracking
-                - navigation.tabs
-                - navigation.top
-                - search.suggest
-                - search.highlight
-                - content.code.copy
-                - content.action.edit
-            
-            plugins:
-              - search
-            
-            markdown_extensions:
-              - admonition
-              - codehilite:
-                  guess_lang: false
-              - toc:
-                  permalink: true
-              - pymdownx.highlight
-              - pymdownx.superfences
-              - pymdownx.tabbed
-              - pymdownx.emoji
-              - pymdownx.tasklist
-              - pymdownx.details
-              - pymdownx.inlinehilite
-            
-            nav:
-              - Home: index.md
-              - Getting Started: getting-started.md
-              - User Guide: user-guide.md
-              - API Reference: api-reference.md
-              - Contributing: contributing.md
-            EOL
+            cat > mkdocs.yml << 'EOF'
+site_name: AstroBot Documentation
+site_description: Documentation for AstroBot - AI-Powered Discord Bot for Minecraft and Twitch
+site_author: AstroBot Team
+copyright: Copyright &copy; 2024 AstroBot Team
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.emoji
+  - pymdownx.tasklist
+  - pymdownx.details
+  - pymdownx.inlinehilite
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide: user-guide.md
+  - API Reference: api-reference.md
+  - Contributing: contributing.md
+EOF
           fi
       
       # Generate automatic API documentation
