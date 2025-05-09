@@ -27,7 +27,14 @@ function initializeTheme() {
         root.classList.add(`theme-${theme}`);
     }
     
-    if (document.body) {
+    // Wait for document.body to be available
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.body) {
+                document.body.setAttribute('data-theme', theme);
+            }
+        });
+    } else if (document.body) {
         document.body.setAttribute('data-theme', theme);
     }
 }

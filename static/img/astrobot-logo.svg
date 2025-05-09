@@ -1,37 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background Circle -->
-  <circle cx="150" cy="150" r="150" fill="#222" />
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#0F172A"/>
   
-  <!-- Outer Ring with Stars -->
-  <circle cx="150" cy="150" r="140" stroke="#4E63EE" stroke-width="10" fill="none" />
+  <!-- Stars (small dots) in background -->
+  <g opacity="0.8">
+    <circle cx="128" cy="120" r="2" fill="white"/>
+    <circle cx="190" cy="85" r="2" fill="white"/>
+    <circle cx="300" cy="95" r="2" fill="white"/>
+    <circle cx="400" cy="140" r="2" fill="white"/>
+    <circle cx="450" cy="240" r="2" fill="white"/>
+    <circle cx="410" cy="350" r="2" fill="white"/>
+    <circle cx="320" cy="410" r="2" fill="white"/>
+    <circle cx="200" cy="430" r="2" fill="white"/>
+    <circle cx="100" cy="380" r="2" fill="white"/>
+    <circle cx="70" cy="270" r="3" fill="white"/>
+    <circle cx="150" cy="200" r="1.5" fill="white"/>
+    <circle cx="370" cy="180" r="1.5" fill="white"/>
+    <circle cx="280" cy="300" r="1.5" fill="white"/>
+    <circle cx="140" cy="330" r="1.5" fill="white"/>
+  </g>
   
-  <!-- Stars on Ring -->
-  <path d="M80 90 L90 80 L100 90 L90 100 Z" fill="#4E63EE" transform="rotate(15, 80, 90)" />
-  <path d="M220 90 L230 80 L240 90 L230 100 Z" fill="#4E63EE" transform="rotate(35, 220, 90)" />
-  <path d="M80 210 L90 200 L100 210 L90 220 Z" fill="#4E63EE" transform="rotate(45, 80, 210)" />
-  <path d="M220 210 L230 200 L240 210 L230 220 Z" fill="#4E63EE" transform="rotate(20, 220, 210)" />
+  <!-- Robot head (main shape) -->
+  <path d="M256 136C204 136 162 178 162 230V342C162 394 204 436 256 436C308 436 350 394 350 342V230C350 178 308 136 256 136Z" fill="#1E293B"/>
   
-  <!-- Small Dots -->
-  <circle cx="150" cy="20" r="5" fill="white" />
-  <circle cx="280" cy="150" r="5" fill="white" />
-  <circle cx="150" cy="280" r="5" fill="white" />
-  <circle cx="20" cy="150" r="5" fill="white" />
+  <!-- Robot face plate -->
+  <path d="M196 230H316V342C316 374.98 289.02 402 256 402C222.98 402 196 374.98 196 342V230Z" fill="#475569"/>
   
-  <!-- Robot Head -->
-  <rect x="85" y="100" width="130" height="130" rx="15" fill="#4E63EE" />
+  <!-- Robot eyes -->
+  <g>
+    <circle cx="226" cy="286" r="20" fill="#60A5FA"/>
+    <circle cx="286" cy="286" r="20" fill="#60A5FA"/>
+    <circle cx="226" cy="286" r="10" fill="#2563EB"/>
+    <circle cx="286" cy="286" r="10" fill="#2563EB"/>
+    <circle cx="230" cy="282" r="4" fill="white" opacity="0.8"/>
+    <circle cx="290" cy="282" r="4" fill="white" opacity="0.8"/>
+  </g>
+  
+  <!-- Robot mouth/speaker -->
+  <rect x="226" y="326" width="60" height="16" rx="8" fill="#1E293B"/>
+  <rect x="226" y="336" width="60" height="2" fill="#94A3B8"/>
+  <rect x="238" y="330" width="36" height="2" fill="#94A3B8"/>
   
   <!-- Antenna -->
-  <circle cx="150" cy="85" r="15" fill="#78AAFF" />
+  <rect x="252" y="116" width="8" height="20" fill="#475569"/>
+  <circle cx="256" cy="106" r="10" fill="#60A5FA"/>
   
-  <!-- Robot Eyes -->
-  <circle cx="120" cy="140" r="20" fill="white" />
-  <circle cx="180" cy="140" r="20" fill="white" />
+  <!-- Robot ears/modules -->
+  <rect x="146" y="250" width="16" height="60" rx="4" fill="#334155"/>
+  <rect x="350" y="250" width="16" height="60" rx="4" fill="#334155"/>
   
-  <!-- Pupils -->
-  <circle cx="120" cy="140" r="10" fill="#222" />
-  <circle cx="180" cy="140" r="10" fill="#222" />
+  <!-- Glowing effect rings -->
+  <circle cx="256" cy="256" r="140" stroke="#6366F1" stroke-width="2" stroke-dasharray="10 5" opacity="0.3"/>
+  <circle cx="256" cy="256" r="160" stroke="#6366F1" stroke-width="1" stroke-dasharray="8 8" opacity="0.2"/>
   
-  <!-- Mouth -->
-  <rect x="110" cy="190" width="80" height="15" rx="7.5" fill="white" />
+  <!-- Circuit patterns on helmet -->
+  <path d="M212 180C212 174.477 216.477 170 222 170H290C295.523 170 300 174.477 300 180V190C300 195.523 295.523 200 290 200H222C216.477 200 212 195.523 212 190V180Z" fill="#334155"/>
+  <path d="M226 176L226 194" stroke="#60A5FA" stroke-width="2"/>
+  <path d="M240 176L240 194" stroke="#60A5FA" stroke-width="2"/>
+  <path d="M256 176L256 194" stroke="#60A5FA" stroke-width="2"/>
+  <path d="M272 176L272 194" stroke="#60A5FA" stroke-width="2"/>
+  <path d="M286 176L286 194" stroke="#60A5FA" stroke-width="2"/>
 </svg>
