@@ -266,3 +266,122 @@ class StreamNotification(db.Model):
     
     def __repr__(self):
         return f"<StreamNotification {self.twitch_username} - {self.notification_type}>"
+
+class ModerationAction(db.Model):
+    """Discord moderation action tracking"""
+    __tablename__ = 'moderation_actions'
+    
+    id = Column(Integer, primary_key=True)
+    guild_id = Column(String(20), nullable=False, index=True)
+    user_id = Column(String(20), nullable=False, index=True)
+    moderator_id = Column(String(20), nullable=False, index=True)
+    action_type = Column(String(20), nullable=False) # warning, mute, unmute, ban, unban, kick
+    reason = Column(Text, nullable=True)
+    active = Column(Boolean, default=False) # For mutes and bans
+    duration_minutes = Column(Integer, nullable=True) # For temporary mutes
+    expiry_time = Column(DateTime, nullable=True) # For temporary mutes
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<ModerationAction {self.action_type} for {self.user_id}>"
+
+class AutoModRule(db.Model):
+    """Discord auto-moderation rule configuration"""
+    __tablename__ = 'automod_rules'
+    
+    id = Column(Integer, primary_key=True)
+    guild_id = Column(String(20), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    rule_type = Column(String(50), nullable=False) # spam, offensive_language, mention_spam, link_filtering
+    enabled = Column(Boolean, default=True)
+    action = Column(String(50), nullable=False) # delete, mute, warn, notify
+    action_duration_minutes = Column(Integer, nullable=True) # For temporary mutes
+    notify_channel_id = Column(String(20), nullable=True) # For notifications
+    created_by = Column(String(20), nullable=True)
+    settings = Column(JSON, nullable=True) # JSON configuration for the rule
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<AutoModRule {self.name} for {self.guild_id}>"
+
+class AutoModTrigger(db.Model):
+    """Record of auto-moderation rule being triggered"""
+    __tablename__ = 'automod_triggers'
+    
+    id = Column(Integer, primary_key=True)
+    rule_id = Column(Integer, ForeignKey('automod_rules.id'))
+    guild_id = Column(String(20), nullable=False, index=True)
+    user_id = Column(String(20), nullable=False, index=True)
+    channel_id = Column(String(20), nullable=True)
+    message_id = Column(String(20), nullable=True)
+    trigger_type = Column(String(50), nullable=False)
+    content_snippet = Column(String(255), nullable=True) # Snippet of the triggering content
+    action_taken = Column(String(50), nullable=False) # delete, mute, warn, notify
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    # Relationships
+    rule = relationship("AutoModRule")
+    
+    def __repr__(self):
+        return f"<AutoModTrigger rule_id={self.rule_id} user_id={self.user_id}>"
+
+class WebhookIntegration(db.Model):
+    """External service webhook integration"""
+    __tablename__ = 'webhook_integrations'
+    
+    id = Column(Integer, primary_key=True)
+    guild_id = Column(String(20), nullable=False, index=True)
+    channel_id = Column(String(20), nullable=False)
+    name = Column(String(100), nullable=False)
+    service = Column(String(50), nullable=False) # github, trello, gitlab, jenkins, custom
+    enabled = Column(Boolean, default=True)
+    secret = Column(String(255), nullable=True) # For webhook verification
+    token = Column(String(255), nullable=True) # For API authentication
+    settings = Column(Text, nullable=True) # JSON settings for the integration
+    endpoint_path = Column(String(100), nullable=True) # Custom endpoint path
+    created_by = Column(String(20), nullable=True) # Discord ID of user who created the integration
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    # Relationships
+    events = relationship("WebhookEvent", back_populates="integration")
+    
+    def __repr__(self):
+        return f"<WebhookIntegration {self.name} for {self.guild_id}>"
+    
+    def get_settings(self):
+        """Get settings as dictionary"""
+        if self.settings:
+            try:
+                return json.loads(self.settings)
+            except:
+                return {}
+        return {}
+
+class WebhookEvent(db.Model):
+    """Record of webhook event"""
+    __tablename__ = 'webhook_events'
+    
+    id = Column(Integer, primary_key=True)
+    integration_id = Column(Integer, ForeignKey('webhook_integrations.id'))
+    event_type = Column(String(50), nullable=False, index=True)
+    payload = Column(Text, nullable=True) # JSON payload
+    processed = Column(Boolean, default=False)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    # Relationships
+    integration = relationship("WebhookIntegration", back_populates="events")
+    
+    def __repr__(self):
+        return f"<WebhookEvent {self.event_type} for integration_id={self.integration_id}>"
+    
+    def get_payload(self):
+        """Get payload as dictionary"""
+        if self.payload:
+            try:
+                return json.loads(self.payload)
+            except:
+                return {}
+        return {}

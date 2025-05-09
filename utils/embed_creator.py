@@ -147,3 +147,66 @@ def create_mod_embed(title, description):
     embed.set_footer(text="Minecraft Mod Community")
     
     return embed
+
+def create_moderation_embed(
+    title, 
+    description, 
+    moderator=None, 
+    user=None, 
+    user_id=None, 
+    reason=None, 
+    dm_sent=None, 
+    include_timestamp=False,
+    color=None
+):
+    """
+    Create an embed for Discord moderation actions
+    
+    Args:
+        title (str): The embed title
+        description (str): The embed description
+        moderator (str, optional): Name of the moderator
+        user (str, optional): Name of the user being moderated
+        user_id (str, optional): ID of the user being moderated
+        reason (str, optional): Reason for the moderation action
+        dm_sent (bool, optional): Whether a DM was sent to the user
+        include_timestamp (bool, optional): Whether to include a timestamp
+        color (int, optional): Embed color
+        
+    Returns:
+        discord.Embed: The formatted embed
+    """
+    # Use provided color or default to the INFO color
+    embed_color = color if color else COLORS["INFO"]
+    
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=embed_color
+    )
+    
+    # Add timestamp if requested
+    if include_timestamp:
+        embed.timestamp = datetime.utcnow()
+    
+    # Add reason if provided
+    if reason:
+        embed.add_field(name="Reason", value=reason, inline=False)
+    
+    # Add user information if provided
+    if user and user_id:
+        embed.add_field(name="User", value=f"{user} ({user_id})", inline=True)
+    
+    # Add moderator if provided
+    if moderator:
+        embed.add_field(name="Moderator", value=moderator, inline=True)
+    
+    # Add DM status if provided
+    if dm_sent is not None:
+        dm_status = "✅ Sent" if dm_sent else "❌ Failed"
+        embed.add_field(name="DM Notification", value=dm_status, inline=True)
+    
+    # Set footer
+    embed.set_footer(text="AstroBot Moderation")
+    
+    return embed
