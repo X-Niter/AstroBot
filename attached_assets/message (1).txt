@@ -1,0 +1,119 @@
+Extension Name
+StreamSync
+
+Refreshed Description
+StreamSync transforms your Discord server into a living, breathing Twitch support ecosystem. Earn Support Points by tuning in, cheering, or hosting fellow streamers, climb through the tiered leaderboard, and bask in the spotlight the higher you rank. Now with Premium Tier access, you’re not just playing the game—you’re rewriting the rules.
+
+Core Free Features
+Community Watch & Support
+
+Definition: Tracks watches, follows, cheers, and subscriptions on community streams.
+
+Mechanics: Grants Support Points per minute watched, cheer bits spent, and new subs.
+
+Tiered Leaderboard
+
+Definition: Ranks users into Bronze → Silver → Gold → Platinum → Diamond based on points.
+
+Mechanics: Real‑time tier shifts; top‑tier streamers get prime “Spotlight” placement.
+
+Spotlight Promotion
+
+Definition: Hourly/daily showcase of top 5 streamers in a dedicated channel.
+
+Mechanics: Auto‑posts embeds with channel links and recent clip snippets.
+
+Raid & Host Coordinator
+
+Definition: Community‑driven raid/host planning tool.
+
+Mechanics: Vote on targets; hit threshold → bot issues coordinated raid prompts.
+
+Cheer & Sub Tracker
+
+Definition: Monitors cheers & subs for community channels.
+
+Mechanics: Awards bonus points; fires celebratory announcements.
+
+Clip & Highlight Sharer
+
+Definition: Auto‑fetches top clips and shares them in Discord.
+
+Mechanics: Pulls via Twitch API; lets users react/vote.
+
+Event Scheduler & Reminder
+
+Definition: Schedule broadcasts or watch‑parties with reminders.
+
+Mechanics: Creates Discord calendar events with auto‑pings.
+
+Engagement Badges & Roles
+
+Definition: Assigns Discord roles/badges for tier milestones.
+
+Mechanics: Auto role‑assignment (e.g., “Gold Supporter”) with custom colors/emojis.
+
+Monthly Challenges & Rewards
+
+Definition: Time‑boxed objectives (e.g., “5,000 minutes watched”) with perks.
+
+Mechanics: Tracks progress; announces winners; dispenses virtual coins or IRL prizes.
+
+Premium Tier Features
+(Subscribe to unlock these next‑level goodies)
+
+Advanced Analytics Dashboard
+
+Definition: Real‑time graphs and stats on your watch time, cheers, raid success, and more.
+
+Mechanics: Access an in‑Discord dashboard with filters by date, streamer, and event type.
+
+Custom Spotlight Overrides
+
+Definition: Premium users can pin their own streams or swap another community stream into the spotlight once per day.
+
+Mechanics: /spotlight pin @you for a personal promo boost.
+
+Priority Raid Queue
+
+Definition: Jump to the front of raid planning—your target gets top billing when votes tally.
+
+Mechanics: Premium raid votes count as 2× weight; cool‑down resets faster.
+
+Clip Vault & Export
+
+Definition: Store up to 50 clips per month, tag them, and export highlights as a downloadable ZIP.
+
+Mechanics: Manage clips via /clip vault commands; /clip export bundles them.
+
+Branded Overlay Templates
+
+Definition: Get Twitch overlay HTML/CSS templates auto‑populated with your Discord stats and tier badges.
+
+Mechanics: Download themed overlays (retro, cyberpunk, minimal) and drop them into StreamLabs/OBS.
+
+Role & Badge Customization
+
+Definition: Design your own support badges and role colors—stand out even more.
+
+Mechanics: Use /premium badge create <emoji> <name> and /premium rolecolor #HEX.
+
+Automated Giveaways & Prize Draws
+
+Definition: Run monthly raffles among top supporters, with random item pickers and announcement banners.
+
+Mechanics: /giveaway start, set qualifying tiers or point thresholds, and let the bot handle the draw.
+
+VIP Support Hotline
+
+Definition: Premium users get priority responses from bot maintainers and a private support channel.
+
+Mechanics: Access #streamsync-vip-support and ping the staff role for rapid troubleshooting.
+
+Webhook Integrations
+
+Definition: Connect to Google Sheets, Notion, or Zapier for cross‑platform data sync.
+
+Mechanics: Configure custom webhooks to send JSON payloads of your stats anywhere you want.
+
+✨ That’s the complete package—free features to get everyone hyped and a Premium Tier to supercharge your support cred. Ready to code it out and watch the tiers pop off? Let’s get that hype train rolling!
