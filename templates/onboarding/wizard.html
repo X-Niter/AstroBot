@@ -796,32 +796,91 @@
         const selectedFeatures = Array.from(document.querySelectorAll('.feature-card.selected'))
             .map(card => card.getAttribute('data-feature'));
         
-        // This would be replaced with actual configuration data from the chat
-        const configData = {
-            features: selectedFeatures,
-            moderation: {
-                sensitivity: 'medium',
+        // Get chat data from the conversation
+        const chatMessages = document.querySelectorAll('.chat-message');
+        let serverInfo = {};
+        
+        // Analyze the chat messages to extract server information
+        // In a real implementation, this would be done more systematically
+        // using AI to analyze the conversation
+        
+        if (selectedFeatures.includes('moderation')) {
+            serverInfo.moderation = {
+                sensitivity: document.getElementById('moderationSettings')?.querySelector('[data-value="sensitivity"]')?.textContent || 'medium',
                 autoModeration: true,
                 warningSystem: '3-strike'
-            },
-            minecraft: {
-                serverType: 'smp',
+            };
+        }
+        
+        if (selectedFeatures.includes('minecraft')) {
+            serverInfo.minecraft = {
+                serverType: document.getElementById('minecraftSettings')?.querySelector('[data-value="serverType"]')?.textContent || 'smp',
                 whitelist: true,
                 monitoring: true
-            }
+            };
+        }
+        
+        if (selectedFeatures.includes('ai')) {
+            serverInfo.ai = {
+                enableClaude: true,
+                enableGPT4o: true,
+                enableImageGeneration: true
+            };
+        }
+        
+        if (selectedFeatures.includes('commands')) {
+            serverInfo.commands = {
+                enableCustomCommands: true,
+                commandPrefix: '!'
+            };
+        }
+        
+        if (selectedFeatures.includes('twitch')) {
+            serverInfo.twitch = {
+                enableStreamNotifications: true,
+                enablePointsSystem: true
+            };
+        }
+        
+        if (selectedFeatures.includes('analytics')) {
+            serverInfo.analytics = {
+                enableCommandTracking: true,
+                enableUserStats: true
+            };
+        }
+        
+        // Create the configuration data
+        const configData = {
+            name: 'AstroBot Configuration',
+            server_purpose: 'community',
+            server_size: 'medium',
+            activity_level: 'medium',
+            moderation_needs: 'medium',
+            features: selectedFeatures,
+            server_info: serverInfo,
+            additional_requirements: '',
         };
         
-        // In a real app, this would be sent to the server
+        console.log('Sending configuration:', configData);
+        
+        // Send to the server
         fetch('/api/onboarding/configure', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
             },
             body: JSON.stringify(configData)
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             console.log('Configuration saved:', data);
+            
             // Move to the final step
             const currentStep = document.querySelector('.wizard-step.active');
             const finalStep = document.getElementById('step5');
@@ -836,6 +895,26 @@
             console.error('Error saving configuration:', error);
             alert('There was an error saving your configuration. Please try again.');
         });
+    }
+    
+    // Helper function to get CSRF token
+    function getCsrfToken() {
+        // Try to get the token from the meta tag
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        if (tokenMeta) {
+            return tokenMeta.getAttribute('content');
+        }
+        
+        // If no meta tag, try to get from cookie
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith('csrf_token=')) {
+                return cookie.substring('csrf_token='.length, cookie.length);
+            }
+        }
+        
+        return '';
     }
 </script>
 {% endblock %}
