@@ -369,6 +369,8 @@ def plugins():
 def bot_settings():
     """Bot settings dashboard"""
     # Get servers where user is owner
+    from models import DiscordServer
+    
     if current_user.is_authenticated:
         servers = DiscordServer.query.filter_by(owner_id=current_user.id).all()
     else:
@@ -575,6 +577,7 @@ def premium_users():
         flash('You do not have permission to access this page.', 'danger')
         return redirect(url_for('index'))
     
+    from models import WebsiteUser, PremiumFeature
     users = WebsiteUser.query.all()
     premium_features = PremiumFeature.query.all()
     
@@ -591,6 +594,7 @@ def premium_features():
         flash('You do not have permission to access this page.', 'danger')
         return redirect(url_for('index'))
     
+    from models import PremiumFeature
     features = PremiumFeature.query.all()
     return render_template('admin/premium_features.html', 
                           title="Premium Features Management", 
@@ -604,6 +608,7 @@ def server_showcase():
         flash('You do not have permission to access this page.', 'danger')
         return redirect(url_for('index'))
     
+    from models import DiscordServer
     servers = DiscordServer.query.all()
     return render_template('admin/server_showcase.html', 
                           title="Server Showcase Management", 
@@ -621,6 +626,7 @@ def toggle_premium():
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
     
     try:
+        from models import WebsiteUser
         user = WebsiteUser.query.get(data['user_id'])
         if not user:
             return jsonify({'status': 'error', 'message': 'User not found'}), 404
@@ -653,6 +659,7 @@ def assign_premium_feature():
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
     
     try:
+        from models import WebsiteUser, PremiumFeature, UserPremiumFeature
         user = WebsiteUser.query.get(data['user_id'])
         feature = PremiumFeature.query.get(data['feature_id'])
         
@@ -709,6 +716,7 @@ def remove_premium_feature():
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
     
     try:
+        from models import UserPremiumFeature
         user_feature = UserPremiumFeature.query.get(data['user_feature_id'])
         if not user_feature:
             return jsonify({'status': 'error', 'message': 'User feature not found'}), 404
@@ -737,6 +745,7 @@ def add_premium_feature():
         return redirect(url_for('index'))
     
     try:
+        from models import PremiumFeature
         name = request.form.get('name')
         feature_key = request.form.get('feature_key')
         description = request.form.get('description', '')
