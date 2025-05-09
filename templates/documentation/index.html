@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}AstroBot Documentation{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/documentation.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container documentation-container">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 doc-sidebar">
+            <div class="sticky-top pt-4">
+                <h5>Documentation</h5>
+                <hr>
+                <div class="nav flex-column">
+                    <a class="nav-link active" href="{{ url_for('documentation_index') }}">Home</a>
+                    
+                    <div class="nav-group">
+                        <h6>Getting Started</h6>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='guides', page_name='quickstart') }}">Quick Start Guide</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='guides', page_name='installation') }}">Installation</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='guides', page_name='configuration') }}">Configuration</a>
+                    </div>
+                    
+                    <div class="nav-group">
+                        <h6>Features</h6>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='features', page_name='moderation') }}">Moderation System</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='features', page_name='customcommands') }}">Custom Commands</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='features', page_name='minecraft') }}">Minecraft Integration</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='features', page_name='twitch') }}">Twitch Integration</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='features', page_name='ai') }}">AI Features</a>
+                    </div>
+                    
+                    <div class="nav-group">
+                        <h6>API Reference</h6>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='api', page_name='overview') }}">Overview</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='api', page_name='authentication') }}">Authentication</a>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='api', page_name='endpoints') }}">Endpoints</a>
+                    </div>
+                    
+                    <div class="nav-group">
+                        <h6>Community</h6>
+                        <a class="nav-link" href="{{ url_for('documentation_page', page_type='guides', page_name='contributing') }}">Contributing</a>
+                        <a class="nav-link" href="{{ url_for('feedback') }}">Feedback & Suggestions</a>
+                        <a class="nav-link" href="https://discord.gg/astrobot" target="_blank">Discord Community</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 doc-content">
+            <div class="jumbotron bg-primary text-white">
+                <h1 class="display-4">AstroBot Documentation</h1>
+                <p class="lead">Complete guides, API references, and examples for the AstroBot platform</p>
+            </div>
+            
+            <div class="card-deck mb-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-rocket text-primary"></i> 
+                            Getting Started
+                        </h5>
+                        <p class="card-text">Learn how to install, configure, and deploy AstroBot on your Discord server.</p>
+                        <a href="{{ url_for('documentation_page', page_type='guides', page_name='quickstart') }}" class="btn btn-primary">Quick Start Guide</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-cogs text-primary"></i> 
+                            Feature Guides
+                        </h5>
+                        <p class="card-text">Explore in-depth guides on AstroBot's powerful features and capabilities.</p>
+                        <a href="{{ url_for('documentation_page', page_type='features', page_name='moderation') }}" class="btn btn-primary">Feature Guides</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-plug text-primary"></i> 
+                            API Documentation
+                        </h5>
+                        <p class="card-text">Integrate your applications with AstroBot using our comprehensive API.</p>
+                        <a href="{{ url_for('documentation_page', page_type='api', page_name='overview') }}" class="btn btn-primary">API Reference</a>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Popular Topics</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="list-group mb-4">
+                        <a href="{{ url_for('documentation_page', page_type='features', page_name='customcommands') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Custom Commands</h5>
+                                <small><i class="fas fa-star text-warning"></i></small>
+                            </div>
+                            <p class="mb-1">Create powerful custom commands with variables and conditions</p>
+                        </a>
+                        <a href="{{ url_for('documentation_page', page_type='features', page_name='moderation') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Advanced Moderation</h5>
+                                <small><i class="fas fa-star text-warning"></i></small>
+                            </div>
+                            <p class="mb-1">Keep your server safe with AI-powered moderation tools</p>
+                        </a>
+                        <a href="{{ url_for('documentation_page', page_type='features', page_name='ai') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">AI Capabilities</h5>
+                                <small><i class="fas fa-star text-warning"></i></small>
+                            </div>
+                            <p class="mb-1">Leverage Claude 3.5 and GPT-4o for intelligent interactions</p>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="list-group mb-4">
+                        <a href="{{ url_for('documentation_page', page_type='features', page_name='twitch') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Twitch Integration</h5>
+                                <small><i class="fas fa-star text-warning"></i></small>
+                            </div>
+                            <p class="mb-1">Connect your Twitch streams and engage your community</p>
+                        </a>
+                        <a href="{{ url_for('documentation_page', page_type='features', page_name='minecraft') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Minecraft Server Management</h5>
+                                <small><i class="fas fa-star text-warning"></i></small>
+                            </div>
+                            <p class="mb-1">Monitor and manage your Minecraft servers with ease</p>
+                        </a>
+                        <a href="{{ url_for('documentation_page', page_type='guides', page_name='webhooks') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Webhook Integrations</h5>
+                                <small><i class="fas fa-star text-warning"></i></small>
+                            </div>
+                            <p class="mb-1">Connect AstroBot to external services with webhooks</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Recently Updated</h2>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Category</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="{{ url_for('documentation_page', page_type='features', page_name='ai') }}">AI Features</a></td>
+                            <td>Features</td>
+                            <td>May 9, 2025</td>
+                        </tr>
+                        <tr>
+                            <td><a href="{{ url_for('documentation_page', page_type='features', page_name='moderation') }}">Moderation System</a></td>
+                            <td>Features</td>
+                            <td>May 8, 2025</td>
+                        </tr>
+                        <tr>
+                            <td><a href="{{ url_for('documentation_page', page_type='api', page_name='authentication') }}">API Authentication</a></td>
+                            <td>API Reference</td>
+                            <td>May 7, 2025</td>
+                        </tr>
+                        <tr>
+                            <td><a href="{{ url_for('documentation_page', page_type='guides', page_name='quickstart') }}">Quick Start Guide</a></td>
+                            <td>Guides</td>
+                            <td>May 5, 2025</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="alert alert-info mt-4">
+                <h4 class="alert-heading">Need Help?</h4>
+                <p>Can't find what you're looking for? Join our <a href="https://discord.gg/astrobot" target="_blank" class="alert-link">Discord server</a> for community support or <a href="{{ url_for('contact') }}" class="alert-link">contact us</a> directly.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/documentation.js') }}"></script>
+{% endblock %}

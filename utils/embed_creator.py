@@ -308,6 +308,260 @@ def create_ai_response_embed(
     return embed
 
 
+def create_twitch_embed(
+    title: str,
+    streamer: str = None,
+    stream_title: str = None,
+    game: str = None,
+    viewer_count: int = None,
+    stream_url: str = None,
+    thumbnail_url: Optional[str] = None,
+    color: int = 0x6441A4,  # Twitch purple
+    include_timestamp: bool = True
+) -> discord.Embed:
+    """
+    Create a standardized embed for Twitch streams
+    
+    Args:
+        title: Title of the embed
+        streamer: Name of the Twitch streamer
+        stream_title: Title of the stream
+        game: Game being played
+        viewer_count: Number of viewers
+        stream_url: URL to the Twitch stream
+        thumbnail_url: URL for the thumbnail image
+        color: Color of the embed
+        include_timestamp: Whether to include a timestamp
+        
+    Returns:
+        discord.Embed: The created embed
+    """
+    embed = discord.Embed(
+        title=title,
+        url=stream_url,
+        color=color
+    )
+    
+    # Add streamer information if provided
+    if streamer:
+        embed.add_field(name="Streamer", value=streamer, inline=True)
+        
+    if stream_title:
+        embed.add_field(name="Stream Title", value=stream_title, inline=False)
+    
+    if game:
+        embed.add_field(name="Game", value=game, inline=True)
+        
+    if viewer_count is not None:
+        embed.add_field(name="Viewers", value=f"{viewer_count:,}", inline=True)
+        
+    if stream_url:
+        embed.add_field(name="Watch", value=f"[Twitch]({stream_url})", inline=True)
+    
+    # Add thumbnail if provided
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    
+    # Add timestamp if requested
+    if include_timestamp:
+        embed.timestamp = datetime.datetime.utcnow()
+    
+    # Add footer
+    embed.set_footer(text="AstroBot Twitch Integration")
+    
+    return embed
+
+
+def create_leaderboard_embed(
+    title: str,
+    leaderboard_entries: List[Dict[str, Any]],
+    description: str = None,
+    field_name: str = "Top Users",
+    rank_icon: str = "🏆",
+    color: int = 0xF1C40F,  # Gold
+    thumbnail_url: Optional[str] = None,
+    include_timestamp: bool = True
+) -> discord.Embed:
+    """
+    Create a standardized embed for leaderboards
+    
+    Args:
+        title: Title of the embed
+        leaderboard_entries: List of dictionaries with leaderboard data
+        description: Description text
+        field_name: Name of the leaderboard field
+        rank_icon: Icon to use for ranking
+        color: Color of the embed
+        thumbnail_url: URL for the thumbnail image
+        include_timestamp: Whether to include a timestamp
+        
+    Returns:
+        discord.Embed: The created embed
+    """
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+    
+    # Format leaderboard entries
+    if leaderboard_entries:
+        leaderboard_text = ""
+        
+        for i, entry in enumerate(leaderboard_entries):
+            rank = i + 1
+            rank_prefix = f"{rank}. "
+            
+            # Add special icons for top 3
+            if rank == 1:
+                rank_prefix = "🥇 "
+            elif rank == 2:
+                rank_prefix = "🥈 "
+            elif rank == 3:
+                rank_prefix = "🥉 "
+                
+            # Format entry based on available fields
+            if "name" in entry and "score" in entry:
+                leaderboard_text += f"{rank_prefix}**{entry['name']}** - {entry['score']:,} points\n"
+            elif "name" in entry and "value" in entry:
+                leaderboard_text += f"{rank_prefix}**{entry['name']}** - {entry['value']}\n"
+            elif "user" in entry and "score" in entry:
+                leaderboard_text += f"{rank_prefix}**{entry['user']}** - {entry['score']:,} points\n"
+            else:
+                # Generic fallback
+                leaderboard_text += f"{rank_prefix}{str(entry)}\n"
+                
+        embed.add_field(name=field_name, value=leaderboard_text, inline=False)
+    else:
+        embed.add_field(name=field_name, value="No entries found", inline=False)
+    
+    # Add thumbnail if provided
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    
+    # Add timestamp if requested
+    if include_timestamp:
+        embed.timestamp = datetime.datetime.utcnow()
+    
+    # Add footer
+    embed.set_footer(text="AstroBot Leaderboard")
+    
+    return embed
+
+
+def create_mod_embed(
+    title: str,
+    description: str = None,
+    mod_action: str = None,
+    target_user: str = None,
+    reason: str = None,
+    duration: str = None,
+    color: int = 0xFF3860,  # Red
+    thumbnail_url: Optional[str] = None,
+    include_timestamp: bool = True
+) -> discord.Embed:
+    """
+    Create a standardized embed for community moderation actions
+    
+    Args:
+        title: Title of the embed
+        description: Description text
+        mod_action: Type of moderation action (ban, mute, etc.)
+        target_user: User who received the moderation action
+        reason: Reason for the moderation action
+        duration: Duration of the moderation action
+        color: Color of the embed
+        thumbnail_url: URL for the thumbnail image
+        include_timestamp: Whether to include a timestamp
+        
+    Returns:
+        discord.Embed: The created embed
+    """
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+    
+    # Add action information if provided
+    if mod_action:
+        embed.add_field(name="Action", value=mod_action, inline=True)
+        
+    if target_user:
+        embed.add_field(name="User", value=target_user, inline=True)
+    
+    if reason:
+        embed.add_field(name="Reason", value=reason, inline=False)
+        
+    if duration:
+        embed.add_field(name="Duration", value=duration, inline=True)
+    
+    # Add thumbnail if provided
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    
+    # Add timestamp if requested
+    if include_timestamp:
+        embed.timestamp = datetime.datetime.utcnow()
+    
+    # Add footer
+    embed.set_footer(text="AstroBot Community Moderation")
+    
+    return embed
+
+
+def create_feedback_embed(
+    user: str,
+    feedback: str,
+    feedback_type: str = "Suggestion",
+    contact_info: str = None,
+    feedback_id: str = None,
+    status: str = "Submitted",
+    color: int = 0x3498DB,  # Blue
+    include_timestamp: bool = True
+) -> discord.Embed:
+    """
+    Create a standardized embed for user feedback/suggestions
+    
+    Args:
+        user: Name of the user providing feedback
+        feedback: The feedback content
+        feedback_type: Type of feedback (Suggestion, Bug Report, etc.)
+        contact_info: Optional contact information
+        feedback_id: Optional feedback ID for tracking
+        status: Status of the feedback
+        color: Color of the embed
+        include_timestamp: Whether to include a timestamp
+        
+    Returns:
+        discord.Embed: The created embed
+    """
+    embed = discord.Embed(
+        title=f"{feedback_type} #{feedback_id}" if feedback_id else feedback_type,
+        description=feedback,
+        color=color
+    )
+    
+    # Add user information
+    embed.add_field(name="From", value=user, inline=True)
+    
+    # Add status
+    embed.add_field(name="Status", value=status, inline=True)
+    
+    # Add contact info if provided
+    if contact_info:
+        embed.add_field(name="Contact Info", value=contact_info, inline=True)
+    
+    # Add timestamp if requested
+    if include_timestamp:
+        embed.timestamp = datetime.datetime.utcnow()
+    
+    # Add footer
+    embed.set_footer(text="AstroBot Feedback System")
+    
+    return embed
+
+
 def create_welcome_embed(
     guild_name: str,
     member_name: str,
