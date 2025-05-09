@@ -396,46 +396,79 @@ def bot_customization(server_id):
     # Get existing customization if any
     customization = BotCustomization.query.filter_by(server_id=server.id).first()
     
+    # Create form
+    form = BotCustomizationForm()
+    
     # Handle form submission
-    if request.method == 'POST':
+    if form.validate_on_submit():
         if not server.can_customize_bot:
             flash('Bot customization is a premium feature. Upgrade to access this feature.', 'warning')
             return redirect(url_for('premium_plans'))
         
         # Create or update customization
         if customization is None:
-            customization = BotCustomization(
-                server_id=server.id,
-                created_by_id=current_user.id
-            )
+            customization = BotCustomization(server_id=server.id)
             db.session.add(customization)
         
-        # Update fields
-        customization.custom_name = request.form.get('custom_name', '')
-        customization.custom_avatar_url = request.form.get('custom_avatar_url', '')
-        customization.custom_status = request.form.get('custom_status', '')
-        customization.custom_playing = request.form.get('custom_playing', '')
-        customization.theme_color = request.form.get('theme_color', '#5865F2')
-        customization.custom_prefix = request.form.get('custom_prefix', '')
+        # Update fields from form
+        customization.custom_name = form.custom_name.data
+        customization.custom_status = form.custom_status.data
+        customization.custom_playing = form.custom_playing.data
+        customization.theme_color = form.theme_color.data
+        
+        # Handle avatar file upload
+        if form.avatar_file.data:
+            try:
+                avatar_file = form.avatar_file.data
+                filename = secure_filename(f"avatar_{server_id}_{int(time.time())}.{avatar_file.filename.rsplit('.', 1)[1].lower()}")
+                avatar_path = os.path.join(app.static_folder, 'uploads', 'avatars', filename)
+                
+                # Ensure upload directory exists
+                os.makedirs(os.path.dirname(avatar_path), exist_ok=True)
+                
+                # Save the file
+                avatar_file.save(avatar_path)
+                
+                # Set avatar URL
+                customization.custom_avatar_url = url_for('static', filename=f'uploads/avatars/{filename}')
+                
+                app.logger.info(f"Saved custom avatar for server {server_id}: {avatar_path}")
+            except Exception as e:
+                app.logger.error(f"Error saving avatar: {str(e)}")
+                flash(f"Error uploading avatar: {str(e)}", 'danger')
         
         try:
             db.session.commit()
             flash('Bot customization saved successfully!', 'success')
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error saving bot customization: {str(e)}")
+            app.logger.error(f"Error saving bot customization: {str(e)}")
             flash(f'Error saving customization: {str(e)}', 'danger')
         
         return redirect(url_for('bot_customization', server_id=server_id))
     
+    # Fill form with existing data, if any
+    if customization and request.method == 'GET':
+        form.custom_name.data = customization.custom_name
+        form.custom_status.data = customization.custom_status
+        form.custom_playing.data = customization.custom_playing
+        form.theme_color.data = customization.theme_color
+    
     # Pass current time for preview
     now = datetime.now()
     
-    return render_template('server/bot_customization.html',
-                          title="Bot Customization",
+    # Check for errors or success from redirects
+    error = request.args.get('error')
+    success = request.args.get('success')
+    
+    return render_template('server/customize.html',
+                          title=f"Customize Bot - {server.name}",
                           server=server,
                           customization=customization,
-                          now=now)
+                          form=form,
+                          now=now,
+                          error=error,
+                          success=success)
 
 @app.route('/discord/analytics')
 def discord_analytics():

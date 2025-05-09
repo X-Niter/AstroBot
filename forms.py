@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, TextAreaField, SelectField, BooleanField, PasswordField, EmailField
-from wtforms.validators import DataRequired, Length, Email, Optional, EqualTo
+from wtforms.validators import DataRequired, Length, Email, Optional, EqualTo, Regexp
 
 class FeedbackForm(FlaskForm):
     """Form for user feedback and suggestions"""
@@ -140,3 +141,37 @@ class WebhookForm(FlaskForm):
     )
     
     active = BooleanField('Active')
+
+
+class BotCustomizationForm(FlaskForm):
+    """Form for customizing the bot appearance for premium servers"""
+    custom_name = StringField(
+        'Bot Name',
+        validators=[Optional(), Length(min=3, max=32)]
+    )
+    
+    custom_status = StringField(
+        'Status Text',
+        validators=[Optional(), Length(max=100)]
+    )
+    
+    custom_playing = StringField(
+        'Playing Status',
+        validators=[Optional(), Length(max=100)]
+    )
+    
+    theme_color = StringField(
+        'Theme Color',
+        validators=[
+            Optional(), 
+            Regexp(r'^#(?:[0-9a-fA-F]{3}){1,2}$', message='Must be a valid HEX color code (e.g. #7289DA)')
+        ]
+    )
+    
+    avatar_file = FileField(
+        'Bot Avatar',
+        validators=[
+            Optional(),
+            FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')
+        ]
+    )
