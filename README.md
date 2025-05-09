@@ -12,6 +12,10 @@
 ![Build Status](https://img.shields.io/github/workflow/status/astroframe/astrobot/Deploy)
 [![Documentation](https://img.shields.io/badge/docs-online-informational)](https://yourusername.github.io/astrobot/)
 
+<br />
+<i>Revolutionize your Discord server with AI-powered solutions</i>
+<br /><br />
+
 </div>
 
 <div align="center">
@@ -161,7 +165,7 @@ AstroBot offers enhanced capabilities for premium users:
 ## 📊 **Dashboard Demo**
 
 <div align="center">
-<img src="static/img/dashboard-demo.png" alt="AstroBot Dashboard" width="80%"/>
+<img src="static/img/dashboard-demo.svg" alt="AstroBot Dashboard" width="80%"/>
 </div>
 
 ## 🧩 **Commands**
