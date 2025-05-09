@@ -23,6 +23,17 @@ TWITCH_CLIENT_SECRET = os.environ.get("TWITCH_CLIENT_SECRET")
 # MongoDB Configuration
 MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/astrobot")
 DB_NAME = os.environ.get("DB_NAME", "astrobot")
+MONGODB_HOST = os.environ.get("MONGODB_HOST", "localhost")
+MONGODB_PORT = int(os.environ.get("MONGODB_PORT", 27017))
+MONGODB_USERNAME = os.environ.get("MONGODB_USERNAME", "")
+MONGODB_PASSWORD = os.environ.get("MONGODB_PASSWORD", "")
+# If direct connection URI is not provided, build one from components
+if not MONGODB_URI or MONGODB_URI == "mongodb://localhost:27017/astrobot":
+    # Build connection string based on credentials
+    if MONGODB_USERNAME and MONGODB_PASSWORD:
+        MONGODB_URI = f"mongodb://{MONGODB_USERNAME}:{MONGODB_PASSWORD}@{MONGODB_HOST}:{MONGODB_PORT}/{DB_NAME}"
+    else:
+        MONGODB_URI = f"mongodb://{MONGODB_HOST}:{MONGODB_PORT}/{DB_NAME}"
 
 # Minecraft Server Configuration
 MINECRAFT_SERVER_IP = os.environ.get("MINECRAFT_SERVER_IP", "localhost")
