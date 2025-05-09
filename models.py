@@ -268,11 +268,8 @@ class WebsiteUser(UserMixin, db.Model):
     discord_id = Column(String(20), unique=True, nullable=True)
     is_admin = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
-    is_premium = Column(Boolean, default=False)
-    premium_since = Column(DateTime, nullable=True)
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    theme_preference = Column(String(20), default="dark") # light, dark, space, neon, contrast
     
     @property
     def bs_theme(self):

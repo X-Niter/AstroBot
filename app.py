@@ -529,9 +529,16 @@ def premium_plans():
 @login_required
 def user_premium_features():
     """Show premium features available to the user"""
+    from models import UserPremiumFeature, PremiumFeature
+    
     # Get user's features
     user_features = []
-    if current_user.is_premium:
+    # Check if the user has a premium relationship or associated feature
+    is_premium = False
+    premium_feature_count = db.session.query(UserPremiumFeature).filter_by(user_id=current_user.id).count()
+    is_premium = premium_feature_count > 0
+    
+    if is_premium:
         user_features = UserPremiumFeature.query.filter_by(user_id=current_user.id).all()
     
     # Get all available features
