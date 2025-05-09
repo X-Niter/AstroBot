@@ -1254,11 +1254,12 @@ def get_analytics_moderation():
 
 # Helper function to generate time data for analytics
 def generate_time_data(days, is_ai=False):
+    from datetime import datetime, timedelta
     data = []
-    now = datetime.datetime.now()
+    now = datetime.now()
     
     for i in range(days + 1):
-        date = now - datetime.timedelta(days=i)
+        date = now - timedelta(days=i)
         date_str = date.strftime('%Y-%m-%d')
         
         if is_ai:

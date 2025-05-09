@@ -22,7 +22,8 @@ try:
     )
     
     # Test connection - this will fail quickly if MongoDB is not available
-    client.admin.command('ping')
+    # Use synchronous methods for connection check in module initialization
+    result = client.admin.command('ping')
     
     logger.info("MongoDB connection successful")
     db = client[DB_NAME]
