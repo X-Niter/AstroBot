@@ -1,1 +1,670 @@
-null
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Analytics Dashboard</h5>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="timeRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Last 7 Days
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="timeRangeDropdown">
+                        <li><a class="dropdown-item active" href="#" data-range="7">Last 7 Days</a></li>
+                        <li><a class="dropdown-item" href="#" data-range="14">Last 14 Days</a></li>
+                        <li><a class="dropdown-item" href="#" data-range="30">Last 30 Days</a></li>
+                        <li><a class="dropdown-item" href="#" data-range="90">Last 90 Days</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2 fs-4"></i>
+                        <div>
+                            <h6 class="mb-1">Premium Analytics</h6>
+                            <p class="mb-0">Unlock advanced analytics and unlimited historical data with a Premium subscription.</p>
+                        </div>
+                        <a href="{{ url_for('premium_plans') }}" class="btn btn-primary ms-auto">Upgrade</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Overview Stats -->
+    <div class="col-12 mb-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4" id="stats-cards-container">
+            <div class="col">
+                <div class="card h-100 border-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-muted mb-0">Total Discord Users</h6>
+                            <i class="bi bi-people-fill text-primary fs-3"></i>
+                        </div>
+                        <h3 class="mb-0" id="total-users">27,584</h3>
+                        <div class="small text-success mt-2">
+                            <i class="bi bi-graph-up-arrow"></i> +5.2% from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 border-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-muted mb-0">Commands Used</h6>
+                            <i class="bi bi-terminal-fill text-success fs-3"></i>
+                        </div>
+                        <h3 class="mb-0" id="commands-used">156,340</h3>
+                        <div class="small text-success mt-2">
+                            <i class="bi bi-graph-up-arrow"></i> +12.7% from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 border-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-muted mb-0">AI Prompts</h6>
+                            <i class="bi bi-cpu-fill text-info fs-3"></i>
+                        </div>
+                        <h3 class="mb-0" id="ai-prompts">42,971</h3>
+                        <div class="small text-success mt-2">
+                            <i class="bi bi-graph-up-arrow"></i> +18.3% from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 border-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-muted mb-0">Moderation Actions</h6>
+                            <i class="bi bi-shield-fill-check text-warning fs-3"></i>
+                        </div>
+                        <h3 class="mb-0" id="mod-actions">8,452</h3>
+                        <div class="small text-danger mt-2">
+                            <i class="bi bi-graph-down-arrow"></i> -3.1% from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Over Time Chart -->
+    <div class="col-12 col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Activity Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activity-chart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Commands Chart -->
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Top Commands</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="commands-chart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Activity Heatmap -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Hourly Activity Heatmap</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="heatmap-chart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Usage Breakdown -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">AI Model Usage</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ai-usage-chart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Servers -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Top Active Servers</h5>
+                <button class="btn btn-sm btn-outline-primary" id="refresh-servers">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="active-servers-table">
+                        <thead>
+                            <tr>
+                                <th>Server</th>
+                                <th>Members</th>
+                                <th>Commands Today</th>
+                                <th>AI Usage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Sample data rows - will be populated with real data -->
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="server-icon me-2" style="width: 32px; height: 32px; background-color: #7289DA; border-radius: 50%;"></div>
+                                        <div>
+                                            <div class="fw-bold">AstroFrame Community</div>
+                                            <div class="small text-muted">ID: 123456789012345678</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>4,285</td>
+                                <td>587</td>
+                                <td>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">Online</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="server-icon me-2" style="width: 32px; height: 32px; background-color: #43B581; border-radius: 50%;"></div>
+                                        <div>
+                                            <div class="fw-bold">Minecraft Modders</div>
+                                            <div class="small text-muted">ID: 234567890123456789</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>2,147</td>
+                                <td>342</td>
+                                <td>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: 52%;" aria-valuenow="52" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">Online</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="server-icon me-2" style="width: 32px; height: 32px; background-color: #FAA61A; border-radius: 50%;"></div>
+                                        <div>
+                                            <div class="fw-bold">Twitch Streamers</div>
+                                            <div class="small text-muted">ID: 345678901234567890</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>1,893</td>
+                                <td>271</td>
+                                <td>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 38%;" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">Online</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Live Activity Feed Modal -->
+<div class="modal fade" id="liveActivityModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Live Activity Feed</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <p class="mb-0"><i class="bi bi-info-circle-fill me-2"></i> Live activity feed shows real-time events across all your servers.</p>
+                </div>
+                <div class="list-group" id="live-activity-list">
+                    <!-- Activity items will be added here dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate the stats cards on page load using GSAP
+        AstroBotUtils.animation.animateEntrance('#stats-cards-container > .col', {
+            y: 20,
+            opacity: 0,
+            duration: 0.5,
+            stagger: 0.1,
+            ease: 'power2.out'
+        });
+        
+        // Add hover effects to chart cards
+        AstroBotUtils.animation.addHoverEffects('.card', {
+            scale: 1.02,
+            duration: 0.3,
+            ease: 'power1.out'
+        });
+        
+        // Initialize charts using our utility functions
+        initializeCharts();
+        
+        // Setup socket connection for real-time updates if user is authenticated
+        if (window.astrobotSocket) {
+            setupSocketEvents();
+        }
+        
+        // Time range dropdown functionality
+        document.querySelectorAll('[data-range]').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const range = this.getAttribute('data-range');
+                document.getElementById('timeRangeDropdown').textContent = `Last ${range} Days`;
+                // Update charts based on new time range
+                updateChartsForTimeRange(range);
+                
+                // Update active state
+                document.querySelectorAll('[data-range]').forEach(el => {
+                    el.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+        
+        // Refresh button functionality
+        document.getElementById('refresh-servers').addEventListener('click', function() {
+            const button = this;
+            
+            // Show loading state with GSAP rotation
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Loading...';
+            
+            gsap.to(button.querySelector('i'), {
+                rotation: 360,
+                duration: 1,
+                repeat: 2,
+                ease: 'power1.inOut'
+            });
+            
+            // Simulate data refresh (would be a real API call)
+            setTimeout(() => {
+                // Reset button state
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+                
+                // Show success toast using GSAP
+                const toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1080';
+                
+                const toast = document.createElement('div');
+                toast.className = 'toast show bg-success text-white';
+                toast.innerHTML = `
+                    <div class="toast-header bg-success text-white">
+                        <strong class="me-auto">Success</strong>
+                        <small>just now</small>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        Server data has been refreshed successfully.
+                    </div>
+                `;
+                
+                toastContainer.appendChild(toast);
+                document.body.appendChild(toastContainer);
+                
+                AstroBotUtils.animation.animateNotification(toastContainer);
+            }, 1500);
+        });
+    });
+    
+    // Initialize all charts
+    function initializeCharts() {
+        // Activity Over Time Chart
+        const activityChartCtx = document.getElementById('activity-chart').getContext('2d');
+        const activityChartData = {
+            labels: ['May 3', 'May 4', 'May 5', 'May 6', 'May 7', 'May 8', 'May 9'],
+            datasets: [
+                {
+                    label: 'Commands',
+                    data: [4251, 4812, 5132, 4987, 5643, 6218, 5987],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'AI Interactions',
+                    data: [1532, 1876, 2132, 2432, 2876, 3012, 2987],
+                    borderColor: '#6f42c1',
+                    backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'User Activity',
+                    data: [8765, 9432, 10234, 9876, 11234, 12543, 11987],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        };
+        const activityChart = AstroBotUtils.charts.createResponsiveChart('activity-chart', 'line', activityChartData, {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    boxPadding: 8
+                }
+            }
+        });
+        
+        // Top Commands Chart
+        const commandsChartCtx = document.getElementById('commands-chart').getContext('2d');
+        const commandsChartData = {
+            labels: ['!help', '!ai', '!mod', '!config', '!minecraft', '!twitch'],
+            datasets: [{
+                data: [32, 24, 15, 13, 9, 7],
+                backgroundColor: [
+                    '#007bff', '#6f42c1', '#fd7e14', 
+                    '#28a745', '#17a2b8', '#dc3545'
+                ]
+            }]
+        };
+        const commandsChart = AstroBotUtils.charts.createResponsiveChart('commands-chart', 'doughnut', commandsChartData, {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            cutout: '70%'
+        });
+        
+        // AI Usage Chart
+        const aiUsageChartCtx = document.getElementById('ai-usage-chart').getContext('2d');
+        const aiUsageChartData = {
+            labels: ['Claude 3.5', 'GPT-4o', 'Stable Diffusion', 'Others'],
+            datasets: [{
+                data: [42, 35, 15, 8],
+                backgroundColor: [
+                    '#6f42c1', '#007bff', '#28a745', '#6c757d'
+                ]
+            }]
+        };
+        const aiUsageChart = AstroBotUtils.charts.createResponsiveChart('ai-usage-chart', 'pie', aiUsageChartData, {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        });
+        
+        // Activity Heatmap
+        const heatmapLabels = {
+            x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            y: ['12am', '4am', '8am', '12pm', '4pm', '8pm']
+        };
+        
+        // Generate some sample heatmap data
+        const heatmapData = [];
+        for (let i = 0; i < heatmapLabels.y.length; i++) {
+            for (let j = 0; j < heatmapLabels.x.length; j++) {
+                const value = Math.floor(Math.random() * 100);
+                let color;
+                if (value < 20) {
+                    color = 'rgba(40, 167, 69, 0.2)';
+                } else if (value < 50) {
+                    color = 'rgba(40, 167, 69, 0.5)';
+                } else if (value < 80) {
+                    color = 'rgba(40, 167, 69, 0.8)';
+                } else {
+                    color = 'rgba(40, 167, 69, 1)';
+                }
+                
+                heatmapData.push({
+                    x: j,
+                    y: i,
+                    v: value,
+                    r: 10 + (value / 10),
+                    color: color
+                });
+            }
+        }
+        
+        const heatmapChartData = {
+            datasets: [{
+                data: heatmapData.map(d => ({
+                    x: d.x,
+                    y: d.y,
+                    r: d.r
+                })),
+                backgroundColor: heatmapData.map(d => d.color)
+            }]
+        };
+        
+        const heatmapChart = AstroBotUtils.charts.createResponsiveChart('heatmap-chart', 'bubble', heatmapChartData, {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    min: -0.5,
+                    max: 6.5,
+                    ticks: {
+                        callback: function(value) {
+                            return heatmapLabels.x[value];
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    min: -0.5,
+                    max: 5.5,
+                    ticks: {
+                        callback: function(value) {
+                            return heatmapLabels.y[value];
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const d = heatmapData[context.dataIndex];
+                            return `${heatmapLabels.x[d.x]} ${heatmapLabels.y[d.y]}: ${d.v} activities`;
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Setup socket events for real-time updates
+    function setupSocketEvents() {
+        // Setup event handlers for incoming data
+        AstroBotUtils.socket.setupSocketEventHandlers(window.astrobotSocket, {
+            'stats_update': function(data) {
+                // Update the stats cards with new data
+                document.getElementById('total-users').textContent = data.users.toLocaleString();
+                document.getElementById('commands-used').textContent = data.commands.toLocaleString();
+                document.getElementById('ai-prompts').textContent = data.ai_prompts.toLocaleString();
+                document.getElementById('mod-actions').textContent = data.mod_actions.toLocaleString();
+                
+                // Animate the update with a subtle highlight
+                const statsCards = document.querySelectorAll('#stats-cards-container .card');
+                statsCards.forEach(card => {
+                    gsap.fromTo(card, 
+                        { backgroundColor: 'rgba(255,255,255,0.1)' },
+                        { 
+                            backgroundColor: 'transparent',
+                            duration: 1,
+                            ease: 'power2.out'
+                        }
+                    );
+                });
+            },
+            
+            'activity_event': function(data) {
+                // Add new activity to the live feed if modal is open
+                const liveActivityList = document.getElementById('live-activity-list');
+                if (liveActivityList) {
+                    const eventItem = document.createElement('div');
+                    eventItem.className = 'list-group-item list-group-item-action';
+                    eventItem.innerHTML = `
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${data.type}</h6>
+                            <small>${new Date(data.timestamp).toLocaleTimeString()}</small>
+                        </div>
+                        <p class="mb-1">${data.content}</p>
+                        <small>Server: ${data.server_name}</small>
+                    `;
+                    
+                    // Insert at the top
+                    liveActivityList.insertBefore(eventItem, liveActivityList.firstChild);
+                    
+                    // Animate entry
+                    gsap.from(eventItem, {
+                        opacity: 0,
+                        x: -20,
+                        duration: 0.5,
+                        ease: 'power2.out'
+                    });
+                    
+                    // Limit to 10 items
+                    if (liveActivityList.children.length > 10) {
+                        liveActivityList.removeChild(liveActivityList.lastChild);
+                    }
+                }
+            }
+        });
+        
+        // Join notifications channel
+        window.astrobotSocket.emit('join_notifications', {
+            user_id: '{{ current_user.id if current_user.is_authenticated else "" }}',
+        });
+    }
+    
+    // Update charts based on selected time range
+    function updateChartsForTimeRange(days) {
+        // In a real app, this would make an API request to fetch new data
+        // For demo, we'll just show a loading animation
+        
+        // Show loading overlay
+        const charts = document.querySelectorAll('canvas');
+        charts.forEach(chart => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chart-loading-wrapper';
+            wrapper.style.position = 'absolute';
+            wrapper.style.top = '0';
+            wrapper.style.left = '0';
+            wrapper.style.width = '100%';
+            wrapper.style.height = '100%';
+            wrapper.style.backgroundColor = 'rgba(0,0,0,0.1)';
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.justifyContent = 'center';
+            wrapper.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+            
+            chart.parentNode.style.position = 'relative';
+            chart.parentNode.appendChild(wrapper);
+            
+            // Animate with GSAP
+            gsap.to(wrapper, {
+                opacity: 1,
+                duration: 0.3,
+                ease: 'power2.out'
+            });
+        });
+        
+        // Simulate API request delay
+        setTimeout(() => {
+            // Remove loading overlays
+            const wrappers = document.querySelectorAll('.chart-loading-wrapper');
+            wrappers.forEach(wrapper => {
+                gsap.to(wrapper, {
+                    opacity: 0,
+                    duration: 0.3,
+                    ease: 'power2.in',
+                    onComplete: () => wrapper.remove()
+                });
+            });
+            
+            // Show success message
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '1080';
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast show bg-info text-white';
+            toast.innerHTML = `
+                <div class="toast-header bg-info text-white">
+                    <strong class="me-auto">Time Range Updated</strong>
+                    <small>just now</small>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">
+                    Data has been updated to show the last ${days} days.
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+            
+            AstroBotUtils.animation.animateNotification(toastContainer);
+        }, 1500);
+    }
+</script>
+{% endblock %}

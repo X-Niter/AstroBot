@@ -1184,6 +1184,12 @@ def admin_logs():
 def admin_settings():
     return render_template('admin/settings.html', title="System Settings")
 
+# Enhanced analytics dashboard route with Chart.js and GSAP animations
+@app.route('/analytics/dashboard')
+def analytics_dashboard():
+    """Enhanced analytics dashboard using Chart.js and real-time updates"""
+    return render_template('analytics/dashboard.html', title='Analytics Dashboard')
+
 # Error handlers
 @app.errorhandler(404)
 def page_not_found(e):
