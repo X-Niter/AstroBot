@@ -137,10 +137,86 @@ function initializeTheme() {
         htmlElement.setAttribute('data-bs-theme', 'dark');
     }
     
+    // Apply theme class to body
+    body.className = body.className.replace(/theme-\w+/g, '').trim();
+    body.classList.add(`theme-${themePreference}`);
+    
     // Apply custom theme CSS for premium themes
     if (['space', 'neon', 'contrast'].includes(themePreference)) {
         applyCustomThemeCSS(themePreference);
     }
+    
+    // Store theme preference in localStorage for guests
+    localStorage.setItem('theme_preference', themePreference);
+    
+    // Set theme color variables based on the chosen theme
+    setThemeColorVariables(themePreference);
+}
+
+/**
+ * Set CSS variables for colors based on the active theme
+ * This ensures consistent color usage throughout the app
+ */
+function setThemeColorVariables(theme) {
+    const root = document.documentElement;
+    
+    // Default color values (can be overridden by theme-specific CSS)
+    let primaryColor = getComputedStyle(root).getPropertyValue('--primary-color').trim();
+    let primaryColorRGB = hexToRgb(primaryColor.replace('#', ''));
+    
+    // Set RGB variables for transparency operations
+    if (primaryColorRGB) {
+        root.style.setProperty('--primary-color-rgb', `${primaryColorRGB.r}, ${primaryColorRGB.g}, ${primaryColorRGB.b}`);
+    }
+    
+    // Calculate light and dark variants of the primary color if not already set
+    if (!getComputedStyle(root).getPropertyValue('--primary-color-light').trim()) {
+        const lightVariant = adjustColorBrightness(primaryColor, 20);
+        root.style.setProperty('--primary-color-light', lightVariant);
+    }
+    
+    if (!getComputedStyle(root).getPropertyValue('--primary-color-dark').trim()) {
+        const darkVariant = adjustColorBrightness(primaryColor, -20);
+        root.style.setProperty('--primary-color-dark', darkVariant);
+    }
+}
+
+/**
+ * Convert hex color to RGB
+ */
+function hexToRgb(hex) {
+    if (!hex) return null;
+    
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+    
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+/**
+ * Adjust color brightness (positive value for lighter, negative for darker)
+ */
+function adjustColorBrightness(color, percent) {
+    if (!color) return null;
+    
+    const rgb = hexToRgb(color.replace('#', ''));
+    if (!rgb) return color;
+    
+    const adjustValue = (value) => {
+        value = Math.floor(value * (1 + percent / 100));
+        return Math.min(255, Math.max(0, value));
+    };
+    
+    const r = adjustValue(rgb.r);
+    const g = adjustValue(rgb.g);
+    const b = adjustValue(rgb.b);
+    
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
 /**
@@ -172,8 +248,40 @@ function updateTheme(theme) {
         applyCustomThemeCSS(theme);
     }
     
+    // Store theme preference in localStorage for guests
+    localStorage.setItem('theme_preference', theme);
+    
+    // Update theme color variables after a slight delay to allow the CSS to load
+    setTimeout(() => {
+        setThemeColorVariables(theme);
+    }, 50);
+    
     // Update theme card selections in settings page
     updateThemeCardSelections(theme);
+    
+    // Add a subtle transition effect for theme change
+    const transitionOverlay = document.createElement('div');
+    transitionOverlay.style.position = 'fixed';
+    transitionOverlay.style.top = '0';
+    transitionOverlay.style.left = '0';
+    transitionOverlay.style.width = '100%';
+    transitionOverlay.style.height = '100%';
+    transitionOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.15)';
+    transitionOverlay.style.zIndex = '9999';
+    transitionOverlay.style.opacity = '0';
+    transitionOverlay.style.pointerEvents = 'none';
+    transitionOverlay.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(transitionOverlay);
+    
+    setTimeout(() => {
+        transitionOverlay.style.opacity = '0.15';
+        setTimeout(() => {
+            transitionOverlay.style.opacity = '0';
+            setTimeout(() => {
+                transitionOverlay.remove();
+            }, 300);
+        }, 100);
+    }, 0);
 }
 
 /**

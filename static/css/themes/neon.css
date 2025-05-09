@@ -23,10 +23,74 @@
 .theme-neon body {
     background-color: var(--primary-bg);
     color: var(--text-color);
-    /* Subtle grid pattern */
-    background-image: linear-gradient(rgba(255, 0, 255, 0.05) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(255, 0, 255, 0.05) 1px, transparent 1px);
-    background-size: 20px 20px;
+    /* Enhanced grid pattern with glow effect */
+    background-image: 
+        linear-gradient(rgba(255, 0, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 
+        20px 20px,
+        20px 20px,
+        100px 100px,
+        100px 100px;
+    position: relative;
+}
+
+/* Add a neon glow overlay */
+.theme-neon body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: 
+        radial-gradient(circle at 20% 35%, rgba(255, 0, 255, 0.1), transparent 40%),
+        radial-gradient(circle at 75% 60%, rgba(0, 255, 255, 0.1), transparent 40%);
+    z-index: 0;
+    animation: neonPulse 8s ease-in-out infinite alternate;
+}
+
+/* Add scanning line effect */
+.theme-neon body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, 
+        rgba(255, 0, 255, 0), 
+        rgba(255, 0, 255, 0.5), 
+        rgba(0, 255, 255, 0.5), 
+        rgba(0, 255, 255, 0));
+    opacity: 0.3;
+    z-index: 1000;
+    pointer-events: none;
+    animation: scanline 6s linear infinite;
+}
+
+@keyframes neonPulse {
+    0% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes scanline {
+    0% {
+        top: -5px;
+    }
+    100% {
+        top: 100%;
+    }
 }
 
 .theme-neon a {

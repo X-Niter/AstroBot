@@ -20,22 +20,90 @@
     --footer-text: #f0f6fc;
 }
 
-/* Space background with stars */
+/* Space background with better stars effect */
 .theme-space body {
     background-color: var(--primary-bg);
     background-image: 
         radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
         radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
-        radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+        radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px),
+        radial-gradient(rgba(255,255,255,.4), rgba(255,255,255,.1) 2px, transparent 4px);
     background-size: 
         550px 550px,
         350px 350px,
-        250px 250px;
+        250px 250px,
+        650px 650px;
     background-position: 
         0 0,
         40px 60px,
-        130px 270px;
+        130px 270px,
+        200px 350px;
+    animation: subtleTwinkle 8s ease-in-out infinite alternate;
     color: var(--text-color);
+    position: relative;
+}
+
+/* Add occasional meteor effect */
+.theme-space body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background-image: 
+        linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,.1) 50.5%, rgba(255,255,255,0) 51%);
+    background-size: 200% 200%;
+    animation: meteor 15s linear infinite;
+    z-index: 0;
+}
+
+/* Add a subtle cosmic fog */
+.theme-space body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(88, 166, 255, 0.05), transparent 50%),
+        radial-gradient(circle at 70% 60%, rgba(138, 43, 226, 0.05), transparent 50%);
+    z-index: 0;
+}
+
+/* Animation for the twinkling stars */
+@keyframes subtleTwinkle {
+    0% {
+        background-color: var(--primary-bg);
+    }
+    50% {
+        background-color: rgba(11, 19, 30, 1);
+    }
+    100% {
+        background-color: var(--primary-bg);
+    }
+}
+
+/* Animation for the meteor effect */
+@keyframes meteor {
+    0% {
+        background-position: 200% 200%;
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    20% {
+        background-position: 0% 0%;
+        opacity: 0;
+    }
+    100% {
+        background-position: 0% 0%;
+        opacity: 0;
+    }
 }
 
 .theme-space .navbar {
