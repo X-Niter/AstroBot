@@ -1,0 +1,25 @@
+/**
+ * Light Theme - Default theme with clean light interface
+ */
+:root {
+    --primary-bg: #ffffff;
+    --secondary-bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #212529;
+    --muted-text: #6c757d;
+    --border-color: #dee2e6;
+    --primary-color: #3453d1;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --nav-bg: #212529;
+    --nav-text: #f8f9fa;
+    --footer-bg: #212529;
+    --footer-text: #f8f9fa;
+}
+
+.theme-light .card {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}

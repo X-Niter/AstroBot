@@ -1,0 +1,65 @@
+/**
+ * Dark Theme - Dark interface that's easier on the eyes
+ */
+:root {
+    --primary-bg: #121212;
+    --secondary-bg: #1e1e1e;
+    --card-bg: #2d2d2d;
+    --text-color: #f8f9fa;
+    --muted-text: #adb5bd;
+    --border-color: #495057;
+    --primary-color: #4f6bed;
+    --secondary-color: #adb5bd;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --nav-bg: #1a1a1a;
+    --nav-text: #f8f9fa;
+    --footer-bg: #1a1a1a;
+    --footer-text: #f8f9fa;
+}
+
+.theme-dark .card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .breadcrumb {
+    background-color: var(--secondary-bg);
+}
+
+.theme-dark .table {
+    color: var(--text-color);
+}
+
+.theme-dark .dropdown-menu {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+}
+
+.theme-dark .dropdown-item {
+    color: var(--text-color);
+}
+
+.theme-dark .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+.theme-dark .form-control,
+.theme-dark .form-select {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-dark .input-group-text {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-dark .modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
