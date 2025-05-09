@@ -218,9 +218,12 @@ def onboarding_wizard():
     return render_template('onboarding/wizard.html', title="AstroBot AI Onboarding Wizard")
 
 @app.route('/api/onboarding/configure', methods=['POST'])
-@login_required
 def onboarding_configure():
-    """Process configuration data from the onboarding wizard"""
+    """Process configuration data from the onboarding wizard
+    
+    This endpoint can be accessed by both authenticated and non-authenticated users.
+    Authenticated users will have their user ID associated with the configuration.
+    """
     from services.onboarding_service import OnboardingService
     
     data = request.json
@@ -228,11 +231,28 @@ def onboarding_configure():
         return jsonify({'status': 'error', 'message': 'No data provided'}), 400
     
     try:
-        result = OnboardingService.process_configuration(data, current_user.id if current_user.is_authenticated else None)
+        # Get optional CSRF token from header
+        csrf_token = request.headers.get('X-CSRFToken')
+        
+        # Log the received configuration data
+        logger.info(f"Received configuration data: {json.dumps(data)}")
+        
+        # Process the configuration with the OnboardingService
+        user_id = current_user.id if current_user.is_authenticated else None
+        result = OnboardingService.process_configuration(data, user_id)
+        
+        # Return the result with a 200 OK status
         return jsonify(result)
     except Exception as e:
+        # Log the full traceback for debugging
         logger.error(f"Error processing onboarding configuration: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        logger.error(traceback.format_exc())
+        
+        # Return an error response
+        return jsonify({
+            'status': 'error', 
+            'message': f"Failed to process configuration: {str(e)}"
+        }), 500
 
 # Feedback route
 @app.route('/feedback', methods=['GET', 'POST'])
