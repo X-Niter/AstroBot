@@ -5,6 +5,38 @@
  * It also sets up global event handling for theme changes and other UI interactions.
  */
 
+// Initialize theme before Alpine.js loads to prevent flashing
+function initializeTheme() {
+    const getTheme = () => {
+        const persistedTheme = localStorage.getItem('theme');
+        if (persistedTheme) return persistedTheme;
+        
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+    
+    const theme = getTheme();
+    const root = document.documentElement;
+    
+    if (theme === 'dark' || ['space', 'neon', 'contrast'].includes(theme)) {
+        root.classList.add('dark');
+    } else {
+        root.classList.remove('dark');
+    }
+    
+    if (theme !== 'light' && theme !== 'dark') {
+        root.classList.add(`theme-${theme}`);
+    }
+    
+    if (document.body) {
+        document.body.setAttribute('data-theme', theme);
+    }
+}
+
+// Run theme initialization immediately
+if (typeof document !== 'undefined') {
+    initializeTheme();
+}
+
 document.addEventListener('alpine:init', () => {
     // Register any additional Alpine.js components or stores here
     
@@ -81,6 +113,8 @@ document.addEventListener('alpine:init', () => {
         
         // Apply the selected theme
         apply(themeName) {
+            if (!document.documentElement) return;
+            
             const root = document.documentElement;
             
             // Clear existing theme classes
@@ -101,18 +135,21 @@ document.addEventListener('alpine:init', () => {
             // Store the theme preference
             localStorage.setItem('theme', themeName);
             
-            // Update body data attribute
-            document.body.setAttribute('data-theme', themeName);
+            // Safely update body data attribute
+            if (document.body) {
+                document.body.setAttribute('data-theme', themeName);
+                
+                // If user is authenticated, save preference to server
+                if (document.body.hasAttribute('data-user-authenticated') && 
+                    document.body.getAttribute('data-user-authenticated') === 'true') {
+                    this.saveToServer(themeName);
+                }
+            }
             
             // Dispatch theme change event
             window.dispatchEvent(new CustomEvent('theme-changed', {
                 detail: { theme: themeName, isDark: this.isDark }
             }));
-            
-            // If user is authenticated, save preference to server
-            if (document.body.getAttribute('data-user-authenticated') === 'true') {
-                this.saveToServer(themeName);
-            }
         },
         
         // Save theme preference to server

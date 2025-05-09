@@ -1,23 +1,22 @@
 <!-- Theme Selector Component 
      Uses Alpine.js for managing theme state and interactions -->
-<div class="relative" x-data="themeManager">
+<div class="relative" x-data>
     <!-- Theme Toggle Button -->
     <button type="button" 
-            @click="toggleDarkMode()"
+            @click="$store.theme.toggle()"
             class="relative inline-flex items-center p-2 rounded-full text-gray-400 hover:text-white focus:outline-none transition-colors"
             data-tippy-content="Toggle Light/Dark Mode">
         <!-- Dark mode icon -->
-        <i class="bi bi-moon-stars text-lg" x-show="darkMode"></i>
+        <i class="bi bi-moon-stars text-lg" x-show="$store.theme.isDark"></i>
         <!-- Light mode icon -->
-        <i class="bi bi-sun text-lg" x-show="!darkMode"></i>
+        <i class="bi bi-sun text-lg" x-show="!$store.theme.isDark"></i>
         <span class="sr-only">Toggle theme</span>
     </button>
     
     <!-- Premium Theme Selection (only visible for premium users) -->
     {% if current_user.is_authenticated and current_user.is_premium %}
     <button type="button"
-            @click="$refs.themesDropdown.classList.toggle('hidden')"
-            @click.away="$refs.themesDropdown.classList.add('hidden')"
+            @click="$store.theme.menuOpen = !$store.theme.menuOpen"
             class="relative inline-flex items-center p-2 rounded-full ml-1 text-gray-400 hover:text-white focus:outline-none transition-colors"
             data-tippy-content="Select Premium Theme">
         <i class="bi bi-palette text-lg"></i>
@@ -25,61 +24,73 @@
     </button>
     
     <!-- Theme Dropdown -->
-    <div x-ref="themesDropdown"
-         class="absolute right-0 z-10 mt-1 w-48 rounded-md bg-gray-800 py-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden"
+    <div x-show="$store.theme.menuOpen"
+         @click.away="$store.theme.menuOpen = false"
+         x-transition:enter="transition ease-out duration-200" 
+         x-transition:enter-start="opacity-0 translate-y-1" 
+         x-transition:enter-end="opacity-100 translate-y-0" 
+         x-transition:leave="transition ease-in duration-150" 
+         x-transition:leave-start="opacity-100 translate-y-0" 
+         x-transition:leave-end="opacity-0 translate-y-1"
+         class="absolute right-0 z-10 mt-1 w-48 rounded-md bg-gray-800 py-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
          x-cloak>
         <div class="px-3 py-2 text-xs font-medium text-gray-400 uppercase">Theme Options</div>
         
         <!-- Dark Mode (default dark) -->
-        <button @click="setPremiumTheme('dark'); $refs.themesDropdown.classList.add('hidden')"
-                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <button @click="$store.theme.set('dark')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white"
+                :class="{'bg-gray-700': $store.theme.current === 'dark'}">
             <i class="bi bi-circle-fill text-gray-900 drop-shadow-md"></i>
             <span>Dark</span>
-            <i class="bi bi-check ml-auto" x-show="theme === 'dark'"></i>
+            <i class="bi bi-check ml-auto" x-show="$store.theme.current === 'dark'"></i>
         </button>
         
         <!-- Light Mode -->
-        <button @click="setPremiumTheme('light'); $refs.themesDropdown.classList.add('hidden')"
-                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <button @click="$store.theme.set('light')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white"
+                :class="{'bg-gray-700': $store.theme.current === 'light'}">
             <i class="bi bi-circle-fill text-white drop-shadow-md"></i>
             <span>Light</span>
-            <i class="bi bi-check ml-auto" x-show="theme === 'light'"></i>
+            <i class="bi bi-check ml-auto" x-show="$store.theme.current === 'light'"></i>
         </button>
         
         <div class="border-t border-gray-700 my-1"></div>
         <div class="px-3 py-1 text-xs font-medium text-gray-400">Premium Themes</div>
         
         <!-- Space Theme -->
-        <button @click="setPremiumTheme('space'); $refs.themesDropdown.classList.add('hidden')"
-                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <button @click="$store.theme.set('space')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white"
+                :class="{'bg-gray-700': $store.theme.current === 'space'}">
             <i class="bi bi-circle-fill text-purple-600"></i>
             <span>Space</span>
             <span class="ml-auto px-1.5 py-0.5 text-xs rounded bg-purple-800 text-purple-200">Premium</span>
-            <i class="bi bi-check" x-show="theme === 'space'"></i>
+            <i class="bi bi-check" x-show="$store.theme.current === 'space'"></i>
         </button>
         
         <!-- Neon Theme -->
-        <button @click="setPremiumTheme('neon'); $refs.themesDropdown.classList.add('hidden')"
-                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <button @click="$store.theme.set('neon')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white"
+                :class="{'bg-gray-700': $store.theme.current === 'neon'}">
             <i class="bi bi-circle-fill text-cyan-400"></i>
             <span>Neon</span>
             <span class="ml-auto px-1.5 py-0.5 text-xs rounded bg-cyan-800 text-cyan-200">Premium</span>
-            <i class="bi bi-check" x-show="theme === 'neon'"></i>
+            <i class="bi bi-check" x-show="$store.theme.current === 'neon'"></i>
         </button>
         
         <!-- High Contrast Theme -->
-        <button @click="setPremiumTheme('contrast'); $refs.themesDropdown.classList.add('hidden')"
-                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <button @click="$store.theme.set('contrast')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white"
+                :class="{'bg-gray-700': $store.theme.current === 'contrast'}">
             <i class="bi bi-circle-fill text-yellow-400"></i>
             <span>High Contrast</span>
             <span class="ml-auto px-1.5 py-0.5 text-xs rounded bg-yellow-800 text-yellow-200">Premium</span>
-            <i class="bi bi-check" x-show="theme === 'contrast'"></i>
+            <i class="bi bi-check" x-show="$store.theme.current === 'contrast'"></i>
         </button>
         
         <div class="border-t border-gray-700 my-1"></div>
         
         <!-- Reset to System Preference -->
-        <button @click="resetToSystemTheme(); $refs.themesDropdown.classList.add('hidden')"
+        <button @click="localStorage.removeItem('theme'); $store.theme.set(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')"
                 class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
             <i class="bi bi-arrow-counterclockwise"></i>
             <span>Use System Preference</span>

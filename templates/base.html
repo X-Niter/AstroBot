@@ -74,6 +74,7 @@
       data-theme="{{ current_user.theme_preference if current_user.is_authenticated else request.cookies.get('theme', 'light' if not request.user_agent.platform in ['android', 'iphone', 'ipad'] else 'dark') }}"
       data-user-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}"
       data-premium="{{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }}"
+>
     <nav x-data="{ mobileMenuOpen: false, 
                   discordOpen: false, 
                   minecraftOpen: false, 
@@ -342,20 +343,20 @@
                 </a>
                 
                 <!-- Mobile theme toggle -->
-                <div x-data="themeManager" class="px-3 py-2 flex items-center justify-between">
+                <div x-data class="px-3 py-2 flex items-center justify-between">
                     <span class="text-base font-medium text-gray-300">Theme Mode</span>
                     <button 
-                        @click="toggleDarkMode()" 
+                        @click="$store.theme.toggle()" 
                         class="rounded-full items-center justify-center p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <!-- Dark mode icon -->
-                        <span x-show="darkMode" class="sr-only">Switch to light mode</span>
-                        <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <span x-show="$store.theme.isDark" class="sr-only">Switch to light mode</span>
+                        <svg x-show="$store.theme.isDark" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                         
                         <!-- Light mode icon -->
-                        <span x-show="!darkMode" class="sr-only">Switch to dark mode</span>
-                        <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <span x-show="!$store.theme.isDark" class="sr-only">Switch to dark mode</span>
+                        <svg x-show="!$store.theme.isDark" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                     </button>
@@ -587,102 +588,15 @@
                 if (theme !== 'light' && theme !== 'dark') {
                     document.documentElement.classList.add(`theme-${theme}`);
                 }
+                
+                // Ensure body has a data-theme attribute even before Alpine initializes
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (document.body) {
+                        document.body.setAttribute('data-theme', theme);
+                    }
+                });
             }
         })();
-    </script>
-    <script>
-        document.addEventListener('alpine:init', function() {
-            if (typeof Alpine.plugin === 'function' && typeof Alpine.collapse === 'object') {
-                Alpine.plugin(Alpine.collapse);
-            }
-            
-            Alpine.data('themeManager', function() {
-                return {
-                    theme: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-                    darkMode: localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches),
-                    premium: {{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }},
-                    
-                    init: function() {
-                        // Initialize theme on page load
-                        if (document.body) {
-                            this.setTheme(this.theme);
-                        }
-                        
-                        // Listen for OS theme changes
-                        const self = this;
-                        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                            if (!localStorage.getItem('theme')) {
-                                self.darkMode = e.matches;
-                                self.theme = e.matches ? 'dark' : 'light';
-                                self.setTheme(self.theme);
-                            }
-                        });
-                    },
-                    
-                    toggleDarkMode: function() {
-                        this.darkMode = !this.darkMode;
-                        const newTheme = this.darkMode ? 'dark' : 'light';
-                        this.setTheme(newTheme);
-                        localStorage.setItem('theme', newTheme);
-                    },
-                    
-                    setPremiumTheme: function(themeId) {
-                        if (this.isPremiumTheme(themeId) && !this.premium) {
-                            console.log('Premium theme not available');
-                            return;
-                        }
-                        
-                        this.theme = themeId;
-                        this.darkMode = themeId === 'dark' || this.isPremiumTheme(themeId);
-                        this.setTheme(themeId);
-                        localStorage.setItem('theme', themeId);
-                    },
-                    
-                    isPremiumTheme: function(themeId) {
-                        return ['space', 'neon', 'contrast'].includes(themeId);
-                    },
-                    
-                    setTheme: function(theme) {
-                        if (!document.documentElement) return;
-                        
-                        const root = document.documentElement;
-                        
-                        // Remove all theme classes first
-                        root.classList.remove('theme-light', 'theme-dark', 'theme-space', 'theme-neon', 'theme-contrast');
-                        
-                        // Add the selected theme class
-                        if (theme !== 'light') {
-                            root.classList.add(`theme-${theme}`);
-                        }
-                        
-                        // Set dark mode if needed
-                        if (theme === 'dark' || this.isPremiumTheme(theme)) {
-                            root.classList.add('dark');
-                        } else {
-                            root.classList.remove('dark');
-                        }
-                        
-                        // Set data attributes on body if it exists
-                        if (document.body) {
-                            document.body.setAttribute('data-theme', theme);
-                        }
-                        
-                        // Dispatch event for other components to react
-                        window.dispatchEvent(new CustomEvent('theme-changed', { 
-                            detail: { theme: theme, isDark: theme === 'dark' || this.isPremiumTheme(theme) } 
-                        }));
-                    },
-                    
-                    resetToSystemTheme: function() {
-                        localStorage.removeItem('theme');
-                        const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                        this.theme = preferredTheme;
-                        this.darkMode = preferredTheme === 'dark';
-                        this.setTheme(preferredTheme);
-                    }
-                };
-            });
-        });
     </script>
     
     <!-- HTMX for dynamic HTML without writing JavaScript -->
