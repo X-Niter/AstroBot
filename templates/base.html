@@ -1,35 +1,78 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="{{ current_user.bs_theme if current_user.is_authenticated else 'dark' }}">
+<html lang="en" class="{% if current_user.is_authenticated and current_user.theme_preference %}{% if current_user.theme_preference in ['dark', 'space', 'neon', 'contrast'] %}dark{% endif %}{% if current_user.theme_preference != 'light' and current_user.theme_preference != 'dark' %}theme-{{ current_user.theme_preference }}{% endif %}{% else %}{% if request.cookies.get('theme') == 'dark' or (not request.cookies.get('theme') and request.user_agent.platform in ['android', 'iphone', 'ipad']) %}dark{% endif %}{% if request.cookies.get('theme') and request.cookies.get('theme') not in ['light', 'dark'] %}theme-{{ request.cookies.get('theme') }}{% endif %}{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1f2937">
     <title>{% block title %}AstroBot AI{% endblock %} - {{ title }}</title>
-    
-    <!-- Modern Frameworks and Libraries -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
     
     <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
     
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
     <!-- Tailwind and Custom Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     <!-- Swiper Carousel -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     
+    <!-- Animation Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+    
     {% block styles %}{% endblock %}
+    
+    <!-- Initial theme setup to prevent flickering -->
+    <script>
+        // Initial theme check and class application
+        (function() {
+            function getInitialTheme() {
+                const persistedTheme = localStorage.getItem('theme');
+                const hasPersistedTheme = typeof persistedTheme === 'string';
+                
+                if (hasPersistedTheme) {
+                    return persistedTheme;
+                }
+                
+                const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+                const hasMediaQueryPreference = typeof mediaQuery.matches === 'boolean';
+                
+                if (hasMediaQueryPreference) {
+                    return mediaQuery.matches ? 'dark' : 'light';
+                }
+                
+                return 'light';
+            }
+            
+            const theme = getInitialTheme();
+            const root = document.documentElement;
+            
+            // Apply theme classes
+            if (theme === 'dark' || theme === 'space' || theme === 'neon' || theme === 'contrast') {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+            
+            if (theme !== 'light' && theme !== 'dark') {
+                root.classList.add(`theme-${theme}`);
+            }
+            
+            document.body.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
-<body class="theme-transition" 
-      data-theme="{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}"
+<body class="bg-app text-normal theme-transition"
+      data-theme="{{ current_user.theme_preference if current_user.is_authenticated else request.cookies.get('theme', 'light' if not request.user_agent.platform in ['android', 'iphone', 'ipad'] else 'dark') }}"
       data-user-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}"
-      data-premium="{{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }}">
+      data-premium="{{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }}"
     <nav x-data="{ mobileMenuOpen: false, 
                   discordOpen: false, 
                   minecraftOpen: false, 
@@ -168,6 +211,9 @@
                     </span>
                     {% endif %}
                     
+                    <!-- Theme toggle -->
+                    {% include 'components/theme-toggle.html' %}
+                    
                     <!-- Feedback link -->
                     <a href="{{ url_for('feedback') }}" 
                        class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center mr-1"
@@ -293,6 +339,32 @@
                 <a href="{{ url_for('feedback') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
                     <i class="bi bi-chat-dots mr-2"></i> Feedback
                 </a>
+                
+                <!-- Mobile theme toggle -->
+                <div x-data="themeManager" class="px-3 py-2 flex items-center justify-between">
+                    <span class="text-base font-medium text-gray-300">Theme Mode</span>
+                    <button 
+                        @click="toggleDarkMode()" 
+                        class="rounded-full items-center justify-center p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <!-- Dark mode icon -->
+                        <span x-show="darkMode" class="sr-only">Switch to light mode</span>
+                        <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        
+                        <!-- Light mode icon -->
+                        <span x-show="!darkMode" class="sr-only">Switch to dark mode</span>
+                        <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                </div>
+                
+                {% if current_user.is_authenticated and current_user.is_premium %}
+                <a href="{{ url_for('account_appearance') }}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                    <i class="bi bi-palette mr-2"></i> Theme Settings
+                </a>
+                {% endif %}
                 
                 <div class="border-t border-gray-700 pt-2 mt-3">
                     {% if current_user.is_authenticated %}
@@ -495,6 +567,89 @@
     <!-- Alpine.js for reactive UI -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.5/dist/cdn.min.js"></script>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.plugin(Alpine.collapse);
+            
+            Alpine.data('themeManager', () => ({
+                theme: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+                darkMode: localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches),
+                premium: {{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }},
+                
+                init() {
+                    // Initialize theme on page load
+                    this.setTheme(this.theme);
+                    
+                    // Listen for OS theme changes
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                        if (!localStorage.getItem('theme')) {
+                            this.darkMode = e.matches;
+                            this.theme = e.matches ? 'dark' : 'light';
+                            this.setTheme(this.theme);
+                        }
+                    });
+                },
+                
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                    const newTheme = this.darkMode ? 'dark' : 'light';
+                    this.setTheme(newTheme);
+                    localStorage.setItem('theme', newTheme);
+                },
+                
+                setPremiumTheme(themeId) {
+                    if (this.isPremiumTheme(themeId) && !this.premium) {
+                        console.log('Premium theme not available');
+                        return;
+                    }
+                    
+                    this.theme = themeId;
+                    this.darkMode = themeId === 'dark' || this.isPremiumTheme(themeId);
+                    this.setTheme(themeId);
+                    localStorage.setItem('theme', themeId);
+                },
+                
+                isPremiumTheme(themeId) {
+                    return ['space', 'neon', 'contrast'].includes(themeId);
+                },
+                
+                setTheme(theme) {
+                    const root = document.documentElement;
+                    
+                    // Remove all theme classes first
+                    root.classList.remove('theme-light', 'theme-dark', 'theme-space', 'theme-neon', 'theme-contrast');
+                    
+                    // Add the selected theme class
+                    if (theme !== 'light') {
+                        root.classList.add(`theme-${theme}`);
+                    }
+                    
+                    // Set dark mode if needed
+                    if (theme === 'dark' || this.isPremiumTheme(theme)) {
+                        root.classList.add('dark');
+                    } else {
+                        root.classList.remove('dark');
+                    }
+                    
+                    // Set data attributes
+                    document.body.setAttribute('data-theme', theme);
+                    
+                    // Dispatch event for other components to react
+                    window.dispatchEvent(new CustomEvent('theme-changed', { 
+                        detail: { theme, isDark: theme === 'dark' || this.isPremiumTheme(theme) } 
+                    }));
+                },
+                
+                resetToSystemTheme() {
+                    localStorage.removeItem('theme');
+                    const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    this.theme = preferredTheme;
+                    this.darkMode = preferredTheme === 'dark';
+                    this.setTheme(preferredTheme);
+                }
+            }));
+        });
+    </script>
     
     <!-- HTMX for dynamic HTML without writing JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.11/dist/htmx.min.js"></script>
