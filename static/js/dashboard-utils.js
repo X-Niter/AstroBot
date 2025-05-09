@@ -9,27 +9,47 @@ window.AstroBotUtils = window.AstroBotUtils || {};
 // Animation utilities using GSAP
 AstroBotUtils.animation = {
   /**
+   * Safely check if GSAP is available and if elements exist before animating
+   * @param {string} selector - CSS selector for target elements
+   * @returns {boolean} - Whether GSAP is available and elements exist
+   */
+  canAnimate: function(selector) {
+    if (typeof gsap === 'undefined') {
+      console.warn('GSAP is not available');
+      return false;
+    }
+    
+    if (!selector) {
+      console.warn('No selector provided for animation');
+      return false;
+    }
+    
+    const elements = document.querySelectorAll(selector);
+    if (elements.length === 0) {
+      console.warn(`No elements found for selector: ${selector}`);
+      return false;
+    }
+    
+    return true;
+  },
+  /**
    * Animate elements with an entrance animation
    * @param {string} selector - CSS selector for target elements
    * @param {Object} options - GSAP animation options
    */
   animateEntrance: function(selector, options = {}) {
-    // Check if GSAP is available
-    if (typeof gsap !== 'undefined') {
+    // Use our utility to check if we can animate
+    if (this.canAnimate(selector)) {
       try {
         const elements = document.querySelectorAll(selector);
-        if (elements.length > 0) {
-          gsap.from(elements, {
-            opacity: 0,
-            y: 20,
-            duration: 0.5,
-            stagger: 0.1,
-            ease: 'power2.out',
-            ...options
-          });
-        } else {
-          console.warn(`No elements found for selector: ${selector}`);
-        }
+        gsap.from(elements, {
+          opacity: 0,
+          y: 20,
+          duration: 0.5,
+          stagger: 0.1,
+          ease: 'power2.out',
+          ...options
+        });
       } catch (err) {
         console.warn('GSAP animation error:', err);
       }
@@ -42,33 +62,29 @@ AstroBotUtils.animation = {
    * @param {Object} options - GSAP animation options for hover effect
    */
   addHoverEffects: function(selector, options = {}) {
-    // Check if GSAP is available
-    if (typeof gsap !== 'undefined') {
+    // Use our utility to check if we can animate
+    if (this.canAnimate(selector)) {
       try {
         const elements = document.querySelectorAll(selector);
-        if (elements.length > 0) {
-          elements.forEach(element => {
-            element.addEventListener('mouseenter', () => {
-              gsap.to(element, {
-                scale: 1.02,
-                duration: 0.3,
-                ease: 'power1.out',
-                ...options
-              });
-            });
-            
-            element.addEventListener('mouseleave', () => {
-              gsap.to(element, {
-                scale: 1,
-                duration: 0.3,
-                ease: 'power1.out',
-                ...options
-              });
+        elements.forEach(element => {
+          element.addEventListener('mouseenter', () => {
+            gsap.to(element, {
+              scale: 1.02,
+              duration: 0.3,
+              ease: 'power1.out',
+              ...options
             });
           });
-        } else {
-          console.warn(`No elements found for selector: ${selector}`);
-        }
+          
+          element.addEventListener('mouseleave', () => {
+            gsap.to(element, {
+              scale: 1,
+              duration: 0.3,
+              ease: 'power1.out',
+              ...options
+            });
+          });
+        });
       } catch (err) {
         console.warn('GSAP hover effect error:', err);
       }
@@ -131,6 +147,15 @@ AstroBotUtils.charts = {
     }
     
     try {
+      // Safely get the 2D context
+      let context;
+      try {
+        context = element.getContext('2d');
+      } catch (contextErr) {
+        console.error(`Error getting canvas context for ${elementId}:`, contextErr);
+        return null;
+      }
+      
       // Default options for responsive charts
       const defaultOptions = {
         responsive: true,
@@ -146,8 +171,18 @@ AstroBotUtils.charts = {
         }
       };
       
+      // Look for existing chart instance on this canvas and destroy it
+      const existingChart = Chart.getChart(element);
+      if (existingChart) {
+        try {
+          existingChart.destroy();
+        } catch (destroyErr) {
+          console.warn(`Failed to destroy existing chart on ${elementId}:`, destroyErr);
+        }
+      }
+      
       // Create chart with merged options
-      return new Chart(element, {
+      return new Chart(context, {
         type: type,
         data: data,
         options: { ...defaultOptions, ...options }
