@@ -273,6 +273,15 @@ class WebsiteUser(UserMixin, db.Model):
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     theme_preference = Column(String(20), default="dark") # light, dark, space, neon, contrast
+    
+    @property
+    def bs_theme(self):
+        """Return the Bootstrap theme value based on theme_preference"""
+        # Bootstrap only supports 'light' and 'dark' natively
+        # For custom themes, we use 'dark' as the base and apply custom CSS
+        if self.theme_preference in ['light']:
+            return 'light'
+        return 'dark'  # dark, space, neon, and contrast all use dark as base
     bio = Column(Text, nullable=True)
     
     # Relationships

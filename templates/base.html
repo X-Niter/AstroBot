@@ -1,42 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="{{ current_user.bs_theme if current_user.is_authenticated else 'dark' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AstroBot AI{% endblock %} - {{ title }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% if current_user.is_authenticated %}
+    
+    {% if current_user.is_authenticated and current_user.theme_preference in ['space', 'neon', 'contrast'] %}
+    <!-- Premium themes for authenticated users -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/' + current_user.theme_preference + '.css') }}">
-    {% else %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/dark.css') }}">
     {% endif %}
+    
     {% block styles %}{% endblock %}
     
     <style>
-        /* Base Theme Variables */
+        /* Base Theme Colors - Bootstrap 5.3+ supports data-bs-theme */
         :root {
-            --primary-bg: #ffffff;
-            --secondary-bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #212529;
-            --muted-text: #6c757d;
-            --border-color: #dee2e6;
             --primary-color: #3453d1;
             --secondary-color: #6c757d;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --info-color: #0dcaf0;
-            --nav-bg: #212529;
-            --nav-text: #f8f9fa;
-            --footer-bg: #212529;
-            --footer-text: #f8f9fa;
+            --accent-color: #7289da;
         }
-        
-        /* Theme-specific variables will be in their respective CSS files */
         
         body {
             background-color: var(--primary-bg);
@@ -109,8 +95,7 @@
         }
     </style>
 </head>
-<body class="theme-{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}"
->
+<body class="theme-{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}" data-theme="{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
@@ -251,7 +236,7 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
