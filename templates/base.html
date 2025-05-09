@@ -30,46 +30,53 @@
     
     {% block styles %}{% endblock %}
     
-    <!-- Alpine.js collapse plugin -->
-    <script src="{{ url_for('static', filename='js/alpine-collapse.js') }}"></script>
-    
     <!-- Initial theme setup to prevent flickering -->
     <script>
-        // Initial theme check and class application
+        // Safe theme initialization - only apply to HTML element to prevent flicker
+        // Body attributes will be set after DOM is ready
         (function() {
-            function getInitialTheme() {
-                const persistedTheme = localStorage.getItem('theme');
-                const hasPersistedTheme = typeof persistedTheme === 'string';
-                
-                if (hasPersistedTheme) {
-                    return persistedTheme;
+            try {
+                // Theme detection
+                function getStoredTheme() {
+                    try {
+                        return localStorage.getItem('theme');
+                    } catch(e) {
+                        console.warn('localStorage not available:', e);
+                        return null;
+                    }
                 }
                 
-                const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-                const hasMediaQueryPreference = typeof mediaQuery.matches === 'boolean';
-                
-                if (hasMediaQueryPreference) {
-                    return mediaQuery.matches ? 'dark' : 'light';
+                function getSystemTheme() {
+                    try {
+                        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    } catch(e) {
+                        console.warn('matchMedia not available:', e);
+                        return 'light';
+                    }
                 }
                 
-                return 'light';
+                // Get theme with fallbacks
+                const theme = getStoredTheme() || getSystemTheme();
+                const PREMIUM_THEMES = ['space', 'neon', 'contrast'];
+                
+                // Only apply to documentElement to avoid errors with body
+                const root = document.documentElement; 
+                if (!root) return;
+                
+                // Apply theme classes
+                if (theme === 'dark' || PREMIUM_THEMES.includes(theme)) {
+                    root.classList.add('dark');
+                }
+                
+                if (PREMIUM_THEMES.includes(theme)) {
+                    root.classList.add(`theme-${theme}`);
+                }
+                
+                // Store for later use
+                window.__initialTheme = theme;
+            } catch(e) {
+                console.error('Error during initial theme setup:', e);
             }
-            
-            const theme = getInitialTheme();
-            const root = document.documentElement;
-            
-            // Apply theme classes
-            if (theme === 'dark' || theme === 'space' || theme === 'neon' || theme === 'contrast') {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
-            
-            if (theme !== 'light' && theme !== 'dark') {
-                root.classList.add(`theme-${theme}`);
-            }
-            
-            document.body.setAttribute('data-theme', theme);
         })();
     </script>
 </head>
@@ -585,98 +592,49 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Alpine.js for reactive UI -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.5/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
-    <!-- Make sure Alpine.collapse is globally available -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.5/dist/cdn.min.js"></script>
+    <!-- Alpine.js and plugins configuration -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (window.Alpine && window.Alpine.plugin) {
-                // Check if AlpineCollapse is loaded from CDN
-                if (window.AlpineCollapse) {
-                    window.Alpine.plugin(window.AlpineCollapse);
-                    console.log('Collapse plugin registered (from window)');
-                }
-                
-                // Register the collapse plugin from @alpinejs/collapse
-                if (!window.Alpine.collapse) {
-                    // Handle polyfill for x-collapse
-                    window.Alpine.directive('collapse', (el, { value, modifiers, expression }, { evaluateLater, cleanup }) => {
-                        console.log('Using polyfill for x-collapse directive');
-                        const getStyle = (el, style) => window.getComputedStyle(el)[style];
+            try {
+                // This will run when the DOM is ready but possibly before Alpine initializes
+                window.addEventListener('alpine:init', () => {
+                    // Register the collapse plugin when Alpine is ready to initialize
+                    if (window.AlpineCollapse) {
+                        window.Alpine.plugin(window.AlpineCollapse);
+                        console.log('Successfully registered Alpine Collapse plugin');
+                    } else {
+                        console.warn('Alpine Collapse plugin not found, will try again later');
                         
-                        // Set initial height/styles
-                        let isVisible = el.style.display !== 'none';
-                        let isCollapsed = !isVisible;
-                        
-                        // Setup styles
-                        el.style.overflow = 'hidden';
-                        el.style.maxHeight = isVisible ? el.scrollHeight + 'px' : '0px';
-                        el.style.transition = 'max-height 0.3s ease';
-                        
-                        // Toggle function
-                        const toggle = (show) => {
-                            if (show) {
-                                el.style.maxHeight = el.scrollHeight + 'px';
-                                el.style.display = '';
-                                setTimeout(() => {
-                                    isCollapsed = false;
-                                }, 300);
+                        // Try again after a short delay in case the script is still loading
+                        setTimeout(() => {
+                            if (window.AlpineCollapse && window.Alpine) {
+                                window.Alpine.plugin(window.AlpineCollapse);
+                                console.log('Successfully registered Alpine Collapse plugin (delayed)');
                             } else {
-                                el.style.maxHeight = '0px';
-                                isCollapsed = true;
-                                setTimeout(() => {
-                                    el.style.display = 'none';
-                                }, 300);
+                                console.error('Alpine Collapse plugin could not be loaded');
                             }
-                        };
-                        
-                        // Attach to x-show if present
-                        if (el._x_isShown !== undefined) {
-                            const originalTransition = el._x_doHide || (() => {});
-                            el._x_doHide = () => {
-                                toggle(false);
-                                originalTransition();
-                            };
-                            
-                            const originalShow = el._x_doShow || (() => {});
-                            el._x_doShow = () => {
-                                toggle(true);
-                                originalShow();
-                            };
-                        }
-                    });
-                }
+                        }, 500);
+                    }
+                });
+            } catch(e) {
+                console.error('Error setting up Alpine plugins:', e);
             }
         });
     </script>
     <script>
-        // Initialize theme before Alpine.js loads to prevent flashing
-        (function() {
-            if (typeof document !== 'undefined' && document.documentElement) {
-                const getTheme = function() {
-                    const storedTheme = localStorage.getItem('theme');
-                    if (storedTheme) return storedTheme;
-                    
-                    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                };
-                
-                const theme = getTheme();
-                if (theme === 'dark' || ['space', 'neon', 'contrast'].includes(theme)) {
-                    document.documentElement.classList.add('dark');
+        // Use initial theme set in the head
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Set body theme attribute from stored value or the one set earlier
+                if (document.body && window.__initialTheme) {
+                    document.body.setAttribute('data-theme', window.__initialTheme);
                 }
-                
-                if (theme !== 'light' && theme !== 'dark') {
-                    document.documentElement.classList.add(`theme-${theme}`);
-                }
-                
-                // Ensure body has a data-theme attribute even before Alpine initializes
-                document.addEventListener('DOMContentLoaded', function() {
-                    if (document.body) {
-                        document.body.setAttribute('data-theme', theme);
-                    }
-                });
+            } catch(e) {
+                console.warn('Error setting body theme on DOMContentLoaded:', e);
             }
-        })();
+        });
     </script>
     
     <!-- HTMX for dynamic HTML without writing JavaScript -->

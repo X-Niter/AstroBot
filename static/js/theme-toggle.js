@@ -5,43 +5,67 @@
  * theme preferences across the interface.
  */
 
-// Once DOM is loaded, set up theme preferences
+// Theme toggle functionality - will be executed when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Get theme preference from localStorage or default to system preference
-    const getThemePreference = () => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme) return storedTheme;
-        
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    };
+    // Constants
+    const PREMIUM_THEMES = ['space', 'neon', 'contrast'];
+    const DEFAULT_THEME = 'light';
     
-    const theme = getThemePreference();
+    // Use the theme that was initialized early in the page load process
+    // or determine it again if that wasn't available
+    const initialTheme = window.__initialTheme || getThemePreference();
     
-    // Apply theme to document root
-    if (theme === 'dark' || ['space', 'neon', 'contrast'].includes(theme)) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
+    // Store the theme in the global variable
+    window.__initialTheme = initialTheme;
     
-    // If it's a premium theme (not light or dark), add the theme class
-    if (theme !== 'light' && theme !== 'dark') {
-        document.documentElement.classList.add(`theme-${theme}`);
-    }
-    
-    // Set theme data attribute on body
-    if (document.body) {
-        document.body.setAttribute('data-theme', theme);
-    }
-    
-    // Set up system preference change listener
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-        // Only change theme if user hasn't set a preference
-        if (!localStorage.getItem('theme')) {
-            const newTheme = e.matches ? 'dark' : 'light';
-            applyTheme(newTheme);
+    // Safely get theme preference with error handling
+    function getThemePreference() {
+        try {
+            // Try to get from localStorage
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme) return storedTheme;
+            
+            // Fall back to system preference
+            try {
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : DEFAULT_THEME;
+            } catch (e) {
+                console.warn('Could not detect system theme preference:', e);
+                return DEFAULT_THEME;
+            }
+        } catch (e) {
+            console.warn('Error accessing localStorage:', e);
+            return DEFAULT_THEME;
         }
-    });
+    }
+    
+    // Listen for system preference changes
+    try {
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // Use the appropriate event listener method (some browsers use 'change', others 'addListener')
+        const attachListener = (mq, callback) => {
+            if (mq.addEventListener) {
+                mq.addEventListener('change', callback);
+            } else if (mq.addListener) {
+                // For older browsers
+                mq.addListener(callback);
+            }
+        };
+        
+        attachListener(darkModeMediaQuery, (e) => {
+            // Only change theme if user hasn't set a preference
+            try {
+                if (!localStorage.getItem('theme')) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    applyTheme(newTheme);
+                }
+            } catch (err) {
+                console.warn('Error handling theme media query change:', err);
+            }
+        });
+    } catch (e) {
+        console.warn('Could not set up theme media query listener:', e);
+    }
     
     // Create a helper function for theme changes
     window.setTheme = (theme) => {
