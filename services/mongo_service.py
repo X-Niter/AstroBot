@@ -40,10 +40,22 @@ async def init_indexes():
 
 # Initialize indexes when module is imported
 import asyncio
-try:
-    asyncio.create_task(init_indexes())
-except Exception as e:
-    logger.error(f"Failed to create task for initializing indexes: {str(e)}")
+
+def initialize_indexes():
+    """Initialize the database indexes in an async-safe manner"""
+    try:
+        loop = asyncio.get_event_loop()
+        # If we don't have a running event loop, create a new one
+        if not loop.is_running():
+            asyncio.run(init_indexes())
+        else:
+            # If we have a running event loop, create a task
+            asyncio.create_task(init_indexes())
+    except Exception as e:
+        logger.error(f"Failed to initialize MongoDB indexes: {str(e)}")
+
+# Call initialization function
+initialize_indexes()
 
 def _get_rank_from_points(points):
     """
