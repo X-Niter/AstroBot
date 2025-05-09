@@ -569,6 +569,14 @@
     <!-- Alpine.js for reactive UI -->
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.5/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <!-- Make sure Alpine.collapse is globally available -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            if(window.Alpine && window.AlpineCollapse) {
+                window.Alpine.plugin(window.AlpineCollapse);
+            }
+        });
+    </script>
     <script>
         // Initialize theme before Alpine.js loads to prevent flashing
         (function() {

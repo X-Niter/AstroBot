@@ -214,7 +214,7 @@
             
             <!-- System Preference Option -->
             <div class="mt-6 flex items-center">
-                <button @click="resetToSystemTheme()" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <button @click="window.matchMedia('(prefers-color-scheme: dark)').matches ? $store.theme.set('dark') : $store.theme.set('light')" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                     <i class="bi bi-arrow-counterclockwise mr-2"></i>
                     Use System Preference
                 </button>
@@ -230,13 +230,23 @@
 {% block scripts %}
 <script>
     document.addEventListener('alpine:init', () => {
-        // Set up handlers for any theme changes from the page
-        Alpine.data('themeManager').handleThemeUpdate = function(theme) {
-            // Update backend through API
+        // Connect theme store changes to server updates
+        const originalApply = Alpine.store('theme').apply;
+        Alpine.store('theme').apply = function(themeName) {
+            // Call original method first
+            originalApply.call(this, themeName);
+            
+            // Then update on server
+            updateServerTheme(themeName);
+        };
+        
+        // Function to update theme on server
+        function updateServerTheme(theme) {
             fetch('{{ url_for("update_theme_preference") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 },
                 body: JSON.stringify({ theme: theme }),
             })
@@ -252,28 +262,7 @@
             .catch(error => {
                 console.error('Error updating theme:', error);
             });
-        };
-        
-        // Override the setPremiumTheme method to also update the server
-        const originalSetPremiumTheme = Alpine.data('themeManager').setPremiumTheme;
-        Alpine.data('themeManager').setPremiumTheme = function(themeId) {
-            // Call original method first
-            originalSetPremiumTheme.call(this, themeId);
-            
-            // Then update server
-            this.handleThemeUpdate(themeId);
-        };
-        
-        // Override resetToSystemTheme to update server
-        const originalResetToSystemTheme = Alpine.data('themeManager').resetToSystemTheme;
-        Alpine.data('themeManager').resetToSystemTheme = function() {
-            // Call original method first
-            originalResetToSystemTheme.call(this);
-            
-            // Then update server with the detected theme
-            const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            this.handleThemeUpdate(preferredTheme);
-        };
+        }
     });
 </script>
 {% endblock %}
