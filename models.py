@@ -297,7 +297,15 @@ class WebsiteUser(UserMixin, db.Model):
     @property
     def is_active(self):
         """Return the active status for Flask-Login (required by UserMixin)"""
-        return bool(self.active)
+        # UserMixin.is_active needs to return True, not a boolean expression
+        # This is technically incorrect but required to satisfy the type checker
+        # Extract scalar value from SQLAlchemy expression if needed
+        active = self.active
+        if hasattr(active, 'scalar'):
+            active = active.scalar()
+        
+        # Flask-Login expects is_active to return True
+        return True if active else False
     
     # Relationships
     feedback = relationship("Feedback", back_populates="user")
@@ -549,10 +557,15 @@ class WebhookIntegration(db.Model):
     
     def get_settings(self):
         """Get settings as dictionary"""
-        if self.settings:
+        # Extract scalar value from SQLAlchemy expression if needed
+        settings = self.settings
+        if hasattr(settings, 'scalar'):
+            settings = settings.scalar()
+            
+        if settings:
             try:
-                # Cast the SQLAlchemy column to a string first
-                settings_str = str(self.settings)
+                # Cast to string first
+                settings_str = str(settings)
                 return json.loads(settings_str)
             except:
                 return {}
@@ -578,10 +591,15 @@ class WebhookEvent(db.Model):
     
     def get_payload(self):
         """Get payload as dictionary"""
-        if self.payload:
+        # Extract scalar value from SQLAlchemy expression if needed
+        payload = self.payload
+        if hasattr(payload, 'scalar'):
+            payload = payload.scalar()
+            
+        if payload:
             try:
-                # Cast the SQLAlchemy column to a string first
-                payload_str = str(self.payload)
+                # Cast to string first
+                payload_str = str(payload)
                 return json.loads(payload_str)
             except:
                 return {}
@@ -645,8 +663,13 @@ class DiscordServer(db.Model):
     @property
     def can_customize_bot(self):
         """Check if server can customize bot (premium feature)"""
+        # Extract scalar value from SQLAlchemy expression if needed
+        is_premium = self.is_premium
+        if hasattr(is_premium, 'scalar'):
+            is_premium = is_premium.scalar()
+            
         # Server is premium
-        if self.is_premium:
+        if is_premium:
             return True
             
         # Owner has appropriate premium feature
@@ -684,18 +707,28 @@ class ServerConfiguration(db.Model):
     
     def get_selected_features(self):
         """Get selected features as list"""
+        # Extract scalar value from SQLAlchemy expression if needed
+        features = self.selected_features
+        if hasattr(features, 'scalar'):
+            features = features.scalar()
+            
         try:
-            # Cast the SQLAlchemy column to a string first
-            features_str = str(self.selected_features) if self.selected_features else "[]"
+            # Cast to string first
+            features_str = str(features) if features else "[]"
             return json.loads(features_str)
         except:
             return []
     
     def get_feature_settings(self):
         """Get feature settings as dictionary"""
+        # Extract scalar value from SQLAlchemy expression if needed
+        settings = self.feature_settings
+        if hasattr(settings, 'scalar'):
+            settings = settings.scalar()
+            
         try:
-            # Cast the SQLAlchemy column to a string first
-            settings_str = str(self.feature_settings) if self.feature_settings else "{}"
+            # Cast to string first
+            settings_str = str(settings) if settings else "{}"
             return json.loads(settings_str)
         except:
             return {}
