@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Background Circle -->
-  <circle cx="256" cy="256" r="248" fill="#2C2F33"/>
+  <circle cx="150" cy="150" r="150" fill="#222" />
   
-  <!-- Outer Ring -->
-  <circle cx="256" cy="256" r="240" stroke="#5865F2" stroke-width="16" fill="none"/>
+  <!-- Outer Ring with Stars -->
+  <circle cx="150" cy="150" r="140" stroke="#4E63EE" stroke-width="10" fill="none" />
   
-  <!-- Bot Face -->
-  <rect x="144" y="176" width="224" height="192" rx="32" fill="#5865F2"/>
+  <!-- Stars on Ring -->
+  <path d="M80 90 L90 80 L100 90 L90 100 Z" fill="#4E63EE" transform="rotate(15, 80, 90)" />
+  <path d="M220 90 L230 80 L240 90 L230 100 Z" fill="#4E63EE" transform="rotate(35, 220, 90)" />
+  <path d="M80 210 L90 200 L100 210 L90 220 Z" fill="#4E63EE" transform="rotate(45, 80, 210)" />
+  <path d="M220 210 L230 200 L240 210 L230 220 Z" fill="#4E63EE" transform="rotate(20, 220, 210)" />
   
-  <!-- Bot Eyes -->
-  <circle cx="200" cy="240" r="24" fill="white"/>
-  <circle cx="312" cy="240" r="24" fill="white"/>
-  <circle cx="200" cy="240" r="12" fill="#2C2F33"/>
-  <circle cx="312" cy="240" r="12" fill="#2C2F33"/>
+  <!-- Small Dots -->
+  <circle cx="150" cy="20" r="5" fill="white" />
+  <circle cx="280" cy="150" r="5" fill="white" />
+  <circle cx="150" cy="280" r="5" fill="white" />
+  <circle cx="20" cy="150" r="5" fill="white" />
   
-  <!-- Bot Mouth -->
-  <rect x="184" y="296" width="144" height="24" rx="12" fill="white"/>
-  <rect x="184" y="296" width="24" height="24" rx="12" fill="white"/>
-  <rect x="304" y="296" width="24" height="24" rx="12" fill="white"/>
+  <!-- Robot Head -->
+  <rect x="85" y="100" width="130" height="130" rx="15" fill="#4E63EE" />
   
-  <!-- Bot Antennas -->
-  <rect x="240" y="128" width="32" height="48" rx="16" fill="#5865F2"/>
-  <circle cx="256" cy="112" r="24" fill="#7289DA"/>
+  <!-- Antenna -->
+  <circle cx="150" cy="85" r="15" fill="#78AAFF" />
   
-  <!-- Star elements -->
-  <path d="M96 96L104 112L120 120L104 128L96 144L88 128L72 120L88 112L96 96Z" fill="#7289DA"/>
-  <path d="M416 96L424 112L440 120L424 128L416 144L408 128L392 120L408 112L416 96Z" fill="#7289DA"/>
-  <path d="M96 416L104 432L120 440L104 448L96 464L88 448L72 440L88 432L96 416Z" fill="#7289DA"/>
-  <path d="M416 416L424 432L440 440L424 448L416 464L408 448L392 440L408 432L416 416Z" fill="#7289DA"/>
+  <!-- Robot Eyes -->
+  <circle cx="120" cy="140" r="20" fill="white" />
+  <circle cx="180" cy="140" r="20" fill="white" />
   
-  <!-- Small stars -->
-  <circle cx="128" cy="256" r="8" fill="#FFFFFF"/>
-  <circle cx="384" cy="256" r="8" fill="#FFFFFF"/>
-  <circle cx="256" cy="384" r="8" fill="#FFFFFF"/>
+  <!-- Pupils -->
+  <circle cx="120" cy="140" r="10" fill="#222" />
+  <circle cx="180" cy="140" r="10" fill="#222" />
+  
+  <!-- Mouth -->
+  <rect x="110" cy="190" width="80" height="15" rx="7.5" fill="white" />
 </svg>

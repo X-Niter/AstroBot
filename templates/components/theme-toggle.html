@@ -1,63 +1,5 @@
 <!-- Modern Theme Toggle Button -->
-<div class="relative ml-3" x-data="{
-    darkMode: localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches) || ['space', 'neon', 'contrast'].includes(localStorage.getItem('theme')),
-    premium: {{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }},
-    themeMenuOpen: false,
-    
-    toggleDarkMode() {
-        this.darkMode = !this.darkMode;
-        const newTheme = this.darkMode ? 'dark' : 'light';
-        this.setTheme(newTheme);
-    },
-    
-    isPremiumTheme(theme) {
-        return ['space', 'neon', 'contrast'].includes(theme);
-    },
-    
-    setPremiumTheme(theme) {
-        if (this.isPremiumTheme(theme) && !this.premium) {
-            console.log('Premium theme not available');
-            return;
-        }
-        
-        this.darkMode = theme === 'dark' || this.isPremiumTheme(theme);
-        this.setTheme(theme);
-        this.themeMenuOpen = false;
-    },
-    
-    setTheme(theme) {
-        // Use the global helper
-        if (window.setTheme) {
-            window.setTheme(theme);
-        } else {
-            // Fallback if window.setTheme not available
-            const root = document.documentElement;
-            
-            // Remove all theme classes first
-            root.classList.remove('theme-light', 'theme-dark', 'theme-space', 'theme-neon', 'theme-contrast');
-            
-            // Set dark mode
-            if (theme === 'dark' || this.isPremiumTheme(theme)) {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
-            
-            // Add theme class if it's not light or dark
-            if (theme !== 'light' && theme !== 'dark') {
-                root.classList.add(`theme-${theme}`);
-            }
-            
-            // Store theme
-            localStorage.setItem('theme', theme);
-            
-            // Update body data attribute if body exists
-            if (document.body) {
-                document.body.setAttribute('data-theme', theme);
-            }
-        }
-    }
-}">
+<div class="relative ml-3" x-data>
     <div>
         <button 
             type="button" 
@@ -65,16 +7,16 @@
             id="theme-menu-button"
             aria-expanded="false" 
             aria-haspopup="true"
-            @click="toggleDarkMode()">
-            <!-- Dark mode icon -->
-            <span x-show="darkMode" class="sr-only">Switch to light mode</span>
-            <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            @click="$store.theme.toggle()">
+            <!-- Dark mode icon (Sun) -->
+            <span x-show="$store.theme.isDark" class="sr-only">Switch to light mode</span>
+            <svg x-show="$store.theme.isDark" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
             
-            <!-- Light mode icon -->
-            <span x-show="!darkMode" class="sr-only">Switch to dark mode</span>
-            <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <!-- Light mode icon (Moon) -->
+            <span x-show="!$store.theme.isDark" class="sr-only">Switch to dark mode</span>
+            <svg x-show="!$store.theme.isDark" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
         </button>
@@ -82,10 +24,18 @@
 
     <!-- Premium Theme Menu (for premium users) -->
     {% if current_user.is_authenticated and current_user.is_premium %}
+    <button 
+        type="button"
+        class="mt-2 flex items-center justify-center w-full px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-150"
+        @click="$store.theme.menuOpen = !$store.theme.menuOpen">
+        <span>Themes</span>
+        <i class="bi bi-chevron-down ml-1"></i>
+    </button>
+    
     <div 
         x-cloak
-        x-show="themeMenuOpen"
-        @click.away="themeMenuOpen = false"
+        x-show="$store.theme.menuOpen"
+        @click.away="$store.theme.menuOpen = false"
         x-transition:enter="transition ease-out duration-200" 
         x-transition:enter-start="opacity-0 scale-95" 
         x-transition:enter-end="opacity-100 scale-100" 
@@ -97,53 +47,66 @@
         aria-orientation="vertical" 
         aria-labelledby="theme-menu-button" 
         tabindex="-1">
-        <!-- Active: "bg-gray-100 dark:bg-gray-700", Not Active: "" -->
+        
+        <!-- Standard Themes -->
+        <div class="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+            Standard Themes
+        </div>
         <a href="#" 
            class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" 
            role="menuitem" 
            tabindex="-1" 
-           @click.prevent="setPremiumTheme('light')">
-            Light
+           @click.prevent="$store.theme.set('light')"
+           :class="{'bg-gray-100 dark:bg-gray-700': $store.theme.current === 'light'}">
+            <i class="bi bi-sun mr-2"></i> Light
         </a>
         <a href="#" 
            class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" 
            role="menuitem" 
            tabindex="-1" 
-           @click.prevent="setPremiumTheme('dark')">
-            Dark
+           @click.prevent="$store.theme.set('dark')"
+           :class="{'bg-gray-100 dark:bg-gray-700': $store.theme.current === 'dark'}">
+            <i class="bi bi-moon mr-2"></i> Dark
         </a>
-        <hr class="my-1 border-gray-200 dark:border-gray-700">
-        <span class="block px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+        
+        <!-- Premium Themes -->
+        <div class="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 mt-1">
             Premium Themes
-        </span>
+        </div>
         <a href="#" 
            class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" 
            role="menuitem" 
            tabindex="-1" 
-           @click.prevent="setPremiumTheme('space')">
-            Space
-        </a>
-        <a href="#" 
-           class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" 
-           role="menuitem" 
-           tabindex="-1" 
-           @click.prevent="setPremiumTheme('neon')">
-            Neon
+           @click.prevent="$store.theme.set('space')"
+           :class="{'bg-gray-100 dark:bg-gray-700': $store.theme.current === 'space'}">
+            <i class="bi bi-stars mr-2"></i> Space
         </a>
         <a href="#" 
            class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" 
            role="menuitem" 
            tabindex="-1" 
-           @click.prevent="setPremiumTheme('contrast')">
-            High Contrast
+           @click.prevent="$store.theme.set('neon')"
+           :class="{'bg-gray-100 dark:bg-gray-700': $store.theme.current === 'neon'}">
+            <i class="bi bi-lightning mr-2"></i> Neon
         </a>
-        <hr class="my-1 border-gray-200 dark:border-gray-700">
-        <a href="{{ url_for('account_appearance') }}" 
+        <a href="#" 
            class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" 
            role="menuitem" 
-           tabindex="-1">
-            <i class="bi bi-gear-fill mr-2"></i> Theme Settings
+           tabindex="-1" 
+           @click.prevent="$store.theme.set('contrast')"
+           :class="{'bg-gray-100 dark:bg-gray-700': $store.theme.current === 'contrast'}">
+            <i class="bi bi-circle-half mr-2"></i> High Contrast
         </a>
+        
+        <!-- Settings Link -->
+        <div class="border-t border-gray-200 dark:border-gray-700 mt-1 pt-1">
+            <a href="{{ url_for('account_appearance') }}" 
+               class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" 
+               role="menuitem" 
+               tabindex="-1">
+                <i class="bi bi-gear-fill mr-2"></i> Theme Settings
+            </a>
+        </div>
     </div>
     {% endif %}
 </div>
