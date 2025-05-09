@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .leaderboard-card {
+        border-radius: 10px;
+        border: 1px solid #2a2a2a;
+        background-color: #1a1a1a;
+        transition: transform 0.3s ease;
+    }
+    .leaderboard-header {
+        padding: 20px;
+        text-align: center;
+        background: linear-gradient(135deg, #9146ff 0%, #007bff 100%);
+        border-radius: 10px 10px 0 0;
+        color: white;
+    }
+    .trophy-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+    .rank-card {
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: transform 0.3s ease;
+    }
+    .rank-card:hover {
+        transform: translateY(-5px);
+    }
+    .rank-icon {
+        font-size: 2rem;
+        margin-right: 15px;
+    }
+    .rank-1 {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        color: #000;
+    }
+    .rank-2 {
+        background: linear-gradient(135deg, #C0C0C0 0%, #A9A9A9 100%);
+        color: #000;
+    }
+    .rank-3 {
+        background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+        color: #fff;
+    }
+    .rank-badge {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: bold;
+        margin-right: 15px;
+    }
+    .rank-table {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .rank-table th, .rank-table td {
+        padding: 12px 15px;
+        border: none;
+    }
+    .rank-table tr {
+        transition: background-color 0.3s;
+    }
+    .rank-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    .points-badge {
+        background-color: #007bff;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="leaderboard-card">
+            <div class="leaderboard-header">
+                <i class="fas fa-trophy trophy-icon"></i>
+                <h2>Community Support Leaderboard</h2>
+                <p class="mb-0">Top contributors based on support points</p>
+            </div>
+            <div class="p-4">
+                <div class="row mb-4" id="top-three-container">
+                    <div class="text-center">
+                        <div class="spinner-border text-light" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading leaderboard...</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <h4 class="mb-3">Rankings</h4>
+                        <div class="table-responsive">
+                            <table class="table table-dark rank-table" id="leaderboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>User</th>
+                                        <th>Points</th>
+                                        <th>Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" class="text-center">Loading rankings...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h4 class="mb-3">Rank Tiers</h4>
+                        <div class="card bg-dark border-secondary mb-3">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="rank-badge" style="background-color: #4CAF50;">N</span>
+                                    <span>Novice - 100 points</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="rank-badge" style="background-color: #2196F3;">A</span>
+                                    <span>Apprentice - 500 points</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="rank-badge" style="background-color: #9C27B0;">E</span>
+                                    <span>Explorer - 1,000 points</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="rank-badge" style="background-color: #FF9800;">Ex</span>
+                                    <span>Expert - 5,000 points</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="rank-badge" style="background-color: #F44336;">M</span>
+                                    <span>Master - 10,000 points</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="rank-badge" style="background-color: #E91E63;">L</span>
+                                    <span>Legend - 25,000 points</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-header bg-info">
+                                <h5 class="mb-0">How to Earn Points</h5>
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-dark text-light border-secondary">
+                                    <i class="fas fa-star-half-alt me-2 text-warning"></i> Submit mod reviews: 5 points
+                                </li>
+                                <li class="list-group-item bg-dark text-light border-secondary">
+                                    <i class="fas fa-lightbulb me-2 text-warning"></i> Suggest mod ideas: 10 points
+                                </li>
+                                <li class="list-group-item bg-dark text-light border-secondary">
+                                    <i class="fas fa-tv me-2 text-warning"></i> Watch streams: 1 point per 10 minutes
+                                </li>
+                                <li class="list-group-item bg-dark text-light border-secondary">
+                                    <i class="fas fa-hands-helping me-2 text-warning"></i> Help other community members
+                                </li>
+                                <li class="list-group-item bg-dark text-light border-secondary">
+                                    <i class="fas fa-bullhorn me-2 text-warning"></i> Participate in community events
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Format date
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return date.toLocaleDateString(undefined, options);
+    }
+    
+    // Determine rank title based on points
+    function getRankTitle(points) {
+        if (points >= 25000) return "Legend";
+        if (points >= 10000) return "Master";
+        if (points >= 5000) return "Expert";
+        if (points >= 1000) return "Explorer";
+        if (points >= 500) return "Apprentice";
+        if (points >= 100) return "Novice";
+        return "New Member";
+    }
+    
+    // Determine rank color based on points
+    function getRankColor(points) {
+        if (points >= 25000) return "#E91E63"; // Legend
+        if (points >= 10000) return "#F44336"; // Master
+        if (points >= 5000) return "#FF9800";  // Expert
+        if (points >= 1000) return "#9C27B0";  // Explorer
+        if (points >= 500) return "#2196F3";   // Apprentice
+        if (points >= 100) return "#4CAF50";   // Novice
+        return "#6c757d";                      // New Member
+    }
+    
+    // Fetch leaderboard data from the API
+    async function fetchLeaderboard() {
+        try {
+            const response = await fetch('/api/leaderboard');
+            if (!response.ok) {
+                throw new Error('Failed to fetch leaderboard');
+            }
+            const users = await response.json();
+            
+            if (users.length > 0) {
+                // Update top three
+                const topThreeContainer = document.getElementById('top-three-container');
+                topThreeContainer.innerHTML = '';
+                
+                // Only use top 3 if we have at least 3 users
+                const topThree = users.slice(0, Math.min(3, users.length));
+                
+                topThree.forEach((user, index) => {
+                    const rankClass = `rank-${index + 1}`;
+                    const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+                    const rankTitle = getRankTitle(user.points);
+                    
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-3';
+                    
+                    col.innerHTML = `
+                        <div class="rank-card ${rankClass}">
+                            <div class="d-flex align-items-center">
+                                <span class="rank-icon">${rankEmoji}</span>
+                                <div>
+                                    <h5 class="mb-0">User ${user.discord_id.substring(0, 5)}...</h5>
+                                    <div class="mt-2">
+                                        <span class="badge bg-dark">${rankTitle}</span>
+                                        <span class="badge bg-dark">${user.points} points</span>
+                                    </div>
+                                    ${user.twitch_username ? 
+                                      `<small>Twitch: ${user.twitch_username}</small>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    topThreeContainer.appendChild(col);
+                });
+                
+                // Update rankings table
+                const tableBody = document.querySelector('#leaderboard-table tbody');
+                tableBody.innerHTML = '';
+                
+                users.forEach((user, index) => {
+                    const rankTitle = getRankTitle(user.points);
+                    const rankColor = getRankColor(user.points);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <span class="badge bg-secondary rounded-pill">#${index + 1}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="rank-badge" style="background-color: ${rankColor}">
+                                    ${rankTitle.charAt(0)}
+                                </span>
+                                <span>User ${user.discord_id.substring(0, 5)}...</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="points-badge">${user.points}</span>
+                        </td>
+                        <td>${formatDate(user.created_at)}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+            } else {
+                // No users found
+                document.getElementById('top-three-container').innerHTML = `
+                    <div class="col-12 text-center p-5">
+                        <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+                        <h4>No Users Found</h4>
+                        <p class="text-muted">Be the first to earn points and join the leaderboard!</p>
+                    </div>
+                `;
+                
+                document.querySelector('#leaderboard-table tbody').innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center">No users found</td>
+                    </tr>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching leaderboard:', error);
+            document.getElementById('top-three-container').innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error loading leaderboard: ${error.message}
+                    </div>
+                </div>
+            `;
+            
+            document.querySelector('#leaderboard-table tbody').innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error loading rankings
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    // Fetch leaderboard when the page loads
+    document.addEventListener('DOMContentLoaded', fetchLeaderboard);
+</script>
+{% endblock %}

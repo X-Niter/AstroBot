@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .suggestion-card {
+        border-radius: 10px;
+        border: 1px solid #2a2a2a;
+        background-color: #1a1a1a;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
+    }
+    .suggestion-card:hover {
+        transform: translateY(-5px);
+    }
+    .suggestion-header {
+        padding: 15px;
+        border-bottom: 1px solid #2a2a2a;
+        background-color: rgba(145, 70, 255, 0.1);
+    }
+    .suggestion-body {
+        padding: 15px;
+    }
+    .suggestion-footer {
+        padding: 10px 15px;
+        border-top: 1px solid #2a2a2a;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .ai-feedback {
+        background-color: rgba(0, 208, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 10px;
+        border-left: 3px solid #00d0ff;
+    }
+    .filter-box {
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #2a2a2a;
+        background-color: #1a1a1a;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-lightbulb me-2"></i>Minecraft Mod Suggestions</h2>
+        <p class="text-muted">Community ideas for new Minecraft mods</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="filter-box">
+            <h5>Search Suggestions</h5>
+            <div class="mb-3">
+                <label for="title-search" class="form-label">Title or Description</label>
+                <input type="text" class="form-control bg-dark text-light border-secondary" id="title-search" placeholder="Search suggestions...">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="filterSuggestions()">
+                <i class="fas fa-search me-2"></i>Search
+            </button>
+        </div>
+        
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="m-0">Community Stats</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between">
+                    <span>Total Suggestions</span>
+                    <span class="badge bg-primary rounded-pill" id="suggestion-count">-</span>
+                </li>
+                <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between">
+                    <span>Most Active Creator</span>
+                    <span id="most-active-creator">-</span>
+                </li>
+                <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between">
+                    <span>This Month</span>
+                    <span class="badge bg-success rounded-pill" id="this-month-count">-</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card bg-dark border-secondary">
+            <div class="card-header bg-info text-white">
+                <h5 class="m-0">Popular Categories</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap" id="categories-container">
+                    <span class="badge bg-secondary m-1">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div id="suggestions-container">
+            <div class="text-center p-5">
+                <div class="spinner-border text-light" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading suggestions...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Format date
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+    
+    // Fetch suggestions from the API
+    async function fetchSuggestions() {
+        try {
+            const response = await fetch('/api/suggestions');
+            if (!response.ok) {
+                throw new Error('Failed to fetch suggestions');
+            }
+            const suggestions = await response.json();
+            
+            // Update suggestions container
+            const suggestionsContainer = document.getElementById('suggestions-container');
+            suggestionsContainer.innerHTML = '';
+            
+            if (suggestions.length > 0) {
+                // Update suggestion count
+                document.getElementById('suggestion-count').textContent = suggestions.length;
+                
+                // Find most active creator
+                const creators = {};
+                suggestions.forEach(suggestion => {
+                    if (!creators[suggestion.discord_name]) {
+                        creators[suggestion.discord_name] = 0;
+                    }
+                    creators[suggestion.discord_name]++;
+                });
+                
+                const mostActiveCreator = Object.keys(creators).reduce((a, b) => 
+                    creators[a] > creators[b] ? a : b);
+                document.getElementById('most-active-creator').textContent = mostActiveCreator;
+                
+                // Count suggestions from this month
+                const thisMonth = new Date().getMonth();
+                const thisYear = new Date().getFullYear();
+                const thisMonthCount = suggestions.filter(suggestion => {
+                    const date = new Date(suggestion.created_at);
+                    return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+                }).length;
+                document.getElementById('this-month-count').textContent = thisMonthCount;
+                
+                // Extract common keywords for categories
+                const keywords = ['tech', 'magic', 'adventure', 'farming', 'exploration', 
+                                  'combat', 'decoration', 'tools', 'mobs', 'biomes'];
+                const keywordCounts = {};
+                
+                suggestions.forEach(suggestion => {
+                    const text = (suggestion.title + ' ' + suggestion.description).toLowerCase();
+                    keywords.forEach(keyword => {
+                        if (text.includes(keyword)) {
+                            if (!keywordCounts[keyword]) {
+                                keywordCounts[keyword] = 0;
+                            }
+                            keywordCounts[keyword]++;
+                        }
+                    });
+                });
+                
+                // Update categories
+                const categoriesContainer = document.getElementById('categories-container');
+                categoriesContainer.innerHTML = '';
+                
+                Object.keys(keywordCounts).sort((a, b) => keywordCounts[b] - keywordCounts[a])
+                    .slice(0, 6)
+                    .forEach(keyword => {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-info m-1';
+                        badge.textContent = `${keyword} (${keywordCounts[keyword]})`;
+                        categoriesContainer.appendChild(badge);
+                    });
+                
+                // Display suggestions
+                suggestions.forEach(suggestion => {
+                    const card = document.createElement('div');
+                    card.className = 'suggestion-card';
+                    card.setAttribute('data-title', suggestion.title.toLowerCase());
+                    card.setAttribute('data-description', suggestion.description.toLowerCase());
+                    
+                    card.innerHTML = `
+                        <div class="suggestion-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">${suggestion.title}</h5>
+                                <span class="badge bg-primary">By ${suggestion.discord_name}</span>
+                            </div>
+                        </div>
+                        <div class="suggestion-body">
+                            <p>${suggestion.description}</p>
+                            ${suggestion.ai_feedback ? `
+                                <div class="ai-feedback">
+                                    <h6><i class="fas fa-robot me-2"></i>AI Feedback</h6>
+                                    <p class="mb-0">${suggestion.ai_feedback}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="suggestion-footer">
+                            <div class="d-flex justify-content-between">
+                                <span>Posted: ${formatDate(suggestion.created_at)}</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    suggestionsContainer.appendChild(card);
+                });
+            } else {
+                document.getElementById('suggestion-count').textContent = '0';
+                document.getElementById('most-active-creator').textContent = 'N/A';
+                document.getElementById('this-month-count').textContent = '0';
+                document.getElementById('categories-container').innerHTML = '<span class="badge bg-secondary m-1">No Data</span>';
+                
+                suggestionsContainer.innerHTML = `
+                    <div class="text-center p-5">
+                        <i class="fas fa-lightbulb fa-3x mb-3 text-muted"></i>
+                        <h4>No Suggestions Found</h4>
+                        <p class="text-muted">Be the first to suggest a Minecraft mod idea!</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching suggestions:', error);
+            document.getElementById('suggestions-container').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error loading suggestions: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
+    // Filter suggestions based on search
+    function filterSuggestions() {
+        const searchTerm = document.getElementById('title-search').value.toLowerCase();
+        
+        const suggestionCards = document.querySelectorAll('.suggestion-card');
+        
+        suggestionCards.forEach(card => {
+            const title = card.getAttribute('data-title');
+            const description = card.getAttribute('data-description');
+            
+            if (!searchTerm || title.includes(searchTerm) || description.includes(searchTerm)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    // Fetch suggestions when the page loads
+    document.addEventListener('DOMContentLoaded', fetchSuggestions);
+</script>
+{% endblock %}

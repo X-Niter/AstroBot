@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .stat-card {
+        border-radius: 10px;
+        border: 1px solid #2a2a2a;
+        background-color: #1a1a1a;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    .bot-features {
+        background-color: #1a1a1a;
+        border-radius: 10px;
+        border: 1px solid #2a2a2a;
+        padding: 20px;
+    }
+    .feature-icon {
+        font-size: 1.5rem;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    .ai-icon { background-color: rgba(0, 208, 255, 0.2); color: #00d0ff; }
+    .minecraft-icon { background-color: rgba(79, 206, 106, 0.2); color: #4fce6a; }
+    .twitch-icon { background-color: rgba(145, 70, 255, 0.2); color: #9146ff; }
+    .community-icon { background-color: rgba(50, 115, 220, 0.2); color: #3273dc; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="jumbotron p-4 bg-dark border border-secondary rounded-3">
+            <h1 class="display-4">AstroBot Dashboard</h1>
+            <p class="lead">Monitor your Discord bot's activity and community engagement</p>
+            <hr class="my-4 border-secondary">
+            <p>This dashboard provides insights into your AstroBot Discord bot, showing community stats, mod reviews, and more.</p>
+            <a class="btn btn-primary" href="https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands" target="_blank">
+                <i class="fab fa-discord me-2"></i> Add Bot to Server
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card p-3 text-center h-100">
+            <div class="stat-icon text-primary">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3 class="stat-value" id="user-count">-</h3>
+            <p class="stat-label text-muted">Community Members</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card p-3 text-center h-100">
+            <div class="stat-icon text-success">
+                <i class="fas fa-star"></i>
+            </div>
+            <h3 class="stat-value" id="review-count">-</h3>
+            <p class="stat-label text-muted">Mod Reviews</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card p-3 text-center h-100">
+            <div class="stat-icon text-warning">
+                <i class="fas fa-lightbulb"></i>
+            </div>
+            <h3 class="stat-value" id="suggestion-count">-</h3>
+            <p class="stat-label text-muted">Mod Suggestions</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card p-3 text-center h-100">
+            <div class="stat-icon text-info">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h3 class="stat-value" id="top-score">-</h3>
+            <p class="stat-label text-muted">Top User Points</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8 mb-3">
+        <h4 class="mb-3"><i class="fas fa-robot me-2"></i>Bot Features</h4>
+        <div class="bot-features">
+            <div class="d-flex mb-3 align-items-center">
+                <div class="feature-icon ai-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div>
+                    <h5>AI Assistance</h5>
+                    <p class="mb-0">Get coding help, mod ideas, and tutorials powered by GPT-4o and Claude 3.5</p>
+                </div>
+            </div>
+            <div class="d-flex mb-3 align-items-center">
+                <div class="feature-icon minecraft-icon">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <div>
+                    <h5>Minecraft Server Management</h5>
+                    <p class="mb-0">Monitor server status, manage whitelist, and execute commands remotely</p>
+                </div>
+            </div>
+            <div class="d-flex mb-3 align-items-center">
+                <div class="feature-icon twitch-icon">
+                    <i class="fab fa-twitch"></i>
+                </div>
+                <div>
+                    <h5>StreamSync Integration</h5>
+                    <p class="mb-0">Track Twitch streams, clips, and manage community support points</p>
+                </div>
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="feature-icon community-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <h5>Community Tools</h5>
+                    <p class="mb-0">Share and discover mod reviews, suggestions, and community content</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <h4 class="mb-3"><i class="fas fa-award me-2"></i>Top Contributors</h4>
+        <div class="list-group" id="top-users">
+            <div class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
+                <span>Loading...</span>
+                <span class="badge bg-primary rounded-pill">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Fetch stats from the API
+    async function fetchStats() {
+        try {
+            const response = await fetch('/api/stats');
+            if (!response.ok) {
+                throw new Error('Failed to fetch stats');
+            }
+            const data = await response.json();
+            
+            // Update the stats
+            document.getElementById('user-count').textContent = data.user_count;
+            document.getElementById('review-count').textContent = data.review_count;
+            document.getElementById('suggestion-count').textContent = data.suggestion_count;
+            
+            // Update top score if there are any users
+            if (data.top_users && data.top_users.length > 0) {
+                document.getElementById('top-score').textContent = data.top_users[0].points;
+            } else {
+                document.getElementById('top-score').textContent = '0';
+            }
+            
+            // Update top users list
+            const topUsersList = document.getElementById('top-users');
+            topUsersList.innerHTML = '';
+            
+            if (data.top_users && data.top_users.length > 0) {
+                data.top_users.forEach((user, index) => {
+                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                    
+                    const listItem = document.createElement('div');
+                    listItem.className = 'list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center';
+                    listItem.innerHTML = `
+                        <span>${medal} User ${user.discord_id.substring(0, 5)}...</span>
+                        <span class="badge bg-primary rounded-pill">${user.points} pts</span>
+                    `;
+                    topUsersList.appendChild(listItem);
+                });
+            } else {
+                const listItem = document.createElement('div');
+                listItem.className = 'list-group-item bg-dark text-light border-secondary';
+                listItem.textContent = 'No users found';
+                topUsersList.appendChild(listItem);
+            }
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    }
+    
+    // Fetch stats when the page loads
+    document.addEventListener('DOMContentLoaded', fetchStats);
+</script>
+{% endblock %}
