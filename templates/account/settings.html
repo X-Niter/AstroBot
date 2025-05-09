@@ -83,7 +83,7 @@
                                                     <input class="form-check-input me-2 theme-radio" type="radio" 
                                                            name="theme_preference" id="theme-light" value="light" 
                                                            {% if current_user.theme_preference == 'light' %}checked{% endif %}
-                                                           onchange="updateTheme('light'); document.querySelector('[data-theme=light]').classList.add('border-primary');">
+                                                           onchange="updateTheme('light');">
                                                     <label class="form-check-label" for="theme-light">Light</label>
                                                 </div>
                                             </div>
@@ -105,7 +105,7 @@
                                                     <input class="form-check-input me-2 theme-radio" type="radio" 
                                                            name="theme_preference" id="theme-dark" value="dark" 
                                                            {% if current_user.theme_preference == 'dark' %}checked{% endif %}
-                                                           onchange="updateTheme('dark'); document.querySelector('[data-theme=dark]').classList.add('border-primary');">
+                                                           onchange="updateTheme('dark');">
                                                     <label class="form-check-label" for="theme-dark">Dark</label>
                                                 </div>
                                             </div>
@@ -128,7 +128,7 @@
                                                     <input class="form-check-input me-2 theme-radio" type="radio" 
                                                            name="theme_preference" id="theme-space" value="space" 
                                                            {% if current_user.theme_preference == 'space' %}checked{% endif %}
-                                                           onchange="updateTheme('space'); document.querySelector('[data-theme=space]').classList.add('border-primary');">
+                                                           onchange="updateTheme('space');">
                                                     <label class="form-check-label" for="theme-space">Space <span class="badge bg-warning text-dark">Premium</span></label>
                                                 </div>
                                             </div>
@@ -150,7 +150,7 @@
                                                     <input class="form-check-input me-2 theme-radio" type="radio" 
                                                            name="theme_preference" id="theme-neon" value="neon" 
                                                            {% if current_user.theme_preference == 'neon' %}checked{% endif %}
-                                                           onchange="updateTheme('neon'); document.querySelector('[data-theme=neon]').classList.add('border-primary');">
+                                                           onchange="updateTheme('neon');">
                                                     <label class="form-check-label" for="theme-neon">Neon <span class="badge bg-warning text-dark">Premium</span></label>
                                                 </div>
                                             </div>
@@ -172,7 +172,7 @@
                                                     <input class="form-check-input me-2 theme-radio" type="radio" 
                                                            name="theme_preference" id="theme-contrast" value="contrast" 
                                                            {% if current_user.theme_preference == 'contrast' %}checked{% endif %}
-                                                           onchange="updateTheme('contrast'); document.querySelector('[data-theme=contrast]').classList.add('border-primary');">
+                                                           onchange="updateTheme('contrast');">
                                                     <label class="form-check-label" for="theme-contrast">High Contrast <span class="badge bg-warning text-dark">Premium</span></label>
                                                 </div>
                                             </div>
