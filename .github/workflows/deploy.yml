@@ -1,0 +1,139 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Install dependencies
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install flask-frozen  # For static site generation
+
+      - name: Install Node.js dependencies
+        if: hashFiles('package.json') != ''
+        run: npm ci
+
+      # Build static assets
+      - name: Build Frontend Assets
+        run: |
+          if [ -f build-tailwind.js ]; then
+            node build-tailwind.js
+          fi
+          if grep -q "\"build\":" package.json; then
+            npm run build
+          fi
+
+      # Generate static site (if using Flask)
+      - name: Generate static site
+        run: |
+          # Create a static site generator script if it doesn't exist
+          if [ ! -f freeze.py ]; then
+            echo 'from flask_frozen import Freezer
+from app import app
+
+freezer = Freezer(app)
+
+if __name__ == "__main__":
+    freezer.freeze()' > freeze.py
+          fi
+          
+          # Run the static site generator
+          python freeze.py
+        continue-on-error: true
+
+      # Generate documentation site
+      - name: Generate API documentation
+        run: |
+          # Install documentation tools
+          pip install sphinx sphinx_rtd_theme
+          
+          # Set up Sphinx documentation if not already set up
+          if [ ! -d docs ]; then
+            mkdir -p docs
+            cd docs
+            sphinx-quickstart --sep --project="AstroBot" --author="AstroBot Team" --release="$(date +'%Y.%m.%d')" --language=en -q
+            cd ..
+            
+            # Configure Sphinx to auto-document Python modules
+            sed -i 's/# import os/import os/g' docs/conf.py
+            sed -i 's/# import sys/import sys/g' docs/conf.py
+            sed -i "s/# sys.path.insert(0, os.path.abspath('.'))/sys.path.insert(0, os.path.abspath('..'))/g" docs/conf.py
+            
+            echo "Welcome to AstroBot's documentation!
+================================
+
+AstroBot is a sophisticated Discord bot leveraging advanced AI technologies to enhance 
+Minecraft server management, modding, and community interaction through intelligent, 
+adaptive interfaces.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   modules
+   
+Indices and tables
+==================
+
+* :ref:\`genindex\`
+* :ref:\`modindex\`
+* :ref:\`search\`" > docs/index.rst
+          fi
+          
+          # Generate API documentation
+          cd docs
+          sphinx-apidoc -o . ..
+          make html
+        continue-on-error: true
+
+      # Deploy to GitHub Pages (use built files or docs)
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4.4.3
+        with:
+          branch: gh-pages  # The branch the action should deploy to
+          folder: build     # The folder the action should deploy
+          # Fallback options based on what might have been generated
+          clean: true
+          clean-exclude: |
+            .github
+            .gitignore
+          target-folder: docs  # Deploy to docs folder on gh-pages branch
+      
+      # Post deployment status comment on PRs
+      - name: Post deployment status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { issue: { number: issue_number }, repo: { owner, repo } } = context;
+            github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: `🚀 Deployed preview: https://${owner}.github.io/${repo}/`
+            });

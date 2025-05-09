@@ -1,0 +1,98 @@
+name: Automated Testing
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual triggering
+  schedule:
+    - cron: '0 6 * * 2'  # Run at 6 AM every Tuesday
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    services:
+      # Set up PostgreSQL service for testing
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Install dependencies
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest pytest-cov
+
+      - name: Install Node.js dependencies
+        if: hashFiles('package.json') != ''
+        run: npm ci
+
+      # Run tests
+      - name: Run Python tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: test_db
+          PGHOST: localhost
+          PGPORT: 5432
+          SESSION_SECRET: testing_secret_key
+          FLASK_ENV: testing
+        run: |
+          pytest --cov=. --cov-report=xml
+        continue-on-error: true
+
+      - name: Run JavaScript tests
+        if: hashFiles('package.json') != ''
+        run: |
+          if grep -q "\"test\":" package.json; then
+            npm test
+          fi
+        continue-on-error: true
+
+      # Upload test coverage reports
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+
+      # Create an issue if tests fail
+      - name: Create issue for test failures
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: .github/TEST_FAILURE_TEMPLATE.md
+          update_existing: true

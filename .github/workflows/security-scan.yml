@@ -1,0 +1,91 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 7 * * 3'  # Run at 7 AM every Wednesday
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Python dependency scanning with Safety
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install safety
+        run: pip install safety
+      
+      - name: Run safety check
+        run: |
+          if [ -f requirements.txt ]; then
+            safety check -r requirements.txt --output json > safety-report.json || true
+          else
+            echo '[]' > safety-report.json
+          fi
+      
+      # JavaScript dependency scanning
+      - name: Node.js security scan
+        if: hashFiles('package.json') != ''
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        with:
+          args: --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      
+      # CodeQL Analysis
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python, javascript
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+      
+      # Bandit for Python security issues
+      - name: Run Bandit
+        run: |
+          pip install bandit
+          bandit -r . -f json -o bandit-report.json || true
+      
+      # Create security report issue if high severity issues found
+      - name: Check for high severity issues
+        id: check-severity
+        run: |
+          # Check Python safety report
+          PYTHON_HIGH_SEVERITY=$(cat safety-report.json | grep -c '"severity": "high"' || echo "0")
+          
+          # Check bandit report for high severity
+          BANDIT_HIGH_SEVERITY=$(cat bandit-report.json | grep -c '"issue_severity": "high"' || echo "0")
+          
+          # Check if any high severity issues found
+          if [ "$PYTHON_HIGH_SEVERITY" -gt "0" ] || [ "$BANDIT_HIGH_SEVERITY" -gt "0" ]; then
+            echo "high_severity_found=true" >> $GITHUB_OUTPUT
+          else
+            echo "high_severity_found=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Security Issue
+        if: steps.check-severity.outputs.high_severity_found == 'true'
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: .github/SECURITY_ISSUE_TEMPLATE.md
+          update_existing: true

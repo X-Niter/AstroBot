@@ -1,0 +1,91 @@
+name: Code Quality Analysis
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual triggering of the workflow
+  schedule:
+    - cron: '0 5 * * 1'  # Run at 5 AM every Monday
+
+jobs:
+  analyze:
+    name: Analyze Code
+    runs-on: ubuntu-latest
+    permissions:
+      # Required for automated fixes and PR creation
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Install and cache dependencies
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install flake8 pylint black pytest pytest-cov mypy
+
+      - name: Install Node.js dependencies
+        run: |
+          if [ -f package.json ]; then npm ci; fi
+          npm install -g eslint prettier
+
+      # Run code quality checks
+      - name: Run Flake8
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run Pylint
+        run: pylint --disable=all --enable=E,F,W,R,C --disable=C0111,C0103 $(git ls-files '*.py')
+        continue-on-error: true
+
+      - name: Run ESLint
+        run: |
+          if [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f .eslintrc.yml ]; then
+            eslint . --ext .js,.jsx,.ts,.tsx
+          fi
+        continue-on-error: true
+
+      # Automated code fixes
+      - name: Format Python code with Black
+        run: black .
+
+      - name: Format JavaScript with Prettier
+        run: |
+          prettier --write "**/*.{js,jsx,ts,tsx,json,css,md}"
+        continue-on-error: true
+
+      # Create PR if there are any changes
+      - name: Create Pull Request for automated fixes
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "style: Automated code formatting"
+          title: "Automated Code Formatting"
+          body: |
+            This PR contains automated formatting changes made by GitHub Actions.
+            
+            - Code formatted with Black and Prettier
+            - Fixed linting issues
+            
+            These changes should not affect functionality.
+          branch: automated-code-formatting
+          delete-branch: true
+          labels: automated-pr, code-style

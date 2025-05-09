@@ -1,0 +1,115 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull Request Number to review'
+        required: true
+        type: number
+
+jobs:
+  review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      # If triggered manually, checkout the PR
+      - name: Checkout PR
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          gh pr checkout ${{ github.event.inputs.pr_number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Get the PR diff for review
+      - name: Get PR Diff
+        id: get-pr-diff
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            PR_NUMBER=${{ github.event.inputs.pr_number }}
+          else
+            PR_NUMBER=${{ github.event.pull_request.number }}
+          fi
+          
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "pr_diff=$(gh pr diff $PR_NUMBER)" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Use OpenAI to review the code
+      - name: OpenAI Code Review
+        id: openai-review
+        # If you prefer using GitHub's built-in AI code review, you can replace this with the GitHub-provided action
+        uses: docker://ghcr.io/coderabbitai/ai-pr-reviewer:latest
+        with:
+          pr_num: ${{ env.PR_NUMBER }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          openai_model: gpt-4
+          review_simple_changes: true
+          review_comment_lgtm: false
+          path_filters: |
+            !**/*.json
+            !**/*.md
+            !**/*.txt
+          custom_prompt: |
+            You are a helpful AI assistant focused on code review for the AstroBot Discord bot and dashboard application.
+            You will analyze code changes related to:
+            1. Python Flask-based web application
+            2. Discord bot implementation
+            3. AI integrations (OpenAI, Anthropic)
+            4. Front-end components (HTML, CSS, JavaScript with Alpine.js)
+            5. Database models and operations
+            
+            Focus your review on:
+            - Code correctness and potential bugs
+            - Security issues and best practices
+            - Performance improvements
+            - Maintainability and readability
+            
+            For each issue you find, suggest a clear fix or improvement. Don't comment on minor style issues.
+            
+            At the end of your review, summarize the key points and include a verdict: 
+            - Approve if the changes look good with only minor issues
+            - Request changes if there are significant problems that should be fixed
+
+      # Suggest automated fixes if possible
+      - name: Suggest Code Fixes
+        if: steps.openai-review.outputs.suggestions != ''
+        run: |
+          PR_NUMBER=${{ env.PR_NUMBER }}
+          
+          # Create a new branch based on the PR branch
+          PR_BRANCH=$(gh pr view $PR_NUMBER --json headRefName -q .headRefName)
+          FIXES_BRANCH="ai-suggestions-pr-$PR_NUMBER"
+          
+          git fetch origin $PR_BRANCH
+          git checkout -b $FIXES_BRANCH origin/$PR_BRANCH
+          
+          # Apply suggested changes (in a real implementation, this would parse the AI output)
+          # This is a simplified example - in practice you'd need to parse the AI output and make changes
+          
+          # Push the branch with fixes
+          git commit -am "AI-suggested fixes for PR #$PR_NUMBER"
+          git push origin $FIXES_BRANCH
+          
+          # Create a PR with the fixes
+          gh pr create --title "AI-suggested fixes for PR #$PR_NUMBER" \
+            --body "This PR contains automated fixes suggested by the AI code review bot for PR #$PR_NUMBER. 
+            
+            Please review these changes and merge if they look good." \
+            --base $PR_BRANCH
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
