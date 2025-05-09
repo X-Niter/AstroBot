@@ -101,6 +101,28 @@ We expect all contributors to follow our [Code of Conduct](CODE_OF_CONDUCT.md). 
 - Document new features, API endpoints, or significant changes
 - Use clear, concise language and include examples when possible
 
+Our documentation is built with MkDocs and hosted on GitHub Pages. You can find the full documentation at:
+- https://yourusername.github.io/astrobot/
+
+To contribute to the documentation:
+1. Edit the Markdown files in the `docs/` directory
+2. Build the documentation locally to preview:
+   ```bash
+   mkdocs build
+   ```
+3. Run a local server to view changes:
+   ```bash
+   mkdocs serve
+   ```
+
+We have specialized documentation sections for:
+- [Getting Started](docs/getting-started.md)
+- [User Guide](docs/user-guide.md)
+- [API Reference](docs/api-reference.md)
+- [AI Integrations](docs/ai-integrations.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [AI Workflows](docs/ai-workflows.md)
+
 ## Community
 
 - Join our [Discord server](https://discord.gg/your-community-link) for discussions

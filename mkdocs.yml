@@ -52,4 +52,9 @@ nav:
   - Getting Started: getting-started.md
   - User Guide: user-guide.md
   - API Reference: api-reference.md
-  - Contributing: contributing.md
+  - AI Features:
+    - AI Integrations: ai-integrations.md
+  - Developer Resources:
+    - Contributing: contributing.md
+    - Troubleshooting: troubleshooting.md
+    - AI Workflows: ai-workflows.md

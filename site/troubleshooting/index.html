@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../ai-integrations/">
+        <link rel="prev" href="../contributing/">
       
       
-        <link rel="next" href="../troubleshooting/">
+        <link rel="next" href="../ai-workflows/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Contributing - AstroBot Documentation</title>
+        <title>Troubleshooting - AstroBot Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing-to-astrobot" class="md-skip">
+        <a href="#troubleshooting-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing
+              Troubleshooting
             
           </span>
         </div>
@@ -311,7 +311,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../contributing/" class="md-tabs__link">
           
   
   
@@ -565,6 +565,29 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -582,7 +605,7 @@
   
   
   <span class="md-ellipsis">
-    Contributing
+    Troubleshooting
     
   </span>
   
@@ -595,7 +618,7 @@
   
   
   <span class="md-ellipsis">
-    Contributing
+    Troubleshooting
     
   </span>
   
@@ -618,46 +641,61 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#code-of-conduct" class="md-nav__link">
+  <a href="#common-errors" class="md-nav__link">
     <span class="md-ellipsis">
-      Code of Conduct
+      Common Errors
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-contribute" class="md-nav__link">
-    <span class="md-ellipsis">
-      How to Contribute
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="How to Contribute">
+    <nav class="md-nav" aria-label="Common Errors">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#reporting-bugs" class="md-nav__link">
+  <a href="#undefined-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Reporting Bugs
+      Undefined Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Undefined Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#missing-sqlalchemy-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing SQLAlchemy Functions
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#suggesting-features" class="md-nav__link">
+  <a href="#missing-model-references" class="md-nav__link">
     <span class="md-ellipsis">
-      Suggesting Features
+      Missing Model References
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Connection Issues
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#pull-requests" class="md-nav__link">
+  <a href="#module-import-errors" class="md-nav__link">
     <span class="md-ellipsis">
-      Pull Requests
+      Module Import Errors
     </span>
   </a>
   
@@ -669,28 +707,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#development-environment" class="md-nav__link">
+  <a href="#application-startup-issues" class="md-nav__link">
     <span class="md-ellipsis">
-      Development Environment
+      Application Startup Issues
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Development Environment">
+    <nav class="md-nav" aria-label="Application Startup Issues">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#flask-application-not-starting" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Flask Application Not Starting
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#setup" class="md-nav__link">
+  <a href="#discord-bot-not-connecting" class="md-nav__link">
     <span class="md-ellipsis">
-      Setup
+      Discord Bot Not Connecting
     </span>
   </a>
   
@@ -702,28 +740,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#coding-standards" class="md-nav__link">
+  <a href="#debugging-techniques" class="md-nav__link">
     <span class="md-ellipsis">
-      Coding Standards
+      Debugging Techniques
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debugging Techniques">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logging
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#ai-powered-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      AI-Powered Development
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AI-Powered Development">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-ai-commands" class="md-nav__link">
+  <a href="#interactive-debugging" class="md-nav__link">
     <span class="md-ellipsis">
-      Using AI Commands
+      Interactive Debugging
     </span>
   </a>
   
@@ -731,6 +769,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting Support
+    </span>
+  </a>
   
 </li>
       
@@ -738,29 +785,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Troubleshooting
-    
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -823,46 +847,61 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#code-of-conduct" class="md-nav__link">
+  <a href="#common-errors" class="md-nav__link">
     <span class="md-ellipsis">
-      Code of Conduct
+      Common Errors
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-contribute" class="md-nav__link">
-    <span class="md-ellipsis">
-      How to Contribute
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="How to Contribute">
+    <nav class="md-nav" aria-label="Common Errors">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#reporting-bugs" class="md-nav__link">
+  <a href="#undefined-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Reporting Bugs
+      Undefined Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Undefined Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#missing-sqlalchemy-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing SQLAlchemy Functions
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#suggesting-features" class="md-nav__link">
+  <a href="#missing-model-references" class="md-nav__link">
     <span class="md-ellipsis">
-      Suggesting Features
+      Missing Model References
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Connection Issues
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#pull-requests" class="md-nav__link">
+  <a href="#module-import-errors" class="md-nav__link">
     <span class="md-ellipsis">
-      Pull Requests
+      Module Import Errors
     </span>
   </a>
   
@@ -874,28 +913,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#development-environment" class="md-nav__link">
+  <a href="#application-startup-issues" class="md-nav__link">
     <span class="md-ellipsis">
-      Development Environment
+      Application Startup Issues
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Development Environment">
+    <nav class="md-nav" aria-label="Application Startup Issues">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#flask-application-not-starting" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Flask Application Not Starting
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#setup" class="md-nav__link">
+  <a href="#discord-bot-not-connecting" class="md-nav__link">
     <span class="md-ellipsis">
-      Setup
+      Discord Bot Not Connecting
     </span>
   </a>
   
@@ -907,28 +946,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#coding-standards" class="md-nav__link">
+  <a href="#debugging-techniques" class="md-nav__link">
     <span class="md-ellipsis">
-      Coding Standards
+      Debugging Techniques
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debugging Techniques">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logging
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#ai-powered-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      AI-Powered Development
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="AI-Powered Development">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-ai-commands" class="md-nav__link">
+  <a href="#interactive-debugging" class="md-nav__link">
     <span class="md-ellipsis">
-      Using AI Commands
+      Interactive Debugging
     </span>
   </a>
   
@@ -936,6 +975,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting Support
+    </span>
+  </a>
   
 </li>
       
@@ -955,60 +1003,89 @@
 
 
 
-<h1 id="contributing-to-astrobot">Contributing to AstroBot<a class="headerlink" href="#contributing-to-astrobot" title="Permanent link">&para;</a></h1>
-<p>Thank you for considering contributing to AstroBot! This guide will help you get started with contributing to the project.</p>
-<h2 id="code-of-conduct">Code of Conduct<a class="headerlink" href="#code-of-conduct" title="Permanent link">&para;</a></h2>
-<p>We expect all contributors to follow our Code of Conduct. By participating in this project, you agree to abide by its terms.</p>
-<h2 id="how-to-contribute">How to Contribute<a class="headerlink" href="#how-to-contribute" title="Permanent link">&para;</a></h2>
-<h3 id="reporting-bugs">Reporting Bugs<a class="headerlink" href="#reporting-bugs" title="Permanent link">&para;</a></h3>
-<p>If you find a bug, please report it by creating an issue on the GitHub repository.</p>
-<h3 id="suggesting-features">Suggesting Features<a class="headerlink" href="#suggesting-features" title="Permanent link">&para;</a></h3>
-<p>If you have an idea for a new feature or improvement, please create an issue on the GitHub repository.</p>
-<h3 id="pull-requests">Pull Requests<a class="headerlink" href="#pull-requests" title="Permanent link">&para;</a></h3>
+<h1 id="troubleshooting-guide">Troubleshooting Guide<a class="headerlink" href="#troubleshooting-guide" title="Permanent link">&para;</a></h1>
+<p>This guide covers common issues you might encounter when working with AstroBot and how to resolve them.</p>
+<h2 id="common-errors">Common Errors<a class="headerlink" href="#common-errors" title="Permanent link">&para;</a></h2>
+<h3 id="undefined-variables">Undefined Variables<a class="headerlink" href="#undefined-variables" title="Permanent link">&para;</a></h3>
+<p>If you encounter errors like <code>F821 undefined name 'func'</code> or <code>undefined name 'DiscordServer'</code>, it usually means that a necessary import is missing. Here's how to fix these common issues:</p>
+<h4 id="missing-sqlalchemy-functions">Missing SQLAlchemy Functions<a class="headerlink" href="#missing-sqlalchemy-functions" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># Add this import at the top of your file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">func</span>
+</code></pre></div>
+<p>The <code>func</code> object is used for SQL functions and aggregations. It's commonly needed in queries that use operations like <code>count()</code>, <code>max()</code>, or <code>min()</code>.</p>
+<h4 id="missing-model-references">Missing Model References<a class="headerlink" href="#missing-model-references" title="Permanent link">&para;</a></h4>
+<p>If you see <code>undefined name 'DiscordServer'</code> or similar, you need to import the model:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Add this import at the top of your file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiscordServer</span>
+</code></pre></div>
+<h3 id="database-connection-issues">Database Connection Issues<a class="headerlink" href="#database-connection-issues" title="Permanent link">&para;</a></h3>
+<p>If you encounter database connectivity problems:</p>
 <ol>
-<li>Fork the repository</li>
-<li>Create a new branch for your changes</li>
-<li>Make your changes</li>
-<li>Submit a pull request</li>
+<li>Check that your database URL is correctly set in the environment variables</li>
+<li>Verify that the PostgreSQL service is running</li>
+<li>Ensure that your models are properly defined with correct relationships</li>
 </ol>
-<h2 id="development-environment">Development Environment<a class="headerlink" href="#development-environment" title="Permanent link">&para;</a></h2>
-<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Python 3.11 or higher</li>
-<li>Node.js 20 or higher</li>
-<li>PostgreSQL database</li>
-</ul>
-<h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Debug database connection</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database URL: </span><span class="si">{</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;SQLALCHEMY_DATABASE_URI&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT 1&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Database connection successful&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database connection failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="module-import-errors">Module Import Errors<a class="headerlink" href="#module-import-errors" title="Permanent link">&para;</a></h3>
+<p>If you see <code>ModuleNotFoundError</code> or <code>ImportError</code>:</p>
 <ol>
-<li>Clone the repository</li>
-<li>Install dependencies</li>
-<li>Set up environment variables</li>
-<li>Initialize the database</li>
+<li>Check your project structure to ensure the module exists</li>
+<li>Verify that your Python path includes the necessary directories</li>
+<li>Make sure all dependencies are installed</li>
 </ol>
-<h2 id="coding-standards">Coding Standards<a class="headerlink" href="#coding-standards" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Follow PEP 8 for Python code</li>
-<li>Use ESLint for JavaScript code</li>
-<li>Write tests for new features</li>
-<li>Document your code</li>
-</ul>
-<h2 id="ai-powered-development">AI-Powered Development<a class="headerlink" href="#ai-powered-development" title="Permanent link">&para;</a></h2>
-<p>This project uses AI-powered GitHub Actions to help with development tasks. You can:</p>
+<h2 id="application-startup-issues">Application Startup Issues<a class="headerlink" href="#application-startup-issues" title="Permanent link">&para;</a></h2>
+<h3 id="flask-application-not-starting">Flask Application Not Starting<a class="headerlink" href="#flask-application-not-starting" title="Permanent link">&para;</a></h3>
+<p>If the Flask application fails to start:</p>
 <ol>
-<li>Use the <code>@ai</code> command in issue comments to get AI assistance</li>
-<li>Automatically get AI-suggested fixes for bugs</li>
-<li>Leverage AI for code review and improvement suggestions</li>
+<li>Check for syntax errors in your Python files</li>
+<li>Look for circular imports</li>
+<li>Verify that the port (5000) is not already in use</li>
 </ol>
-<h3 id="using-ai-commands">Using AI Commands<a class="headerlink" href="#using-ai-commands" title="Permanent link">&para;</a></h3>
-<p>You can use these commands in issue and PR comments:</p>
-<ul>
-<li><code>@ai explain</code> - Explain code or concepts</li>
-<li><code>@ai fix</code> - Suggest fixes for issues</li>
-<li><code>@ai implement</code> - Implement requested features</li>
-<li><code>@ai optimize</code> - Optimize existing code</li>
-<li><code>@ai test</code> - Generate test cases</li>
-<li><code>@ai document</code> - Create documentation</li>
-</ul>
+<h3 id="discord-bot-not-connecting">Discord Bot Not Connecting<a class="headerlink" href="#discord-bot-not-connecting" title="Permanent link">&para;</a></h3>
+<p>If the Discord bot fails to connect:</p>
+<ol>
+<li>Verify that your <code>DISCORD_TOKEN</code> is correct and properly set</li>
+<li>Check that your bot has the necessary permissions</li>
+<li>Ensure that you've enabled the necessary Gateway Intents in the Discord Developer Portal</li>
+</ol>
+<h2 id="debugging-techniques">Debugging Techniques<a class="headerlink" href="#debugging-techniques" title="Permanent link">&para;</a></h2>
+<h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
+<p>AstroBot uses Python's built-in logging module. To add more detailed logs:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="c1"># Set up logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Use throughout your code</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Detailed information for debugging&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Confirmation that things are working&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Something unexpected happened&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;A more serious problem occurred&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;A fatal error occurred&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="interactive-debugging">Interactive Debugging<a class="headerlink" href="#interactive-debugging" title="Permanent link">&para;</a></h3>
+<p>You can use Python's built-in debugger (pdb):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pdb</span>
+
+<span class="c1"># Add this line where you want to start debugging</span>
+<span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+</code></pre></div>
+<p>When this line is executed, Python will stop and provide an interactive debug console.</p>
+<h2 id="getting-support">Getting Support<a class="headerlink" href="#getting-support" title="Permanent link">&para;</a></h2>
+<p>If you can't resolve the issue using this guide:</p>
+<ol>
+<li>Check existing issues on GitHub to see if someone else has encountered the same problem</li>
+<li>Create a new issue with a detailed description of the problem and the steps to reproduce it</li>
+<li>Join our Discord server for community support</li>
+</ol>
 
 
 
