@@ -432,7 +432,10 @@ def bot_customization(server_id):
         
         # Create or update customization
         if customization is None:
-            customization = BotCustomization(server_id=server.id)
+            customization = BotCustomization(
+                server_id=server.id,
+                created_by_id=current_user.id
+            )
             db.session.add(customization)
         
         # Update fields from form

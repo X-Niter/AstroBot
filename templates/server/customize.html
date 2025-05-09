@@ -70,7 +70,7 @@
                         previewPlaying: '{{ customization.custom_playing or 'Minecraft' }}',
                         previewColor: '{{ customization.theme_color or '#5865F2' }}',
                         avatarFile: null,
-                        avatarPreview: '{{ customization.avatar_url or url_for('static', filename='img/astrobot-logo.svg') }}'
+                        avatarPreview: '{{ customization.custom_avatar_url or url_for('static', filename='img/astrobot-logo.svg') }}'
                       }"
                       class="space-y-6">
                     {{ form.csrf_token }}
