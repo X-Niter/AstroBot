@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block styles %}
+<style>
+    .register-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+    .register-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .register-header img {
+        width: 80px;
+        margin-bottom: 1rem;
+    }
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+    .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+    }
+    .divider::before, .divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .divider span {
+        padding: 0 1rem;
+        color: #6c757d;
+    }
+    .social-login button {
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <div class="register-header">
+        <img src="{{ url_for('static', filename='img/astrobot-logo.svg') }}" alt="AstroBot Logo">
+        <h2>Create an Account</h2>
+        <p class="text-muted">Join the AstroBot AI community</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('register') }}">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-floating">
+            {{ form.username(class="form-control", placeholder="Username", id="floatingUsername") }}
+            <label for="floatingUsername">Username</label>
+            {% if form.username.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.username.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-floating">
+            {{ form.email(class="form-control", placeholder="Email", id="floatingEmail") }}
+            <label for="floatingEmail">Email</label>
+            {% if form.email.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.email.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-floating">
+            {{ form.password(class="form-control", placeholder="Password", id="floatingPassword") }}
+            <label for="floatingPassword">Password</label>
+            {% if form.password.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.password.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-floating">
+            {{ form.confirm_password(class="form-control", placeholder="Confirm Password", id="floatingConfirmPassword") }}
+            <label for="floatingConfirmPassword">Confirm Password</label>
+            {% if form.confirm_password.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.confirm_password.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="termsCheck" required>
+            <label class="form-check-label" for="termsCheck">
+                I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+            </label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100 py-2">Register</button>
+    </form>
+    
+    <div class="divider">
+        <span>OR</span>
+    </div>
+    
+    <div class="social-login">
+        <button class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center">
+            <i class="bi bi-discord me-2"></i> Register with Discord
+        </button>
+        <button class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+            <i class="bi bi-twitch me-2"></i> Register with Twitch
+        </button>
+    </div>
+    
+    <div class="text-center mt-3">
+        <p>Already have an account? <a href="{{ url_for('login') }}" class="text-decoration-none">Login</a></p>
+    </div>
+</div>
+{% endblock %}

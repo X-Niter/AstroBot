@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="248" fill="#2C2F33"/>
+  
+  <!-- Outer Ring -->
+  <circle cx="256" cy="256" r="240" stroke="#5865F2" stroke-width="16" fill="none"/>
+  
+  <!-- Bot Face -->
+  <rect x="144" y="176" width="224" height="192" rx="32" fill="#5865F2"/>
+  
+  <!-- Bot Eyes -->
+  <circle cx="200" cy="240" r="24" fill="white"/>
+  <circle cx="312" cy="240" r="24" fill="white"/>
+  <circle cx="200" cy="240" r="12" fill="#2C2F33"/>
+  <circle cx="312" cy="240" r="12" fill="#2C2F33"/>
+  
+  <!-- Bot Mouth -->
+  <rect x="184" y="296" width="144" height="24" rx="12" fill="white"/>
+  <rect x="184" y="296" width="24" height="24" rx="12" fill="white"/>
+  <rect x="304" y="296" width="24" height="24" rx="12" fill="white"/>
+  
+  <!-- Bot Antennas -->
+  <rect x="240" y="128" width="32" height="48" rx="16" fill="#5865F2"/>
+  <circle cx="256" cy="112" r="24" fill="#7289DA"/>
+  
+  <!-- Star elements -->
+  <path d="M96 96L104 112L120 120L104 128L96 144L88 128L72 120L88 112L96 96Z" fill="#7289DA"/>
+  <path d="M416 96L424 112L440 120L424 128L416 144L408 128L392 120L408 112L416 96Z" fill="#7289DA"/>
+  <path d="M96 416L104 432L120 440L104 448L96 464L88 448L72 440L88 432L96 416Z" fill="#7289DA"/>
+  <path d="M416 416L424 432L440 440L424 448L416 464L408 448L392 440L408 432L416 416Z" fill="#7289DA"/>
+  
+  <!-- Small stars -->
+  <circle cx="128" cy="256" r="8" fill="#FFFFFF"/>
+  <circle cx="384" cy="256" r="8" fill="#FFFFFF"/>
+  <circle cx="256" cy="384" r="8" fill="#FFFFFF"/>
+</svg>
