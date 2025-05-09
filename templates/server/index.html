@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}My Discord Servers{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">My Discord Servers</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Discord Servers</li>
+    </ol>
+    
+    <div class="row">
+        {% if not servers %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h4 class="alert-heading">No Servers Found</h4>
+                <p>You don't have any Discord servers connected to AstroBot AI yet.</p>
+                <hr>
+                <p class="mb-0">
+                    <a href="#" class="btn btn-primary">
+                        <i class="bi bi-discord me-1"></i> Connect a Discord Server
+                    </a>
+                </p>
+            </div>
+        </div>
+        {% else %}
+        
+        {% for server in servers %}
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            {% if server.icon_url %}
+                            <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="rounded-circle me-2" style="width: 48px; height: 48px;">
+                            {% else %}
+                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 48px; height: 48px;">
+                                <i class="bi bi-discord text-white fs-4"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title mb-0">{{ server.name }}</h5>
+                            <div class="text-muted small">{{ server.member_count }} members</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('bot_customization', server_id=server.server_id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-brush me-1"></i> Customize Bot
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary">
+                            <i class="bi bi-gear me-1"></i> Server Settings
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between text-muted small">
+                        <div>
+                            {% if server.is_premium %}
+                            <span class="badge bg-primary">
+                                <i class="bi bi-gem me-1"></i> Premium
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            Bot added: {{ server.bot_joined_at.strftime('%Y-%m-%d') if server.bot_joined_at else 'Unknown' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% endif %}
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-1"></i>
+                    About Server Management
+                </div>
+                <div class="card-body">
+                    <p>From this dashboard, you can:</p>
+                    <ul>
+                        <li>Customize your AstroBot AI appearance for each server</li>
+                        <li>Configure server-specific settings</li>
+                        <li>Manage permissions and access control</li>
+                        <li>View analytics and usage statistics</li>
+                    </ul>
+                    <div class="alert alert-primary mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>
+                        <strong>Premium Tip:</strong> With a premium subscription, you can customize the bot's name, avatar, and status for each server separately!
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    Server Privacy Settings
+                </div>
+                <div class="card-body">
+                    <p>Control what information about your servers is visible to others:</p>
+                    <form>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="showServerInShowcase" checked>
+                                <label class="form-check-label" for="showServerInShowcase">
+                                    Show my servers in the public server showcase
+                                </label>
+                            </div>
+                            <div class="form-text">When enabled, your servers may appear in the AstroBot server showcase</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="showConfigPublic">
+                                <label class="form-check-label" for="showConfigPublic">
+                                    Allow others to view your server configurations
+                                </label>
+                            </div>
+                            <div class="form-text">When enabled, other users can view your custom settings and configurations</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> Save Privacy Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

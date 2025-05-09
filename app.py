@@ -1,8 +1,11 @@
 import os
 import logging
 import json
+import time
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, redirect, url_for, request, flash, session
+from werkzeug.utils import secure_filename
+from forms import BotCustomizationForm
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -380,6 +383,24 @@ def commands_dashboard():
 @app.route('/discord/permissions')
 def permissions():
     return render_template('discord/permissions.html', title="Permissions")
+
+@app.route('/servers')
+@login_required
+def server_index():
+    """List all Discord servers the user has access to"""
+    from models import DiscordServer
+    
+    # Get user's Discord servers
+    if current_user.is_admin:
+        # Admins can see all servers
+        servers = DiscordServer.query.all()
+    else:
+        # Regular users only see their own servers
+        servers = DiscordServer.query.filter_by(owner_id=current_user.id).all()
+    
+    return render_template('server/index.html',
+                          title="My Discord Servers",
+                          servers=servers)
 
 @app.route('/server/<server_id>/customize', methods=['GET', 'POST'])
 @login_required
