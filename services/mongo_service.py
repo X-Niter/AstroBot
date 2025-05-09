@@ -212,6 +212,15 @@ async def update_user_points(discord_id, points_to_add, reason=None, awarded_by=
     Returns:
         dict: Result of the operation
     """
+    # If MongoDB is not available, return a graceful error
+    if users_collection is None:
+        logger.warning("MongoDB users collection is not available, cannot update points")
+        return {
+            "success": False, 
+            "message": "Points system temporarily unavailable", 
+            "fallback": True
+        }
+        
     try:
         # Get the user, create if doesn't exist
         user = await get_user(discord_id)
@@ -273,6 +282,15 @@ async def link_twitch_account(discord_id, twitch_id, twitch_username):
     Returns:
         dict: Result of the operation
     """
+    # If MongoDB is not available, return a graceful error
+    if users_collection is None:
+        logger.warning("MongoDB users collection is not available, cannot link Twitch account")
+        return {
+            "success": False, 
+            "message": "Twitch linking temporarily unavailable", 
+            "fallback": True
+        }
+        
     try:
         # Check if there's already a user with this Twitch ID
         existing_twitch_user = await get_user_by_twitch_id(twitch_id)
@@ -311,6 +329,11 @@ async def get_leaderboard(limit=10):
     Returns:
         list: Top users
     """
+    # If MongoDB is not available, return an empty list
+    if users_collection is None:
+        logger.warning("MongoDB users collection is not available, returning empty leaderboard")
+        return []
+        
     try:
         cursor = users_collection.find(
             {"points": {"$gt": 0}}
@@ -344,6 +367,15 @@ async def add_mod_review(discord_id, discord_name, mod_name, rating, review_text
     Returns:
         dict: Result of the operation
     """
+    # If MongoDB is not available, return a graceful error
+    if mod_reviews_collection is None:
+        logger.warning("MongoDB mod_reviews collection is not available, cannot add review")
+        return {
+            "success": False, 
+            "message": "Review system temporarily unavailable", 
+            "fallback": True
+        }
+        
     try:
         # Check if user has already reviewed this mod
         existing_review = await mod_reviews_collection.find_one({
@@ -399,6 +431,11 @@ async def get_mod_reviews(mod_name):
     Returns:
         list: Reviews for the mod
     """
+    # If MongoDB is not available, return an empty list
+    if mod_reviews_collection is None:
+        logger.warning("MongoDB mod_reviews collection is not available, returning empty reviews")
+        return []
+        
     try:
         cursor = mod_reviews_collection.find(
             {"mod_name": {"$regex": f"^{mod_name}$", "$options": "i"}}
@@ -433,6 +470,15 @@ async def add_mod_suggestion(discord_id, discord_name, title, description, ai_fe
     Returns:
         dict: Result of the operation
     """
+    # If MongoDB is not available, return a graceful error
+    if mod_suggestions_collection is None:
+        logger.warning("MongoDB mod_suggestions collection is not available, cannot add suggestion")
+        return {
+            "success": False, 
+            "message": "Suggestion system temporarily unavailable", 
+            "fallback": True
+        }
+        
     try:
         suggestion = {
             "discord_id": discord_id,
@@ -467,6 +513,11 @@ async def get_mod_suggestions(limit=5):
     Returns:
         list: Recent suggestions
     """
+    # If MongoDB is not available, return an empty list
+    if mod_suggestions_collection is None:
+        logger.warning("MongoDB mod_suggestions collection is not available, returning empty suggestions")
+        return []
+        
     try:
         cursor = mod_suggestions_collection.find().sort("created_at", -1).limit(limit)
         
