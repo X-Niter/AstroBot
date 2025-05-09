@@ -125,12 +125,12 @@ markdown_extensions:
   - pymdownx.inlinehilite
 
 nav:
-            - Home: index.md
-            - Getting Started: getting-started.md
-            - User Guide: user-guide.md
-            - API Reference: api-reference.md
-            - Contributing: contributing.md
-            EOF
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide: user-guide.md
+  - API Reference: api-reference.md
+  - Contributing: contributing.md
+EOF
           fi
       
       # Generate automatic API documentation
