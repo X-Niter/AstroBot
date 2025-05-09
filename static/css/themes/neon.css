@@ -1,32 +1,64 @@
 /**
- * Neon Theme - Vibrant neon colors on dark background
+ * Neon Theme - Vibrant neon colors on dark background (Premium)
  */
 :root {
     --primary-bg: #0f0f12;
-    --secondary-bg: #16161d;
+    --secondary-bg: #18181c;
     --card-bg: #1e1e24;
     --text-color: #ffffff;
-    --muted-text: #a0a0a0;
-    --border-color: #2d2d39;
+    --muted-text: #b3b3cc;
+    --border-color: #333340;
     --primary-color: #ff00ff;
     --secondary-color: #00ffff;
-    --success-color: #00ff66;
-    --danger-color: #ff3366;
-    --warning-color: #ffcc00;
-    --info-color: #00ccff;
+    --success-color: #39ff14;
+    --danger-color: #ff003c;
+    --warning-color: #ffff00;
+    --info-color: #00ffff;
     --nav-bg: #000000;
     --nav-text: #ffffff;
     --footer-bg: #000000;
     --footer-text: #ffffff;
 }
 
-.theme-neon {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+.theme-neon body {
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    /* Subtle grid pattern */
+    background-image: linear-gradient(rgba(255, 0, 255, 0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255, 0, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.theme-neon a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.3s, text-shadow 0.3s;
+}
+
+.theme-neon a:hover {
+    color: #ff80ff;
+    text-shadow: 0 0 8px rgba(255, 0, 255, 0.8);
+}
+
+.theme-neon .navbar {
+    background-color: var(--nav-bg) !important;
+    border-bottom: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+}
+
+.theme-neon .navbar-dark .navbar-nav .nav-link {
+    color: var(--nav-text);
+    transition: text-shadow 0.3s;
+}
+
+.theme-neon .navbar-dark .navbar-nav .nav-link:hover {
+    text-shadow: 0 0 8px rgba(255, 0, 255, 0.8);
 }
 
 .theme-neon .card {
+    background-color: var(--card-bg);
     border: 1px solid var(--primary-color);
-    box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+    box-shadow: 0 0 8px rgba(255, 0, 255, 0.3);
 }
 
 .theme-neon .card-header {
@@ -34,26 +66,96 @@
     border-bottom: 1px solid var(--primary-color);
 }
 
-.theme-neon h1, 
-.theme-neon h2, 
-.theme-neon h3, 
-.theme-neon h4, 
-.theme-neon h5, 
-.theme-neon h6 {
-    color: var(--primary-color);
-    text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+.theme-neon .modal-content {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+}
+
+.theme-neon .dropdown-menu {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+}
+
+.theme-neon .dropdown-item {
+    color: var(--text-color);
+}
+
+.theme-neon .dropdown-item:hover {
+    background-color: rgba(255, 0, 255, 0.1);
+    color: var(--text-color);
+}
+
+.theme-neon .form-control,
+.theme-neon .form-select {
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.theme-neon .form-control:focus,
+.theme-neon .form-select:focus {
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 0, 255, 0.25);
+}
+
+.theme-neon .input-group-text {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-neon .table {
+    color: var(--text-color);
+}
+
+.theme-neon .text-muted {
+    color: var(--muted-text) !important;
+}
+
+.theme-neon .list-group-item {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-neon .list-group-item.active {
+    background-color: rgba(255, 0, 255, 0.2);
+    border-color: var(--primary-color);
+    color: var(--text-color);
+}
+
+.theme-neon .border-bottom {
+    border-color: var(--border-color) !important;
+}
+
+.theme-neon .border-top {
+    border-color: var(--border-color) !important;
+}
+
+.theme-neon pre, 
+.theme-neon code {
+    background-color: #1a1a22;
+    color: #00ffff;
+    border-color: #333340;
 }
 
 .theme-neon .btn-primary {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    color: #ffffff;
+    color: #000000;
     box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+    transition: all 0.3s;
 }
 
 .theme-neon .btn-primary:hover {
-    background-color: #e100e1;
-    border-color: #e100e1;
+    background-color: #ff80ff;
+    border-color: #ff80ff;
     box-shadow: 0 0 15px rgba(255, 0, 255, 0.8);
 }
 
@@ -65,58 +167,18 @@
 
 .theme-neon .btn-outline-primary:hover {
     background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    color: #000000;
     box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
 }
 
-.theme-neon .navbar {
-    background: linear-gradient(90deg, #000000, #1a0038) !important;
-    box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
-}
-
-.theme-neon .navbar-brand {
-    color: var(--primary-color) !important;
-    text-shadow: 0 0 10px rgba(255, 0, 255, 0.7);
-}
-
-.theme-neon .nav-link:hover {
-    color: var(--secondary-color) !important;
-    text-shadow: 0 0 8px rgba(0, 255, 255, 0.7);
-}
-
 .theme-neon .footer {
-    background: linear-gradient(90deg, #000000, #1a0038) !important;
-    box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+    background-color: var(--footer-bg) !important;
+    border-top: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
 }
 
-.theme-neon .dropdown-menu {
-    background-color: var(--secondary-bg);
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
-}
-
-.theme-neon .dropdown-item:hover {
-    background-color: rgba(255, 0, 255, 0.2);
-}
-
-.theme-neon .form-control,
-.theme-neon .form-select {
-    background-color: var(--secondary-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-}
-
-.theme-neon .form-control:focus,
-.theme-neon .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(255, 0, 255, 0.25);
-}
-
-.theme-neon .table {
-    color: var(--text-color);
-}
-
-.theme-neon .badge.bg-primary {
-    background-color: var(--primary-color) !important;
-    box-shadow: 0 0 5px rgba(255, 0, 255, 0.5);
+/* Custom glow effects for headings */
+.theme-neon h1, .theme-neon h2, .theme-neon h3, .theme-neon h4, .theme-neon h5, .theme-neon h6 {
+    color: white;
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.7);
 }

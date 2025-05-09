@@ -273,6 +273,7 @@ class WebsiteUser(UserMixin, db.Model):
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     theme_preference = Column(String(20), default="dark") # light, dark, space, neon, contrast
+    bio = Column(Text, nullable=True)
     
     # Relationships
     feedback = relationship("Feedback", back_populates="user")

@@ -1,18 +1,18 @@
 /**
- * Space Theme - Dark space-inspired theme with stars
+ * Space Theme - Dark space-inspired theme with stars (Premium)
  */
 :root {
     --primary-bg: #0d1117;
     --secondary-bg: #161b22;
     --card-bg: #21262d;
-    --text-color: #f0f6fc;
+    --text-color: #c9d1d9;
     --muted-text: #8b949e;
     --border-color: #30363d;
     --primary-color: #58a6ff;
-    --secondary-color: #8b949e;
+    --secondary-color: #6e7681;
     --success-color: #3fb950;
     --danger-color: #f85149;
-    --warning-color: #e3b341;
+    --warning-color: #d29922;
     --info-color: #58a6ff;
     --nav-bg: #0d1117;
     --nav-text: #f0f6fc;
@@ -20,49 +20,54 @@
     --footer-text: #f0f6fc;
 }
 
-/* Create star background effect */
-.theme-space body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+/* Space background with stars */
+.theme-space body {
+    background-color: var(--primary-bg);
     background-image: 
-        radial-gradient(white 1px, transparent 0),
-        radial-gradient(white 1px, transparent 0);
-    background-size: 50px 50px;
-    background-position: 0 0, 25px 25px;
-    opacity: 0.1;
-    z-index: -1;
-    pointer-events: none;
+        radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+        radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+        radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+    background-size: 
+        550px 550px,
+        350px 350px,
+        250px 250px;
+    background-position: 
+        0 0,
+        40px 60px,
+        130px 270px;
+    color: var(--text-color);
 }
 
-.theme-space .navbar,
-.theme-space .footer {
-    background: linear-gradient(90deg, var(--nav-bg), #1a1f27) !important;
+.theme-space .navbar {
+    background: linear-gradient(90deg, #0d1117, #161b22) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.theme-space .navbar-dark .navbar-nav .nav-link {
+    color: var(--nav-text);
 }
 
 .theme-space .card {
-    background: linear-gradient(140deg, var(--card-bg), #2c313a);
+    background: linear-gradient(145deg, #1a1f27, #21262d);
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .theme-space .card-header {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-color: var(--border-color);
+    background: linear-gradient(90deg, #161b22, #1a1f27);
+    border-bottom: 1px solid var(--border-color);
 }
 
-.theme-space .btn-primary {
-    background: linear-gradient(90deg, var(--primary-color), #2c94ff);
-    border: none;
+.theme-space .modal-content {
+    background: linear-gradient(145deg, #161b22, #1a1f27);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
 }
 
 .theme-space .dropdown-menu {
-    background-color: var(--secondary-bg);
-    border-color: var(--border-color);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    background-color: #161b22;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .theme-space .dropdown-item {
@@ -70,20 +75,28 @@
 }
 
 .theme-space .dropdown-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(88, 166, 255, 0.1);
     color: var(--text-color);
 }
 
 .theme-space .form-control,
 .theme-space .form-select {
-    background-color: var(--secondary-bg);
-    border-color: var(--border-color);
+    background-color: #161b22;
+    border: 1px solid var(--border-color);
     color: var(--text-color);
 }
 
+.theme-space .form-control:focus,
+.theme-space .form-select:focus {
+    background-color: #161b22;
+    color: var(--text-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
+}
+
 .theme-space .input-group-text {
-    background-color: var(--secondary-bg);
-    border-color: var(--border-color);
+    background-color: #161b22;
+    border: 1px solid var(--border-color);
     color: var(--text-color);
 }
 
@@ -91,8 +104,47 @@
     color: var(--text-color);
 }
 
-.theme-space .modal-content {
-    background-color: var(--secondary-bg);
-    color: var(--text-color);
+.theme-space .text-muted {
+    color: var(--muted-text) !important;
+}
+
+.theme-space .list-group-item {
+    background-color: #21262d;
     border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-space .list-group-item.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.theme-space .border-bottom {
+    border-color: var(--border-color) !important;
+}
+
+.theme-space .border-top {
+    border-color: var(--border-color) !important;
+}
+
+.theme-space pre, 
+.theme-space code {
+    background-color: #2d333b;
+    color: #e6edf3;
+    border-color: #444c56;
+}
+
+.theme-space .btn-primary {
+    background: linear-gradient(180deg, #388bfd, #1f6feb);
+    border-color: rgba(240, 246, 252, 0.1);
+}
+
+.theme-space .btn-primary:hover {
+    background: linear-gradient(180deg, #58a6ff, #388bfd);
+    border-color: rgba(240, 246, 252, 0.1);
+}
+
+.theme-space .footer {
+    background: linear-gradient(0deg, #0d1117, #161b22) !important;
+    border-top: 1px solid var(--border-color);
 }
