@@ -6,74 +6,113 @@
  */
 
 // Initialize theme before Alpine.js loads to prevent flashing
-function initializeTheme() {
-    // Don't run in environments without document
-    if (typeof document === 'undefined') return;
-    
-    const getTheme = () => {
-        if (typeof localStorage === 'undefined') return 'light';
-        
-        const persistedTheme = localStorage.getItem('theme');
-        if (persistedTheme) return persistedTheme;
-        
+// We'll use a more robust approach that doesn't depend on document.body
+const THEME_STORAGE_KEY = 'theme';
+const DEFAULT_THEME = 'light';
+const PREMIUM_THEMES = ['space', 'neon', 'contrast'];
+
+// Global variable to store the current theme
+let currentTheme = DEFAULT_THEME;
+
+function getPreferredColorScheme() {
+    // Check if window and matchMedia are available
+    if (typeof window !== 'undefined' && window.matchMedia) {
         return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    };
-    
-    const theme = getTheme();
-    
-    // Handle documentElement updates safely
-    if (document.documentElement) {
-        const root = document.documentElement;
-        
-        if (theme === 'dark' || ['space', 'neon', 'contrast'].includes(theme)) {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-        
-        if (theme !== 'light' && theme !== 'dark') {
-            root.classList.add(`theme-${theme}`);
-        }
     }
-    
-    // Handle document.body updates safely
-    const setBodyTheme = () => {
-        if (document.body) {
-            try {
-                document.body.setAttribute('data-theme', theme);
-            } catch (e) {
-                console.warn('Could not set body theme attribute:', e);
-            }
-        }
-    };
-    
-    // If DOM is still loading, wait for it to be ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setBodyTheme);
-    } else {
-        // Try immediately
-        setBodyTheme();
-        
-        // If body isn't available yet, try again after a short delay
-        if (!document.body) {
-            setTimeout(setBodyTheme, 50);
-        }
-    }
+    return DEFAULT_THEME;
 }
 
-// Run theme initialization with a slight delay to ensure DOM is available
+function getSavedTheme() {
+    // Check if localStorage is available
+    if (typeof localStorage !== 'undefined') {
+        try {
+            return localStorage.getItem(THEME_STORAGE_KEY);
+        } catch (e) {
+            console.warn('Error accessing localStorage:', e);
+        }
+    }
+    return null;
+}
+
+function isDarkTheme(theme) {
+    return theme === 'dark' || PREMIUM_THEMES.includes(theme);
+}
+
+function isPremiumTheme(theme) {
+    return PREMIUM_THEMES.includes(theme);
+}
+
+function determineTheme() {
+    const savedTheme = getSavedTheme();
+    return savedTheme || getPreferredColorScheme();
+}
+
+function applyThemeToHTML(theme) {
+    // Only run if document is available
+    if (typeof document === 'undefined' || !document.documentElement) return;
+    
+    const root = document.documentElement;
+    
+    // Clear existing theme classes
+    PREMIUM_THEMES.forEach(themeName => {
+        root.classList.remove(`theme-${themeName}`);
+    });
+    
+    // Apply dark mode if needed
+    if (isDarkTheme(theme)) {
+        root.classList.add('dark');
+    } else {
+        root.classList.remove('dark');
+    }
+    
+    // Apply premium theme class if needed
+    if (isPremiumTheme(theme)) {
+        root.classList.add(`theme-${theme}`);
+    }
+    
+    // Store the current theme
+    currentTheme = theme;
+}
+
+// Initialize theme system
+function initializeTheme() {
+    const theme = determineTheme();
+    applyThemeToHTML(theme);
+    
+    // We'll handle body separately in DOMContentLoaded
+}
+
+// Safe theme initialization with multiple attempts
 if (typeof window !== 'undefined') {
-    // Run immediately but wrapped in try/catch
+    // Try immediately
     try {
         initializeTheme();
     } catch (e) {
         console.warn('Error during initial theme setup:', e);
     }
     
-    // Also run when DOM is fully loaded for safety
-    window.addEventListener('DOMContentLoaded', () => {
+    // Set up body attribute when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
         try {
-            initializeTheme();
+            // Set data-theme on body element if available
+            if (document.body) {
+                document.body.setAttribute('data-theme', currentTheme);
+            }
+            
+            // Add listener for theme system preference changes
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                    // Only update if user hasn't explicitly set a theme
+                    if (!getSavedTheme()) {
+                        const newTheme = event.matches ? 'dark' : 'light';
+                        applyThemeToHTML(newTheme);
+                        
+                        if (document.body) {
+                            document.body.setAttribute('data-theme', newTheme);
+                        }
+                    }
+                });
+            }
         } catch (e) {
             console.warn('Error during DOMContentLoaded theme setup:', e);
         }
@@ -127,17 +166,13 @@ document.addEventListener('alpine:init', () => {
     // Theme manager store
     Alpine.store('theme', {
         // State
-        current: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-        isDark: localStorage.getItem('theme') === 'dark' || 
-                localStorage.getItem('theme') === 'space' || 
-                localStorage.getItem('theme') === 'neon' || 
-                localStorage.getItem('theme') === 'contrast' || 
-                (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches),
+        current: determineTheme(),
+        isDark: isDarkTheme(determineTheme()),
         menuOpen: false,
         
-        // Premium theme check
+        // Reuse the global utility functions
         isPremiumTheme(theme) {
-            return ['space', 'neon', 'contrast'].includes(theme);
+            return isPremiumTheme(theme);
         },
         
         // Toggle between light and dark
@@ -149,71 +184,86 @@ document.addEventListener('alpine:init', () => {
         
         // Set a specific theme
         set(themeName) {
-            // Check if it's a premium theme and user has premium
-            if (this.isPremiumTheme(themeName) && document.body && document.body.getAttribute('data-premium') !== 'true') {
-                console.warn('Cannot apply premium theme - user does not have premium subscription');
-                return;
+            // Check if premium theme and if user has premium access
+            // Safely check premium status without relying on document.body
+            try {
+                const hasPremium = typeof document !== 'undefined' && 
+                                  document.body && 
+                                  document.body.getAttribute('data-premium') === 'true';
+                
+                if (isPremiumTheme(themeName) && !hasPremium) {
+                    console.warn('Cannot apply premium theme - user does not have premium subscription');
+                    return;
+                }
+            } catch (e) {
+                console.warn('Error checking premium status:', e);
             }
             
             this.current = themeName;
-            this.isDark = themeName === 'dark' || this.isPremiumTheme(themeName);
+            this.isDark = isDarkTheme(themeName);
             this.apply(themeName);
             this.menuOpen = false;
         },
         
         // Apply the selected theme
         apply(themeName) {
-            if (!document.documentElement) return;
-            
-            const root = document.documentElement;
-            
-            // Clear existing theme classes
-            root.classList.remove('theme-space', 'theme-neon', 'theme-contrast');
-            
-            // Set dark mode class
-            if (themeName === 'dark' || this.isPremiumTheme(themeName)) {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
-            
-            // Add specific theme class
-            if (this.isPremiumTheme(themeName)) {
-                root.classList.add(`theme-${themeName}`);
-            }
-            
-            // Store the theme preference
-            localStorage.setItem('theme', themeName);
-            
-            // Safely update body data attribute
-            if (document.body) {
-                document.body.setAttribute('data-theme', themeName);
+            try {
+                // Apply theme to HTML
+                applyThemeToHTML(themeName);
                 
-                // If user is authenticated, save preference to server
-                if (document.body.hasAttribute('data-user-authenticated') && 
-                    document.body.getAttribute('data-user-authenticated') === 'true') {
-                    this.saveToServer(themeName);
+                // Store in our state
+                this.current = themeName;
+                this.isDark = isDarkTheme(themeName);
+                
+                // Store the theme preference
+                if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem(THEME_STORAGE_KEY, themeName);
                 }
+                
+                // Safely update body data attribute if available
+                if (typeof document !== 'undefined' && document.body) {
+                    document.body.setAttribute('data-theme', themeName);
+                    
+                    // Check if user is authenticated
+                    const isAuthenticated = document.body.hasAttribute('data-user-authenticated') && 
+                                          document.body.getAttribute('data-user-authenticated') === 'true';
+                    
+                    // If authenticated, save to server
+                    if (isAuthenticated) {
+                        this.saveToServer(themeName);
+                    }
+                }
+                
+                // Dispatch theme change event
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('theme-changed', {
+                        detail: { theme: themeName, isDark: this.isDark }
+                    }));
+                }
+            } catch (e) {
+                console.error('Error applying theme:', e);
             }
-            
-            // Dispatch theme change event
-            window.dispatchEvent(new CustomEvent('theme-changed', {
-                detail: { theme: themeName, isDark: this.isDark }
-            }));
         },
         
         // Save theme preference to server
         saveToServer(themeName) {
-            fetch('/update_theme_preference', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                },
-                body: JSON.stringify({ theme: themeName })
-            }).catch(err => {
-                console.error('Failed to save theme preference:', err);
-            });
+            try {
+                const csrfToken = typeof document !== 'undefined' && 
+                                 document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                
+                fetch('/update_theme_preference', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ theme: themeName })
+                }).catch(err => {
+                    console.error('Failed to save theme preference:', err);
+                });
+            } catch (e) {
+                console.warn('Error saving theme to server:', e);
+            }
         }
     });
     
