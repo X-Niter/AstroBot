@@ -5,6 +5,8 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import traceback
 import datetime
+from sqlalchemy.orm import DeclarativeBase
+from flask_sqlalchemy import SQLAlchemy
 
 from config import MONGODB_URI, DB_NAME
 
@@ -15,9 +17,38 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Create base class for SQLAlchemy models
+class Base(DeclarativeBase):
+    pass
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(model_class=Base)
+
 # Create Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", os.urandom(24).hex())
+
+# Configure PostgreSQL database
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///astrobot.db")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Initialize SQLAlchemy with the app
+db.init_app(app)
+
+# Create all database tables
+with app.app_context():
+    try:
+        # Import models to register them with SQLAlchemy
+        import models
+        db.create_all()
+        logger.info("PostgreSQL database tables created successfully")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {e}")
+        logger.error(traceback.format_exc())
 
 # Create async event loop for MongoDB queries
 def get_event_loop():
@@ -35,7 +66,7 @@ def run_async(coro):
 
 # Default collections as None
 client = None
-db = None
+mongo_db = None
 users_collection = None
 mod_reviews_collection = None
 mod_suggestions_collection = None
@@ -45,12 +76,12 @@ mongodb_available = False
 try:
     # Connect with a shorter timeout for faster startup
     client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
-    db = client[DB_NAME]
+    mongo_db = client[DB_NAME]
     
     # Collections
-    users_collection = db["users"]
-    mod_reviews_collection = db["mod_reviews"]
-    mod_suggestions_collection = db["mod_suggestions"]
+    users_collection = mongo_db["users"]
+    mod_reviews_collection = mongo_db["mod_reviews"]
+    mod_suggestions_collection = mongo_db["mod_suggestions"]
     
     # Test connection with a timeout
     async def test_connection():
