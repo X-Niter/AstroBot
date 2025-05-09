@@ -571,9 +571,63 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
     <!-- Make sure Alpine.collapse is globally available -->
     <script>
-        document.addEventListener('alpine:init', () => {
-            if(window.Alpine && window.AlpineCollapse) {
-                window.Alpine.plugin(window.AlpineCollapse);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.Alpine && window.Alpine.plugin) {
+                // Check if AlpineCollapse is loaded from CDN
+                if (window.AlpineCollapse) {
+                    window.Alpine.plugin(window.AlpineCollapse);
+                    console.log('Collapse plugin registered (from window)');
+                }
+                
+                // Register the collapse plugin from @alpinejs/collapse
+                if (!window.Alpine.collapse) {
+                    // Handle polyfill for x-collapse
+                    window.Alpine.directive('collapse', (el, { value, modifiers, expression }, { evaluateLater, cleanup }) => {
+                        console.log('Using polyfill for x-collapse directive');
+                        const getStyle = (el, style) => window.getComputedStyle(el)[style];
+                        
+                        // Set initial height/styles
+                        let isVisible = el.style.display !== 'none';
+                        let isCollapsed = !isVisible;
+                        
+                        // Setup styles
+                        el.style.overflow = 'hidden';
+                        el.style.maxHeight = isVisible ? el.scrollHeight + 'px' : '0px';
+                        el.style.transition = 'max-height 0.3s ease';
+                        
+                        // Toggle function
+                        const toggle = (show) => {
+                            if (show) {
+                                el.style.maxHeight = el.scrollHeight + 'px';
+                                el.style.display = '';
+                                setTimeout(() => {
+                                    isCollapsed = false;
+                                }, 300);
+                            } else {
+                                el.style.maxHeight = '0px';
+                                isCollapsed = true;
+                                setTimeout(() => {
+                                    el.style.display = 'none';
+                                }, 300);
+                            }
+                        };
+                        
+                        // Attach to x-show if present
+                        if (el._x_isShown !== undefined) {
+                            const originalTransition = el._x_doHide || (() => {});
+                            el._x_doHide = () => {
+                                toggle(false);
+                                originalTransition();
+                            };
+                            
+                            const originalShow = el._x_doShow || (() => {});
+                            el._x_doShow = () => {
+                                toggle(true);
+                                originalShow();
+                            };
+                        }
+                    });
+                }
             }
         });
     </script>
