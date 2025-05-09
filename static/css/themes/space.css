@@ -1,218 +1,323 @@
 /**
- * Space Theme - Dark space-inspired theme with stars (Premium)
+ * Space Theme - Premium
+ * A dark, space-themed interface with cool blues and deep purples
  */
-:root {
-    --primary-bg: #0d1117;
-    --secondary-bg: #161b22;
-    --card-bg: #21262d;
-    --text-color: #c9d1d9;
-    --muted-text: #8b949e;
-    --border-color: #30363d;
-    --primary-color: #58a6ff;
-    --secondary-color: #6e7681;
-    --success-color: #3fb950;
-    --danger-color: #f85149;
-    --warning-color: #d29922;
-    --info-color: #58a6ff;
-    --nav-bg: #0d1117;
-    --nav-text: #f0f6fc;
-    --footer-bg: #0d1117;
-    --footer-text: #f0f6fc;
+
+:root.theme-space,
+.theme-space {
+  --primary-color: #4d76ff;
+  --primary-color-rgb: 77, 118, 255;
+  --primary-color-light: #6a8fff;
+  --primary-color-dark: #3a5fd9;
+  
+  --secondary-color: #1a1a2e;
+  --secondary-color-rgb: 26, 26, 46;
+  
+  --accent-color: #7d4cdb;
+  --accent-color-light: #9169e8;
+  --accent-color-dark: #6a3cbd;
+  
+  /* Base UI colors */
+  --primary-bg: #0f0f1a;
+  --secondary-bg: #16162c;
+  --card-bg: #1e1e32;
+  --nav-bg: #080815;
+  --footer-bg: #080815;
+  
+  /* Text colors */
+  --text-color: #e6e6ff;
+  --muted-text: #adb5bd;
+  --heading-color: #ffffff;
+  
+  /* Border and shadow */
+  --border-color: #2e2e50;
+  --border-hover: #3d3d7a;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  
+  /* Status colors */
+  --success-color: #00b894;
+  --warning-color: #fdcb6e;
+  --danger-color: #ff6b81;
+  --info-color: #0abde3;
+  
+  /* Custom space theme highlights */
+  --star-color: #ffffff;
+  --planet-color: #7d4cdb;
+  --comet-color: #00b2ff;
+  
+  /* Form elements */
+  --input-bg: #2a2a4a;
+  --input-border: #3c3c6e;
+  --input-text: #e6e6ff;
+  --input-placeholder: #8888aa;
+  --input-focus-border: #4d76ff;
+  
+  /* Buttons */
+  --button-primary-bg: #4d76ff;
+  --button-primary-text: #ffffff;
+  --button-secondary-bg: #2a2a4a;
+  --button-secondary-text: #e6e6ff;
 }
 
-/* Space background with better stars effect */
-.theme-space body {
-    background-color: var(--primary-bg);
-    background-image: 
-        radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
-        radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
-        radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px),
-        radial-gradient(rgba(255,255,255,.4), rgba(255,255,255,.1) 2px, transparent 4px);
-    background-size: 
-        550px 550px,
-        350px 350px,
-        250px 250px,
-        650px 650px;
-    background-position: 
-        0 0,
-        40px 60px,
-        130px 270px,
-        200px 350px;
-    animation: subtleTwinkle 8s ease-in-out infinite alternate;
-    color: var(--text-color);
-    position: relative;
-}
-
-/* Add occasional meteor effect */
+/* Background effect for space theme */
 .theme-space body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    background-image: 
-        linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,.1) 50.5%, rgba(255,255,255,0) 51%);
-    background-size: 200% 200%;
-    animation: meteor 15s linear infinite;
-    z-index: 0;
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, var(--secondary-bg) 0%, var(--primary-bg) 70%);
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0.85;
+  pointer-events: none;
 }
 
-/* Add a subtle cosmic fog */
-.theme-space body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    background: 
-        radial-gradient(circle at 20% 30%, rgba(88, 166, 255, 0.05), transparent 50%),
-        radial-gradient(circle at 70% 60%, rgba(138, 43, 226, 0.05), transparent 50%);
-    z-index: 0;
+/* Star background animation */
+.theme-space .star-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, var(--star-color) 100%, transparent),
+    radial-gradient(2px 2px at 40px 70px, var(--star-color) 100%, transparent),
+    radial-gradient(1px 1px at 90px 40px, var(--star-color) 100%, transparent),
+    radial-gradient(1px 1px at 130px 80px, var(--star-color) 100%, transparent),
+    radial-gradient(1px 1px at 160px 120px, var(--star-color) 100%, transparent);
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.5;
+  animation: sparkle 6s linear infinite;
+  pointer-events: none;
 }
 
-/* Animation for the twinkling stars */
-@keyframes subtleTwinkle {
-    0% {
-        background-color: var(--primary-bg);
-    }
-    50% {
-        background-color: rgba(11, 19, 30, 1);
-    }
-    100% {
-        background-color: var(--primary-bg);
-    }
+@keyframes sparkle {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.3;
+  }
 }
 
-/* Animation for the meteor effect */
-@keyframes meteor {
-    0% {
-        background-position: 200% 200%;
-        opacity: 0;
-    }
-    10% {
-        opacity: 1;
-    }
-    20% {
-        background-position: 0% 0%;
-        opacity: 0;
-    }
-    100% {
-        background-position: 0% 0%;
-        opacity: 0;
-    }
+/* Glow effects for buttons and interactive elements */
+.theme-space .btn-primary,
+.theme-space .btn-outline-primary:hover,
+.theme-space a.btn-primary,
+.theme-space .nav-item.active {
+  box-shadow: 0 0 10px rgba(77, 118, 255, 0.5);
+  transition: all 0.3s ease;
 }
 
-.theme-space .navbar {
-    background: linear-gradient(90deg, #0d1117, #161b22) !important;
-    border-bottom: 1px solid var(--border-color);
+.theme-space .btn-primary:hover,
+.theme-space a.btn-primary:hover {
+  box-shadow: 0 0 15px rgba(77, 118, 255, 0.7);
 }
 
-.theme-space .navbar-dark .navbar-nav .nav-link {
-    color: var(--nav-text);
-}
-
+/* Card styling */
 .theme-space .card {
-    background: linear-gradient(145deg, #1a1f27, #21262d);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.theme-space .card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
 }
 
 .theme-space .card-header {
-    background: linear-gradient(90deg, #161b22, #1a1f27);
-    border-bottom: 1px solid var(--border-color);
+  background-color: rgba(26, 26, 46, 0.6);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.theme-space .modal-content {
-    background: linear-gradient(145deg, #161b22, #1a1f27);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
+/* Form styling */
+.theme-space input.form-control,
+.theme-space textarea.form-control,
+.theme-space select.form-select {
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-text);
 }
 
-.theme-space .dropdown-menu {
-    background-color: #161b22;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.theme-space input.form-control:focus,
+.theme-space textarea.form-control:focus,
+.theme-space select.form-select:focus {
+  background-color: rgba(42, 42, 74, 0.9);
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 0.25rem rgba(77, 118, 255, 0.25);
 }
 
-.theme-space .dropdown-item {
-    color: var(--text-color);
+.theme-space input::placeholder,
+.theme-space textarea::placeholder {
+  color: var(--input-placeholder);
 }
 
-.theme-space .dropdown-item:hover {
-    background-color: rgba(88, 166, 255, 0.1);
-    color: var(--text-color);
-}
-
-.theme-space .form-control,
-.theme-space .form-select {
-    background-color: #161b22;
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-}
-
-.theme-space .form-control:focus,
-.theme-space .form-select:focus {
-    background-color: #161b22;
-    color: var(--text-color);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
-}
-
-.theme-space .input-group-text {
-    background-color: #161b22;
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-}
-
+/* Table styling */
 .theme-space .table {
-    color: var(--text-color);
+  color: var(--text-color);
 }
 
-.theme-space .text-muted {
-    color: var(--muted-text) !important;
+.theme-space .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(26, 26, 46, 0.4);
 }
 
-.theme-space .list-group-item {
-    background-color: #21262d;
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
+.theme-space .table th,
+.theme-space .table td {
+  border-color: var(--border-color);
 }
 
-.theme-space .list-group-item.active {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+.theme-space .table thead th {
+  background-color: rgba(26, 26, 46, 0.6);
+  color: var(--heading-color);
 }
 
-.theme-space .border-bottom {
-    border-color: var(--border-color) !important;
+/* Navigation styling */
+.theme-space nav.navbar {
+  background-color: var(--nav-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-.theme-space .border-top {
-    border-color: var(--border-color) !important;
+.theme-space .nav-link {
+  color: var(--text-color);
 }
 
-.theme-space pre, 
-.theme-space code {
-    background-color: #2d333b;
-    color: #e6edf3;
-    border-color: #444c56;
+.theme-space .nav-link:hover,
+.theme-space .nav-link:focus {
+  color: var(--primary-color-light);
 }
 
-.theme-space .btn-primary {
-    background: linear-gradient(180deg, #388bfd, #1f6feb);
-    border-color: rgba(240, 246, 252, 0.1);
+.theme-space .nav-link.active {
+  color: var(--primary-color);
+  position: relative;
 }
 
-.theme-space .btn-primary:hover {
-    background: linear-gradient(180deg, #58a6ff, #388bfd);
-    border-color: rgba(240, 246, 252, 0.1);
+.theme-space .nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color);
 }
 
-.theme-space .footer {
-    background: linear-gradient(0deg, #0d1117, #161b22) !important;
-    border-top: 1px solid var(--border-color);
+/* Footer styling */
+.theme-space footer {
+  background-color: var(--footer-bg);
+  border-top: 1px solid var(--border-color);
+}
+
+/* Badge styling */
+.theme-space .badge.bg-primary {
+  background-color: var(--primary-color) !important;
+  box-shadow: 0 0 8px rgba(77, 118, 255, 0.4);
+}
+
+.theme-space .badge.bg-secondary {
+  background-color: var(--accent-color) !important;
+  box-shadow: 0 0 8px rgba(125, 76, 219, 0.4);
+}
+
+/* Modal styling */
+.theme-space .modal-content {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+}
+
+.theme-space .modal-header {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.theme-space .modal-footer {
+  border-top: 1px solid var(--border-color);
+}
+
+/* Alert styling */
+.theme-space .alert {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+.theme-space .alert-primary {
+  border-left: 4px solid var(--primary-color);
+}
+
+.theme-space .alert-success {
+  border-left: 4px solid var(--success-color);
+}
+
+.theme-space .alert-warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+.theme-space .alert-danger {
+  border-left: 4px solid var(--danger-color);
+}
+
+.theme-space .alert-info {
+  border-left: 4px solid var(--info-color);
+}
+
+/* Progress bar */
+.theme-space .progress {
+  background-color: var(--input-bg);
+}
+
+.theme-space .progress-bar {
+  background-color: var(--primary-color);
+  box-shadow: 0 0 8px rgba(77, 118, 255, 0.4);
+}
+
+/* Tooltip styling */
+.theme-space .tooltip .tooltip-inner {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.theme-space .bs-tooltip-top .tooltip-arrow::before {
+  border-top-color: var(--border-color);
+}
+
+.theme-space .bs-tooltip-bottom .tooltip-arrow::before {
+  border-bottom-color: var(--border-color);
+}
+
+.theme-space .bs-tooltip-start .tooltip-arrow::before {
+  border-left-color: var(--border-color);
+}
+
+.theme-space .bs-tooltip-end .tooltip-arrow::before {
+  border-right-color: var(--border-color);
+}
+
+/* Custom premium indicators */
+.theme-space .premium-feature-indicator {
+  background: linear-gradient(135deg, #4d76ff 0%, #7d4cdb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+  position: relative;
+}
+
+.theme-space .premium-feature-indicator::after {
+  content: '★';
+  margin-left: 0.3rem;
+  color: var(--primary-color);
+  text-shadow: 0 0 5px rgba(77, 118, 255, 0.7);
 }

@@ -1,242 +1,390 @@
 /**
- * High Contrast Theme - Improved accessibility (Premium)
+ * Contrast Theme - Premium
+ * A high-contrast theme for improved accessibility
  */
-:root {
-    --primary-bg: #000000;
-    --secondary-bg: #121212;
-    --card-bg: #1a1a1a;
-    --text-color: #ffffff;
-    --muted-text: #cccccc;
-    --border-color: #444444;
-    --primary-color: #ffcc00;
-    --secondary-color: #eeeeee;
-    --success-color: #00cc00;
-    --danger-color: #ff0000;
-    --warning-color: #ffcc00;
-    --info-color: #00ccff;
-    --nav-bg: #000000;
-    --nav-text: #ffffff;
-    --footer-bg: #000000;
-    --footer-text: #ffffff;
+
+:root.theme-contrast,
+.theme-contrast {
+  --primary-color: #ffff00;
+  --primary-color-rgb: 255, 255, 0;
+  --primary-color-light: #ffff33;
+  --primary-color-dark: #cccc00;
+  
+  --secondary-color: #ffffff;
+  --secondary-color-rgb: 255, 255, 255;
+  
+  --accent-color: #00aaff;
+  --accent-color-light: #33bbff;
+  --accent-color-dark: #0088cc;
+  
+  /* Base UI colors */
+  --primary-bg: #000000;
+  --secondary-bg: #000000;
+  --card-bg: #0a0a0a;
+  --nav-bg: #000000;
+  --footer-bg: #000000;
+  
+  /* Text colors */
+  --text-color: #ffffff;
+  --muted-text: #dddddd;
+  --heading-color: #ffff00;
+  
+  /* Border and shadow */
+  --border-color: #333333;
+  --border-hover: #555555;
+  --shadow-color: rgba(255, 255, 0, 0.3);
+  
+  /* Status colors */
+  --success-color: #00ff00;
+  --warning-color: #ffaa00;
+  --danger-color: #ff0000;
+  --info-color: #00aaff;
+  
+  /* Form elements */
+  --input-bg: #000000;
+  --input-border: #555555;
+  --input-text: #ffffff;
+  --input-placeholder: #888888;
+  --input-focus-border: #ffff00;
+  
+  /* Buttons */
+  --button-primary-bg: #ffff00;
+  --button-primary-text: #000000;
+  --button-secondary-bg: #00aaff;
+  --button-secondary-text: #000000;
 }
 
-.theme-contrast body {
-    background-color: var(--primary-bg);
-    color: var(--text-color);
-    line-height: 1.8;
-    font-size: 18px;
-    letter-spacing: 0.3px;
-    word-spacing: 1px;
-}
-
-.theme-contrast a {
-    color: var(--primary-color);
-    text-decoration: underline;
-    font-weight: bold;
-}
-
-.theme-contrast a:hover,
-.theme-contrast a:focus {
-    color: #ffe066;
-    text-decoration: underline;
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
-
-.theme-contrast .navbar {
-    background-color: var(--nav-bg) !important;
-    border-bottom: 2px solid var(--primary-color);
-}
-
-.theme-contrast .navbar-dark .navbar-nav .nav-link {
-    color: var(--primary-color);
-    font-weight: bold;
-    padding: 0.5rem 1rem;
-    margin: 0 0.25rem;
-}
-
-.theme-contrast .navbar-dark .navbar-nav .nav-link:hover,
-.theme-contrast .navbar-dark .navbar-nav .nav-link:focus {
-    color: var(--text-color);
-    background-color: var(--primary-color);
-    outline: 2px solid #ffffff;
-    outline-offset: -2px;
-}
-
-.theme-contrast .card {
-    background-color: var(--card-bg);
-    border: 2px solid var(--border-color);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-.theme-contrast .card-header {
-    background-color: var(--secondary-bg);
-    border-bottom: 2px solid var(--border-color);
-    font-weight: bold;
-}
-
-.theme-contrast .modal-content {
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    border: 2px solid var(--primary-color);
-}
-
-.theme-contrast .dropdown-menu {
-    background-color: var(--secondary-bg);
-    border: 2px solid var(--border-color);
-}
-
-.theme-contrast .dropdown-item {
-    color: var(--text-color);
-    padding: 0.5rem 1rem;
-}
-
-.theme-contrast .dropdown-item:hover,
-.theme-contrast .dropdown-item:focus {
-    background-color: var(--primary-color);
-    color: #000000;
-    font-weight: bold;
-}
-
-.theme-contrast .form-control,
-.theme-contrast .form-select {
-    background-color: var(--primary-bg);
-    border: 2px solid var(--border-color);
-    color: var(--text-color);
-    padding: 0.5rem;
-}
-
-.theme-contrast .form-control:focus,
-.theme-contrast .form-select:focus {
-    background-color: var(--primary-bg);
-    color: var(--text-color);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(255, 204, 0, 0.5);
-}
-
-.theme-contrast .form-label {
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    font-size: 1.05rem;
-}
-
-.theme-contrast .input-group-text {
-    background-color: var(--primary-color);
-    border: 2px solid var(--primary-color);
-    color: #000000;
-    font-weight: bold;
-}
-
-.theme-contrast .table {
-    color: var(--text-color);
-    border: 2px solid var(--border-color);
-}
-
-.theme-contrast .table thead {
-    background-color: var(--secondary-bg);
-}
-
-.theme-contrast .table th {
-    font-weight: bold;
-    border-bottom: 2px solid var(--border-color);
-}
-
-.theme-contrast .table td {
-    border: 1px solid var(--border-color);
-}
-
-.theme-contrast .text-muted {
-    color: var(--muted-text) !important;
-}
-
-.theme-contrast .list-group-item {
-    background-color: var(--card-bg);
-    border: 2px solid var(--border-color);
-    color: var(--text-color);
-}
-
-.theme-contrast .list-group-item.active {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: #000000;
-    font-weight: bold;
-}
-
-.theme-contrast .border-bottom {
-    border-color: var(--border-color) !important;
-    border-width: 2px !important;
-}
-
-.theme-contrast .border-top {
-    border-color: var(--border-color) !important;
-    border-width: 2px !important;
-}
-
-.theme-contrast pre, 
-.theme-contrast code {
-    background-color: #1a1a1a;
-    color: var(--primary-color);
-    border: 2px solid #444444;
-    padding: 1rem;
-    font-size: 1.1rem;
-}
-
+/* Special high-contrast overrides */
 .theme-contrast h1, 
 .theme-contrast h2, 
 .theme-contrast h3, 
-.theme-contrast h4, 
-.theme-contrast h5, 
+.theme-contrast h4,
+.theme-contrast h5,
 .theme-contrast h6 {
-    color: var(--primary-color);
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
-    font-weight: bold;
+  color: var(--heading-color);
+  font-weight: bold;
 }
 
-.theme-contrast .btn {
-    font-weight: bold;
-    padding: 0.5rem 1rem;
-    border-width: 2px;
+.theme-contrast p,
+.theme-contrast li,
+.theme-contrast label,
+.theme-contrast div {
+  font-size: 1.05rem; /* Slightly larger text */
 }
 
+/* Button styling for optimal contrast */
 .theme-contrast .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: #000000;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #000000;
+  font-weight: bold;
 }
 
 .theme-contrast .btn-primary:hover,
 .theme-contrast .btn-primary:focus {
-    background-color: #ffe066;
-    border-color: #ffe066;
-    color: #000000;
+  background-color: var(--primary-color-light);
+  border-color: var(--primary-color-light);
+  color: #000000;
+  box-shadow: 0 0 0 0.25rem rgba(255, 255, 0, 0.5);
+}
+
+.theme-contrast .btn-secondary {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #000000;
+  font-weight: bold;
+}
+
+.theme-contrast .btn-secondary:hover,
+.theme-contrast .btn-secondary:focus {
+  background-color: var(--accent-color-light);
+  border-color: var(--accent-color-light);
+  color: #000000;
+  box-shadow: 0 0 0 0.25rem rgba(0, 170, 255, 0.5);
 }
 
 .theme-contrast .btn-outline-primary {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  font-weight: bold;
 }
 
 .theme-contrast .btn-outline-primary:hover,
 .theme-contrast .btn-outline-primary:focus {
-    background-color: var(--primary-color);
-    color: #000000;
+  background-color: var(--primary-color);
+  color: #000000;
 }
 
-.theme-contrast .footer {
-    background-color: var(--footer-bg) !important;
-    border-top: 2px solid var(--primary-color);
-    padding: 2rem 0;
-    margin-top: 3rem;
+/* Link styling for better visibility */
+.theme-contrast a {
+  color: var(--primary-color);
+  text-decoration: underline;
+  font-weight: bold;
 }
 
+.theme-contrast a:hover,
+.theme-contrast a:focus {
+  color: var(--primary-color-light);
+  text-decoration: underline;
+}
+
+/* Card styling with bold borders */
+.theme-contrast .card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--primary-color);
+  border-radius: 6px;
+}
+
+.theme-contrast .card-header {
+  background-color: #000000;
+  border-bottom: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.theme-contrast .card-footer {
+  background-color: #000000;
+  border-top: 2px solid var(--primary-color);
+}
+
+/* Form element styling for better contrast */
+.theme-contrast input.form-control,
+.theme-contrast textarea.form-control,
+.theme-contrast select.form-select {
+  background-color: var(--input-bg);
+  border: 2px solid var(--input-border);
+  color: var(--input-text);
+  border-radius: 6px;
+}
+
+.theme-contrast input.form-control:focus,
+.theme-contrast textarea.form-control:focus,
+.theme-contrast select.form-select:focus {
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 0.25rem rgba(255, 255, 0, 0.25);
+}
+
+.theme-contrast input::placeholder,
+.theme-contrast textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+/* Table styling with enhanced borders */
+.theme-contrast .table {
+  color: var(--text-color);
+  border: 2px solid var(--primary-color);
+}
+
+.theme-contrast .table th,
+.theme-contrast .table td {
+  border-color: var(--border-color);
+}
+
+.theme-contrast .table thead th {
+  background-color: var(--primary-color);
+  color: #000000;
+  font-weight: bold;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.theme-contrast .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #1a1a1a;
+}
+
+/* Navigation styling for better visibility */
+.theme-contrast nav.navbar {
+  background-color: var(--nav-bg);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.theme-contrast .nav-link {
+  color: var(--text-color);
+  font-weight: bold;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  margin: 0 0.25rem;
+}
+
+.theme-contrast .nav-link:hover,
+.theme-contrast .nav-link:focus {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.theme-contrast .nav-link.active {
+  color: var(--primary-color);
+  text-decoration: underline;
+  background-color: rgba(255, 255, 0, 0.1);
+  border-radius: 4px;
+}
+
+/* Footer styling */
+.theme-contrast footer {
+  background-color: var(--footer-bg);
+  border-top: 2px solid var(--primary-color);
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* Alert styling for better visibility */
+.theme-contrast .alert {
+  border: 2px solid;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.theme-contrast .alert-primary {
+  background-color: #000000;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.theme-contrast .alert-success {
+  background-color: #000000;
+  color: var(--success-color);
+  border-color: var(--success-color);
+}
+
+.theme-contrast .alert-warning {
+  background-color: #000000;
+  color: var(--warning-color);
+  border-color: var(--warning-color);
+}
+
+.theme-contrast .alert-danger {
+  background-color: #000000;
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.theme-contrast .alert-info {
+  background-color: #000000;
+  color: var(--info-color);
+  border-color: var(--info-color);
+}
+
+/* Badge styling for better visibility */
 .theme-contrast .badge {
-    font-size: 90%;
-    padding: 0.4em 0.6em;
+  font-size: 0.9em;
+  font-weight: bold;
+  padding: 0.35em 0.65em;
+  border: 1px solid transparent;
 }
 
-/* Focus indicator for better accessibility */
+.theme-contrast .badge.bg-primary {
+  background-color: var(--primary-color) !important;
+  color: #000000;
+}
+
+.theme-contrast .badge.bg-secondary {
+  background-color: var(--accent-color) !important;
+  color: #000000;
+}
+
+.theme-contrast .badge.bg-success {
+  background-color: var(--success-color) !important;
+  color: #000000;
+}
+
+.theme-contrast .badge.bg-warning {
+  background-color: var(--warning-color) !important;
+  color: #000000;
+}
+
+.theme-contrast .badge.bg-danger {
+  background-color: var(--danger-color) !important;
+  color: #000000;
+}
+
+.theme-contrast .badge.bg-info {
+  background-color: var(--info-color) !important;
+  color: #000000;
+}
+
+/* Modal styling with clear borders */
+.theme-contrast .modal-content {
+  background-color: var(--card-bg);
+  border: 2px solid var(--primary-color);
+  border-radius: 6px;
+}
+
+.theme-contrast .modal-header {
+  border-bottom: 2px solid var(--primary-color);
+  background-color: #000000;
+}
+
+.theme-contrast .modal-footer {
+  border-top: 2px solid var(--primary-color);
+  background-color: #000000;
+}
+
+.theme-contrast .modal-title {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* Progress bar for better visibility */
+.theme-contrast .progress {
+  background-color: #333333;
+  height: 1.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.theme-contrast .progress-bar {
+  background-color: var(--primary-color);
+  color: #000000;
+  font-weight: bold;
+}
+
+/* List group styling */
+.theme-contrast .list-group-item {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+.theme-contrast .list-group-item.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #000000;
+}
+
+/* Focus indicators for better accessibility */
 .theme-contrast *:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+  outline: 3px solid var(--primary-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Custom premium indicators for contrast theme */
+.theme-contrast .premium-feature-indicator {
+  background-color: var(--primary-color);
+  color: #000000;
+  font-weight: bold;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  position: relative;
+}
+
+.theme-contrast .premium-feature-indicator::after {
+  content: '★';
+  margin-left: 0.3rem;
+}
+
+/* Toggle button styling */
+.theme-contrast .form-check-input {
+  background-color: #000000;
+  border: 2px solid var(--primary-color);
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.theme-contrast .form-check-input:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.theme-contrast .form-check-label {
+  margin-left: 0.5rem;
+  font-weight: bold;
 }
