@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import ForeignKey, Column, Integer, String, Boolean, Float, DateTime, Text, JSON
-import json
 from sqlalchemy.orm import relationship
+import json
 
 from app import db
 from datetime import datetime
@@ -24,8 +24,8 @@ class User(db.Model):
     is_streamer = Column(Boolean, default=False)
     is_admin = Column(Boolean, default=False)
     is_moderator = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     # Relationships
     servers = relationship("MinecraftServer", back_populates="owner")
@@ -53,8 +53,8 @@ class MinecraftServer(db.Model):
     status = Column(String(20), default="offline") # online, offline, restarting
     description = Column(Text, nullable=True)
     owner_id = Column(Integer, ForeignKey('users.id'))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     # Relationships
     owner = relationship("User", back_populates="servers")
@@ -72,7 +72,7 @@ class WhitelistEntry(db.Model):
     minecraft_uuid = Column(String(36), nullable=True)
     server_id = Column(Integer, ForeignKey('minecraft_servers.id'))
     added_by = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     # Relationships
     server = relationship("MinecraftServer", back_populates="whitelist")
@@ -89,8 +89,8 @@ class ModReview(db.Model):
     rating = Column(Integer, nullable=False) # 1-5
     review_text = Column(Text, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="reviews")
@@ -107,7 +107,7 @@ class ModSuggestion(db.Model):
     description = Column(Text, nullable=False)
     ai_feedback = Column(Text, nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="suggestions")
@@ -123,7 +123,7 @@ class BotSetting(db.Model):
     key = Column(String(100), nullable=False, unique=True, index=True)
     value = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<BotSetting {self.key}>"
@@ -163,7 +163,7 @@ class CommandUsage(db.Model):
     channel_id = Column(String(20), nullable=True)
     success = Column(Boolean, default=True)
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<CommandUsage {self.command_name}>"
@@ -182,8 +182,8 @@ class CustomCommand(db.Model):
     permissions = Column(String(20), default="everyone") # everyone, moderator, admin, owner
     enabled = Column(Boolean, default=True)
     created_by = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<CustomCommand {self.name}>"
@@ -207,7 +207,7 @@ class PointTransaction(db.Model):
     reason = Column(String(255), nullable=True)
     source = Column(String(50), nullable=False) # discord, twitch, minecraft, admin
     source_id = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="point_transactions")
@@ -336,7 +336,7 @@ class AIUsage(db.Model):
     feature = Column(String(50), nullable=True) # ask, fix, idea, tutorial, generate, code
     discord_id = Column(String(20), nullable=True, index=True)
     successful = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<AIUsage {self.model} - {self.total_tokens} tokens>"
@@ -356,8 +356,8 @@ class TwitchStream(db.Model):
     is_live = Column(Boolean, default=False)
     thumbnail_url = Column(String(255), nullable=True)
     discord_message_id = Column(String(20), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<TwitchStream {self.twitch_username}>"
@@ -374,7 +374,7 @@ class StreamNotification(db.Model):
     channel_id = Column(String(20), nullable=True)
     message_id = Column(String(20), nullable=True)
     details = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<StreamNotification {self.twitch_username} - {self.notification_type}>"
@@ -392,7 +392,7 @@ class ModerationAction(db.Model):
     active = Column(Boolean, default=False) # For mutes and bans
     duration_minutes = Column(Integer, nullable=True) # For temporary mutes
     expiry_time = Column(DateTime, nullable=True) # For temporary mutes
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<ModerationAction {self.action_type} for {self.user_id}>"
@@ -411,8 +411,8 @@ class AutoModRule(db.Model):
     notify_channel_id = Column(String(20), nullable=True) # For notifications
     created_by = Column(String(20), nullable=True)
     settings = Column(JSON, nullable=True) # JSON configuration for the rule
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f"<AutoModRule {self.name} for {self.guild_id}>"
@@ -430,7 +430,7 @@ class AutoModTrigger(db.Model):
     trigger_type = Column(String(50), nullable=False)
     content_snippet = Column(String(255), nullable=True) # Snippet of the triggering content
     action_taken = Column(String(50), nullable=False) # delete, mute, warn, notify
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     # Relationships
     rule = relationship("AutoModRule")
@@ -453,8 +453,8 @@ class WebhookIntegration(db.Model):
     settings = Column(Text, nullable=True) # JSON settings for the integration
     endpoint_path = Column(String(100), nullable=True) # Custom endpoint path
     created_by = Column(String(20), nullable=True) # Discord ID of user who created the integration
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     # Relationships
     events = relationship("WebhookEvent", back_populates="integration")
@@ -481,7 +481,7 @@ class WebhookEvent(db.Model):
     payload = Column(Text, nullable=True) # JSON payload
     processed = Column(Boolean, default=False)
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     # Relationships
     integration = relationship("WebhookIntegration", back_populates="events")

@@ -1,7 +1,8 @@
 import os
 import logging
 import json
-from flask import Flask, render_template, jsonify, redirect, url_for, request
+from flask import Flask, render_template, jsonify, redirect, url_for, request, flash, session
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import traceback
@@ -39,6 +40,16 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize SQLAlchemy with the app
 db.init_app(app)
+
+# Initialize Login Manager
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    from models import WebsiteUser
+    return WebsiteUser.query.get(int(user_id))
 
 # Create all database tables
 with app.app_context():
@@ -107,6 +118,128 @@ except Exception as e:
 @app.route('/')
 def index():
     return render_template('index.html', title="Dashboard")
+
+# Authentication routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    from forms import LoginForm
+    from models import WebsiteUser
+    
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = WebsiteUser.query.filter_by(username=form.username.data).first()
+        if user and user.check_password(form.password.data):
+            login_user(user)
+            user.last_login = datetime.datetime.utcnow()
+            db.session.commit()
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('index'))
+        else:
+            flash('Invalid username or password', 'danger')
+    
+    return render_template('auth/login.html', title="Login", form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    from forms import RegisterForm
+    from models import WebsiteUser
+    
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = RegisterForm()
+    if form.validate_on_submit():
+        user = WebsiteUser.query.filter((WebsiteUser.username == form.username.data) | 
+                                        (WebsiteUser.email == form.email.data)).first()
+        if user:
+            if user.username == form.username.data:
+                flash('Username already exists', 'danger')
+            else:
+                flash('Email already exists', 'danger')
+        else:
+            new_user = WebsiteUser(
+                username=form.username.data,
+                email=form.email.data
+            )
+            new_user.set_password(form.password.data)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful! You can now log in.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('auth/register.html', title="Register", form=form)
+
+# Documentation routes
+@app.route('/documentation')
+def documentation_index():
+    return render_template('documentation/index.html', title="Documentation")
+
+@app.route('/documentation/<page_type>/<page_name>')
+def documentation_page(page_type, page_name):
+    return render_template(f'documentation/{page_type}/{page_name}.html', 
+                          title=f"Documentation - {page_name.replace('_', ' ').title()}")
+
+@app.route('/api/documentation/feedback', methods=['POST'])
+def documentation_feedback():
+    from models import DocumentationFeedback
+    
+    data = request.json
+    if not data:
+        return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+    
+    try:
+        feedback = DocumentationFeedback(
+            page_path=data.get('page', ''),
+            helpful=data.get('helpful', False),
+            comment=data.get('comment', ''),
+            user_id=current_user.id if current_user.is_authenticated else None,
+            ip_address=request.remote_addr
+        )
+        db.session.add(feedback)
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error saving documentation feedback: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Feedback route
+@app.route('/feedback', methods=['GET', 'POST'])
+def feedback():
+    from forms import FeedbackForm
+    from models import Feedback
+    
+    form = FeedbackForm()
+    if form.validate_on_submit():
+        try:
+            new_feedback = Feedback(
+                feedback_type=form.feedback_type.data,
+                feature_category=form.feature_category.data if form.feature_category.data else None,
+                subject=form.subject.data,
+                message=form.message.data,
+                contact_info=form.contact_info.data,
+                can_contact=form.can_contact.data,
+                user_id=current_user.id if current_user.is_authenticated else None,
+                discord_id=current_user.discord_id if current_user.is_authenticated and hasattr(current_user, 'discord_id') else None,
+                discord_username=None  # Would be set from Discord OAuth in a real implementation
+            )
+            db.session.add(new_feedback)
+            db.session.commit()
+            flash('Thank you for your feedback!', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            logger.error(f"Error submitting feedback: {str(e)}")
+            flash(f'Error submitting feedback: {str(e)}', 'danger')
+    
+    return render_template('feedback.html', title="Feedback & Suggestions", form=form)
 
 @app.route('/api/status')
 def api_status():
