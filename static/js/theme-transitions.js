@@ -1,122 +1,57 @@
 /**
  * AstroBot AI - Theme Transitions
  * 
- * Adds smooth transition effects when switching themes.
- * Works with the ThemeManager to provide visual feedback during theme changes.
+ * This script provides utilities for smooth theme transitions
+ * when switching between themes to avoid harsh visual changes.
  */
 
-(function() {
-  // Configuration
-  const TRANSITION_DURATION = 400; // milliseconds, should match CSS var --theme-transition-duration
-  const TRANSITION_CLASS = 'theme-transition';
-  
-  // Elements to apply transition to
-  const APPLY_TO_SELECTORS = [
-    'body', 
-    'header', 
-    'main', 
-    'footer', 
-    'nav', 
-    '.card', 
-    '.btn', 
-    'input', 
-    'select', 
-    'textarea',
-    '.alert',
-    '.table',
-    '.badge',
-    '.navbar',
-    '.sidebar'
-  ];
-  
-  // Properties to transition
-  const TRANSITION_PROPS = [
-    'background-color',
-    'color',
-    'border-color',
-    'box-shadow'
-  ];
-  
-  // Initialize once DOM is loaded
-  document.addEventListener('DOMContentLoaded', () => {
-    setupThemeTransitions();
-  });
+class ThemeTransitionManager {
+  constructor() {
+    this.transitionClass = 'theme-transition';
+    this.transitionDuration = 400; // milliseconds, should match CSS
+    this.transitionTimers = {};
+  }
 
   /**
-   * Set up theme transition listeners and handlers
+   * Apply transition effect before changing theme
+   * @param {string} elementSelector - CSS selector for the element to apply transition to
+   * @param {Function} callback - Function to execute during the transition
    */
-  function setupThemeTransitions() {
-    // Watch for theme changes
-    window.addEventListener('theme-changed', handleThemeChange);
-    
-    // Also apply transitions when theme toggler is clicked directly
-    document.querySelectorAll('[data-theme-toggle]').forEach(toggler => {
-      toggler.addEventListener('click', applyTransitionEffect);
-    });
-    
-    // Apply to theme selector change
-    document.querySelectorAll('[data-theme-select]').forEach(select => {
-      select.addEventListener('change', applyTransitionEffect);
-    });
+  applyTransition(elementSelector = 'body', callback) {
+    const element = document.querySelector(elementSelector);
+    if (!element) return;
+
+    // Clear any existing transition timeout for this element
+    if (this.transitionTimers[elementSelector]) {
+      clearTimeout(this.transitionTimers[elementSelector]);
+    }
+
+    // Add transition class
+    element.classList.add(this.transitionClass);
+
+    // Execute the theme change callback
+    if (typeof callback === 'function') {
+      callback();
+    }
+
+    // Remove transition class after transition completes
+    this.transitionTimers[elementSelector] = setTimeout(() => {
+      element.classList.remove(this.transitionClass);
+      delete this.transitionTimers[elementSelector];
+    }, this.transitionDuration);
   }
-  
+
   /**
-   * Handler for theme-changed event
-   * @param {CustomEvent} event Theme changed event
+   * Apply transitions to all specified elements
+   * @param {Array} elements - Array of element selectors to apply transitions to
+   * @param {Function} callback - Function to execute during the transition
    */
-  function handleThemeChange(event) {
-    const { theme, isDark } = event.detail;
-    applyTransitionEffect();
-  }
-  
-  /**
-   * Apply CSS transition classes, then remove after transition completes
-   */
-  function applyTransitionEffect() {
-    const elements = findTransitionElements();
-    
-    // Apply transition class to elements
-    elements.forEach(el => {
-      el.classList.add(TRANSITION_CLASS);
+  applyTransitionToElements(elements = ['body', 'html', '.sidebar', '.navbar'], callback) {
+    elements.forEach(selector => {
+      this.applyTransition(selector, callback);
     });
-    
-    // Remove transition class after duration
-    setTimeout(() => {
-      elements.forEach(el => {
-        el.classList.remove(TRANSITION_CLASS);
-      });
-    }, TRANSITION_DURATION + 50); // Add a small buffer to ensure transitions complete
   }
-  
-  /**
-   * Find all elements to apply transitions to
-   * @returns {Element[]} Array of matched elements
-   */
-  function findTransitionElements() {
-    const elements = [];
-    
-    APPLY_TO_SELECTORS.forEach(selector => {
-      const matched = document.querySelectorAll(selector);
-      matched.forEach(el => elements.push(el));
-    });
-    
-    return elements;
-  }
-  
-  /**
-   * Creates a style element with transition rules
-   * Only needed if CSS variables aren't working properly
-   */
-  function injectTransitionStyles() {
-    const styleEl = document.createElement('style');
-    const transitionProps = TRANSITION_PROPS.join(', ');
-    
-    styleEl.textContent = `
-      .${TRANSITION_CLASS} {
-        transition: ${transitionProps} ${TRANSITION_DURATION}ms ease !important;
-      }
-    `;
-    
-    document.head.appendChild(styleEl);
-  }
-})();
+}
+
+// Create a global instance
+window.themeTransitionManager = new ThemeTransitionManager();

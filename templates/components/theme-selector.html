@@ -1,137 +1,89 @@
-<!-- Theme Selector Component -->
-<div x-data="themeManager" class="relative" x-cloak>
-  <!-- Theme toggle button for mobile -->
-  <div class="md:hidden flex items-center">
-    <button 
-      @click="toggleDarkMode" 
-      class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" 
-      :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
-      data-theme-toggle>
-      <svg x-show="!darkMode" class="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-      </svg>
-      <svg x-show="darkMode" class="h-5 w-5 text-primary-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    </button>
-  </div>
-
-  <!-- Theme selector for desktop -->
-  <div class="hidden md:block">
-    <button 
-      @click="$refs.dropdown.classList.toggle('hidden')" 
-      type="button" 
-      class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" 
-      id="theme-menu-button" 
-      aria-expanded="false" 
-      aria-haspopup="true">
-      
-      <!-- Theme icon -->
-      <template x-if="theme === 'light'">
-        <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      </template>
-      
-      <template x-if="theme === 'dark'">
-        <svg class="h-5 w-5 text-indigo-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      </template>
-      
-      <template x-if="theme === 'space'">
-        <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      </template>
-      
-      <template x-if="theme === 'neon'">
-        <svg class="h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      </template>
-      
-      <template x-if="theme === 'contrast'">
-        <svg class="h-5 w-5 text-yellow-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-      </template>
-      
-      <span class="text-sm" x-text="availableThemes.find(t => t.id === theme)?.name || 'Theme'"></span>
-      
-      <svg class="h-4 w-4 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-      </svg>
+<!-- Theme Selector Component 
+     Uses Alpine.js for managing theme state and interactions -->
+<div class="relative" x-data="themeManager">
+    <!-- Theme Toggle Button -->
+    <button type="button" 
+            @click="toggleDarkMode()"
+            class="relative inline-flex items-center p-2 rounded-full text-gray-400 hover:text-white focus:outline-none transition-colors"
+            data-tippy-content="Toggle Light/Dark Mode">
+        <!-- Dark mode icon -->
+        <i class="bi bi-moon-stars text-lg" x-show="darkMode"></i>
+        <!-- Light mode icon -->
+        <i class="bi bi-sun text-lg" x-show="!darkMode"></i>
+        <span class="sr-only">Toggle theme</span>
     </button>
     
-    <!-- Dropdown menu -->
-    <div 
-      x-ref="dropdown" 
-      class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-gray-700 focus:outline-none z-10" 
-      role="menu" 
-      aria-orientation="vertical" 
-      aria-labelledby="theme-menu-button" 
-      tabindex="-1">
-      
-      <!-- Theme options -->
-      <div class="py-1" role="none">
-        <template x-for="themeOption in availableThemes" :key="themeOption.id">
-          <button 
-            @click="setPremiumTheme(themeOption.id); $refs.dropdown.classList.add('hidden')" 
-            class="group flex items-center px-4 py-2 text-sm w-full text-left" 
-            role="menuitem" 
-            tabindex="-1" 
-            :class="{'bg-gray-100 dark:bg-gray-700': theme === themeOption.id}"
-            :disabled="themeOption.isPremium && !premium">
-            
-            <!-- Theme color indicator -->
-            <span class="theme-indicator" :class="`theme-indicator-${themeOption.id}`"></span>
-            
-            <!-- Theme name -->
-            <span x-text="themeOption.name" :class="{'text-gray-900 dark:text-white': theme !== themeOption.id, 'text-primary-600 dark:text-primary-400': theme === themeOption.id}"></span>
-            
-            <!-- Premium badge -->
-            <span 
-              x-show="themeOption.isPremium" 
-              class="ml-auto premium-theme-badge"
-              :class="{'opacity-50': !premium}">
-              Premium
-            </span>
-            
-            <!-- Active indicator -->
-            <svg 
-              x-show="theme === themeOption.id" 
-              class="ml-auto h-5 w-5 text-primary-600 dark:text-primary-400" 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 20 20" 
-              fill="currentColor">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-            </svg>
-          </button>
-        </template>
-      </div>
-      
-      <!-- Additional options -->
-      <div class="py-1" role="none">
-        <button 
-          @click="resetToSystemTheme(); $refs.dropdown.classList.add('hidden')" 
-          class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700" 
-          role="menuitem" 
-          tabindex="-1">
-          <svg class="mr-3 h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Use system theme
+    <!-- Premium Theme Selection (only visible for premium users) -->
+    {% if current_user.is_authenticated and current_user.is_premium %}
+    <button type="button"
+            @click="$refs.themesDropdown.classList.toggle('hidden')"
+            @click.away="$refs.themesDropdown.classList.add('hidden')"
+            class="relative inline-flex items-center p-2 rounded-full ml-1 text-gray-400 hover:text-white focus:outline-none transition-colors"
+            data-tippy-content="Select Premium Theme">
+        <i class="bi bi-palette text-lg"></i>
+        <span class="sr-only">Change theme</span>
+    </button>
+    
+    <!-- Theme Dropdown -->
+    <div x-ref="themesDropdown"
+         class="absolute right-0 z-10 mt-1 w-48 rounded-md bg-gray-800 py-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden"
+         x-cloak>
+        <div class="px-3 py-2 text-xs font-medium text-gray-400 uppercase">Theme Options</div>
+        
+        <!-- Dark Mode (default dark) -->
+        <button @click="setPremiumTheme('dark'); $refs.themesDropdown.classList.add('hidden')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="bi bi-circle-fill text-gray-900 drop-shadow-md"></i>
+            <span>Dark</span>
+            <i class="bi bi-check ml-auto" x-show="theme === 'dark'"></i>
         </button>
-      </div>
+        
+        <!-- Light Mode -->
+        <button @click="setPremiumTheme('light'); $refs.themesDropdown.classList.add('hidden')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="bi bi-circle-fill text-white drop-shadow-md"></i>
+            <span>Light</span>
+            <i class="bi bi-check ml-auto" x-show="theme === 'light'"></i>
+        </button>
+        
+        <div class="border-t border-gray-700 my-1"></div>
+        <div class="px-3 py-1 text-xs font-medium text-gray-400">Premium Themes</div>
+        
+        <!-- Space Theme -->
+        <button @click="setPremiumTheme('space'); $refs.themesDropdown.classList.add('hidden')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="bi bi-circle-fill text-purple-600"></i>
+            <span>Space</span>
+            <span class="ml-auto px-1.5 py-0.5 text-xs rounded bg-purple-800 text-purple-200">Premium</span>
+            <i class="bi bi-check" x-show="theme === 'space'"></i>
+        </button>
+        
+        <!-- Neon Theme -->
+        <button @click="setPremiumTheme('neon'); $refs.themesDropdown.classList.add('hidden')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="bi bi-circle-fill text-cyan-400"></i>
+            <span>Neon</span>
+            <span class="ml-auto px-1.5 py-0.5 text-xs rounded bg-cyan-800 text-cyan-200">Premium</span>
+            <i class="bi bi-check" x-show="theme === 'neon'"></i>
+        </button>
+        
+        <!-- High Contrast Theme -->
+        <button @click="setPremiumTheme('contrast'); $refs.themesDropdown.classList.add('hidden')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="bi bi-circle-fill text-yellow-400"></i>
+            <span>High Contrast</span>
+            <span class="ml-auto px-1.5 py-0.5 text-xs rounded bg-yellow-800 text-yellow-200">Premium</span>
+            <i class="bi bi-check" x-show="theme === 'contrast'"></i>
+        </button>
+        
+        <div class="border-t border-gray-700 my-1"></div>
+        
+        <!-- Reset to System Preference -->
+        <button @click="resetToSystemTheme(); $refs.themesDropdown.classList.add('hidden')"
+                class="w-full text-left px-4 py-2 text-sm flex items-center space-x-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="bi bi-arrow-counterclockwise"></i>
+            <span>Use System Preference</span>
+        </button>
     </div>
-  </div>
-  
-  <!-- Click outside to close dropdown -->
-  <div 
-    x-show="!$refs.dropdown.classList.contains('hidden')" 
-    @click="$refs.dropdown.classList.add('hidden')" 
-    class="fixed inset-0 h-full w-full z-9" 
-    style="display: none;">
-  </div>
+    {% endif %}
 </div>

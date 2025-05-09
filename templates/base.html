@@ -26,9 +26,10 @@
     
     {% block styles %}{% endblock %}
 </head>
-<body class="{{ 'dark' if (current_user.is_authenticated and current_user.theme_preference != 'light') or (not current_user.is_authenticated) else '' }} {{ current_user.theme_preference if current_user.is_authenticated and current_user.theme_preference.startswith('theme-') else '' }}" 
+<body class="theme-transition" 
       data-theme="{{ current_user.theme_preference if current_user.is_authenticated else 'dark' }}"
-      data-user-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}">
+      data-user-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}"
+      data-premium="{{ 'true' if current_user.is_authenticated and current_user.is_premium else 'false' }}">
     <nav x-data="{ mobileMenuOpen: false, 
                   discordOpen: false, 
                   minecraftOpen: false, 
@@ -174,15 +175,8 @@
                         <i class="bi bi-chat-dots mr-1.5"></i> Feedback
                     </a>
                     
-                    <!-- Theme toggle -->
-                    <button 
-                        id="theme-toggle" 
-                        class="relative inline-flex items-center p-2 rounded-full text-gray-400 hover:text-white focus:outline-none"
-                        data-tippy-content="Toggle Theme">
-                        <i class="bi bi-moon-stars text-lg theme-dark-icon"></i>
-                        <i class="bi bi-sun text-lg theme-light-icon hidden"></i>
-                        <span class="sr-only">Toggle theme</span>
-                    </button>
+                    <!-- Theme selector component -->
+                    {% include 'components/theme-selector.html' %}
                     
                     <!-- User menu -->
                     {% if current_user.is_authenticated %}
@@ -526,6 +520,9 @@
     
     <!-- Our utility library with helpers for the advanced libraries -->
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    
+    <!-- Alpine.js initialization -->
+    <script src="{{ url_for('static', filename='js/alpine-init.js') }}"></script>
     
     <!-- Theme transitions library -->
     <script src="{{ url_for('static', filename='js/theme-transitions.js') }}"></script>

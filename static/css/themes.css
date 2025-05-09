@@ -1,182 +1,244 @@
 /**
- * AstroBot AI - Theme Collection
- * This file combines all theme stylesheets
+ * AstroBot AI - Theme System
+ * 
+ * This CSS file defines theme variables and styles for all available themes:
+ * - Light Mode (default light theme)
+ * - Dark Mode (default dark theme)
+ * - Space (premium theme)
+ * - Neon (premium theme)
+ * - High Contrast (premium theme for accessibility)
+ * 
+ * The theme system uses CSS variables with Tailwind CSS configuration
  */
 
-/* Base theme variables - Light mode is default */
+/* Global transition for theme changes */
+.theme-transition,
+.theme-transition * {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform !important;
+}
+
+/* Base Light Theme Variables */
 :root {
-  /* Primary color */
-  --primary-color: #5865F2;
-  --primary-color-rgb: 88, 101, 242;
-  --primary-color-light: #7984F5;
-  --primary-color-dark: #4752C4;
+  /* Primary branding colors */
+  --color-primary: 79, 70, 229;      /* Indigo-600 */
+  --color-primary-light: 99, 102, 241; /* Indigo-500 */
+  --color-primary-dark: 67, 56, 202;  /* Indigo-700 */
   
-  /* Secondary color */
-  --secondary-color: #36393F;
-  --secondary-color-rgb: 54, 57, 63;
-  --secondary-color-light: #40444B;
-  --secondary-color-dark: #2F3136;
+  /* Accent colors */
+  --color-accent: 245, 158, 11;      /* Amber-500 */
+  --color-accent-light: 251, 191, 36; /* Amber-400 */
+  --color-accent-dark: 217, 119, 6;   /* Amber-600 */
   
-  /* Status colors */
-  --success-color: #57F287;
-  --success-color-rgb: 87, 242, 135;
-  --warning-color: #FEE75C;
-  --warning-color-rgb: 254, 231, 92;
-  --danger-color: #ED4245;
-  --danger-color-rgb: 237, 66, 69;
-  --info-color: #00B0F4;
-  --info-color-rgb: 0, 176, 244;
+  /* Success, error, warning */
+  --color-success: 16, 185, 129;      /* Emerald-500 */
+  --color-error: 239, 68, 68;        /* Red-500 */
+  --color-warning: 245, 158, 11;     /* Amber-500 */
+  --color-info: 59, 130, 246;        /* Blue-500 */
+
+  /* Grayscale */
+  --color-gray-50: 249, 250, 251;
+  --color-gray-100: 243, 244, 246;
+  --color-gray-200: 229, 231, 235;
+  --color-gray-300: 209, 213, 219;
+  --color-gray-400: 156, 163, 175;
+  --color-gray-500: 107, 114, 128;
+  --color-gray-600: 75, 85, 99;
+  --color-gray-700: 55, 65, 81;
+  --color-gray-800: 31, 41, 55;
+  --color-gray-900: 17, 24, 39;
   
-  /* Light theme defaults */
-  --primary-bg: #F9F9F9;
-  --secondary-bg: #F2F3F5;
-  --card-bg: #FFFFFF;
-  --text-color: #2E3338;
-  --muted-text: #72767D;
-  --heading-color: #23262A;
-  --border-color: #E3E5E8;
-  --border-hover: #C4C9CC;
+  /* Text colors */
+  --color-text-primary: 17, 24, 39;     /* Gray-900 */
+  --color-text-secondary: 75, 85, 99;   /* Gray-600 */
+  --color-text-tertiary: 156, 163, 175; /* Gray-400 */
   
-  /* Form elements */
-  --input-bg: #FFFFFF;
-  --input-border: #DBDDE1;
-  --input-text: #2E3338;
-  --input-placeholder: #B9BBBE;
-  --label-color: #4F545C;
+  /* Background colors */
+  --color-bg-primary: 255, 255, 255;    /* White */
+  --color-bg-secondary: 249, 250, 251;  /* Gray-50 */
+  --color-bg-tertiary: 243, 244, 246;   /* Gray-100 */
   
-  /* UI elements */
-  --nav-bg: #FFFFFF;
-  --nav-text: #2E3338;
-  --footer-bg: #F2F3F5;
-  --footer-text: #72767D;
+  /* Border colors */
+  --color-border-light: 229, 231, 235;  /* Gray-200 */
+  --color-border: 209, 213, 219;        /* Gray-300 */
+  --color-border-dark: 156, 163, 175;   /* Gray-400 */
   
-  /* Premium */
-  --premium-gold: #FFD700;
-  --premium-gold-rgb: 255, 215, 0;
+  /* Shadow colors */
+  --color-shadow: 0, 0, 0;              /* Black */
+  --shadow-opacity: 0.1;
   
-  /* Transition timing */
-  --theme-transition-duration: 0.4s;
+  /* Status */
+  --color-online: 16, 185, 129;        /* Emerald-500 */
+  --color-away: 245, 158, 11;          /* Amber-500 */
+  --color-busy: 239, 68, 68;           /* Red-500 */
+  --color-offline: 156, 163, 175;      /* Gray-400 */
+  
+  /* Special states */
+  --color-hover: 238, 242, 255;        /* Indigo-50 */
+  --color-focus: 238, 242, 255;        /* Indigo-50 */
+  --color-selected: 224, 231, 255;     /* Indigo-100 */
 }
 
-/* Dark Theme */
-:root.dark,
+/* Dark Mode Theme - Applied when .dark class is present */
 .dark {
-  --primary-bg: #36393F;
-  --secondary-bg: #2F3136;
-  --card-bg: #40444B;
-  --text-color: #DCDDDE;
-  --muted-text: #A3A6AA;
-  --heading-color: #FFFFFF;
-  --border-color: #202225;
-  --border-hover: #4F545C;
+  /* Primary branding colors - keep the same as light theme for branding consistency */
+  --color-primary: 79, 70, 229;      /* Indigo-600 */
+  --color-primary-light: 99, 102, 241; /* Indigo-500 */
+  --color-primary-dark: 67, 56, 202;  /* Indigo-700 */
   
-  /* Form elements */
-  --input-bg: #40444B;
-  --input-border: #4F545C;
-  --input-text: #DCDDDE;
-  --input-placeholder: #72767D;
-  --label-color: #B9BBBE;
+  /* Accent colors - brightened for better visibility on dark backgrounds */
+  --color-accent: 251, 191, 36;      /* Amber-400 */
+  --color-accent-light: 252, 211, 77; /* Amber-300 */
+  --color-accent-dark: 245, 158, 11;  /* Amber-500 */
   
-  /* UI elements */
-  --nav-bg: #2F3136;
-  --nav-text: #DCDDDE;
-  --footer-bg: #2F3136;
-  --footer-text: #A3A6AA;
+  /* Success, error, warning - brightened for dark mode */
+  --color-success: 34, 197, 94;      /* Emerald-400 */
+  --color-error: 248, 113, 113;      /* Red-400 */
+  --color-warning: 251, 191, 36;     /* Amber-400 */
+  --color-info: 96, 165, 250;        /* Blue-400 */
+  
+  /* Text colors - inverted for dark theme */
+  --color-text-primary: 243, 244, 246;  /* Gray-100 */
+  --color-text-secondary: 209, 213, 219; /* Gray-300 */
+  --color-text-tertiary: 156, 163, 175;  /* Gray-400 */
+  
+  /* Background colors - dark variants */
+  --color-bg-primary: 17, 24, 39;      /* Gray-900 */
+  --color-bg-secondary: 31, 41, 55;    /* Gray-800 */
+  --color-bg-tertiary: 55, 65, 81;     /* Gray-700 */
+  
+  /* Border colors - darker variants */
+  --color-border-light: 55, 65, 81;    /* Gray-700 */
+  --color-border: 75, 85, 99;          /* Gray-600 */
+  --color-border-dark: 107, 114, 128;  /* Gray-500 */
+  
+  /* Shadow colors */
+  --color-shadow: 0, 0, 0;
+  --shadow-opacity: 0.3;
 }
 
-/* Theme transition helpers */
-.theme-transition {
-  transition: background-color var(--theme-transition-duration) ease, 
-              color var(--theme-transition-duration) ease, 
-              border-color var(--theme-transition-duration) ease, 
-              box-shadow var(--theme-transition-duration) ease;
+/* Space Theme (Premium) */
+.theme-space {
+  /* Custom space theme colors */
+  --color-primary: 138, 43, 226;       /* BlueViolet */
+  --color-primary-light: 186, 85, 211; /* MediumOrchid */
+  --color-primary-dark: 75, 0, 130;    /* Indigo */
+  
+  /* Accent colors - star-like colors */
+  --color-accent: 255, 215, 0;         /* Gold */
+  --color-accent-light: 255, 239, 213; /* PapayaWhip */
+  --color-accent-dark: 218, 165, 32;   /* GoldenRod */
+  
+  /* Success, error, warning */
+  --color-success: 0, 255, 127;        /* SpringGreen */
+  --color-error: 255, 69, 0;           /* OrangeRed */
+  --color-warning: 255, 215, 0;        /* Gold */
+  --color-info: 102, 204, 255;         /* Light blue */
+
+  /* Text colors */
+  --color-text-primary: 240, 248, 255;  /* AliceBlue */
+  --color-text-secondary: 220, 220, 255; /* Light lavender */
+  --color-text-tertiary: 176, 196, 222;  /* LightSteelBlue */
+  
+  /* Background colors - space-inspired */
+  --color-bg-primary: 10, 10, 40;       /* Dark blue-purple */
+  --color-bg-secondary: 25, 25, 65;     /* Slightly lighter blue-purple */
+  --color-bg-tertiary: 45, 45, 85;      /* Medium blue-purple */
+  
+  /* Border colors */
+  --color-border-light: 75, 75, 115;    /* Lighter purple */
+  --color-border: 90, 90, 140;          /* Medium purple */
+  --color-border-dark: 138, 43, 226;    /* BlueViolet */
+  
+  /* Shadow colors */
+  --color-shadow: 0, 0, 30;
+  --shadow-opacity: 0.5;
+  
+  /* Added special properties for space theme */
+  --space-stars-opacity: 0.6;
+  --space-nebula-opacity: 0.2;
 }
 
-/* Import premium themes */
-@import url('themes/space.css');
-@import url('themes/neon.css');
-@import url('themes/contrast.css');
-
-/* Theme color indicators in dropdowns/settings */
-.theme-indicator {
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 9999px;
-  margin-right: 0.5rem;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  vertical-align: text-bottom;
+/* Neon Theme (Premium) */
+.theme-neon {
+  /* Primary neon colors */
+  --color-primary: 0, 255, 255;         /* Cyan */
+  --color-primary-light: 127, 255, 212; /* Aquamarine */
+  --color-primary-dark: 0, 191, 255;    /* DeepSkyBlue */
+  
+  /* Accent colors - neon pink/purple */
+  --color-accent: 255, 0, 255;          /* Magenta */
+  --color-accent-light: 255, 105, 180;  /* HotPink */
+  --color-accent-dark: 186, 85, 211;    /* MediumOrchid */
+  
+  /* Success, error, warning - neon variants */
+  --color-success: 0, 255, 127;         /* SpringGreen */
+  --color-error: 255, 69, 0;            /* OrangeRed */
+  --color-warning: 255, 255, 0;         /* Yellow */
+  --color-info: 0, 191, 255;            /* DeepSkyBlue */
+  
+  /* Text colors - bright for neon effect */
+  --color-text-primary: 220, 255, 255;   /* Light cyan */
+  --color-text-secondary: 173, 255, 250; /* Brighter cyan */
+  --color-text-tertiary: 173, 216, 230;  /* LightBlue */
+  
+  /* Background colors - dark for neon contrast */
+  --color-bg-primary: 10, 10, 10;        /* Near black */
+  --color-bg-secondary: 20, 20, 20;      /* Very dark gray */
+  --color-bg-tertiary: 40, 40, 40;       /* Dark gray */
+  
+  /* Border colors - neon glow */
+  --color-border-light: 0, 255, 255;     /* Cyan */
+  --color-border: 0, 191, 255;           /* DeepSkyBlue */
+  --color-border-dark: 30, 144, 255;     /* DodgerBlue */
+  
+  /* Shadow colors - for neon glow effect */
+  --color-shadow: 0, 255, 255;
+  --shadow-opacity: 0.5;
+  
+  /* Added special properties for neon theme */
+  --neon-glow-strength: 10px;
+  --neon-flicker-speed: 3s;
 }
 
-.theme-indicator-light {
-  background: linear-gradient(135deg, #FFFFFF 0%, #F2F3F5 100%);
-}
-
-.theme-indicator-dark {
-  background: linear-gradient(135deg, #36393F 0%, #2F3136 100%);
-}
-
-.theme-indicator-space {
-  background: linear-gradient(135deg, #4d76ff 0%, #1e2254 100%);
-}
-
-.theme-indicator-neon {
-  background: linear-gradient(135deg, #ff00cc 0%, #00ffcc 100%);
-}
-
-.theme-indicator-contrast {
-  background: linear-gradient(135deg, #ffff00 0%, #000000 100%);
-}
-
-/* Premium theme badge */
-.premium-theme-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, var(--premium-gold) 0%, #FFB347 100%);
-  color: #000000;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
-
-.premium-theme-badge::before {
-  content: '★';
-  margin-right: 0.25rem;
-}
-
-/* Theme toggler button */
-.theme-toggle-btn {
-  width: 3rem;
-  height: 1.5rem;
-  background-color: var(--secondary-bg);
-  border-radius: 9999px;
-  position: relative;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  border: 1px solid var(--border-color);
-}
-
-.dark .theme-toggle-btn {
-  background-color: var(--primary-color);
-}
-
-.theme-toggle-btn::after {
-  content: '';
-  position: absolute;
-  width: 1.125rem;
-  height: 1.125rem;
-  background-color: #FFFFFF;
-  border-radius: 9999px;
-  top: 0.15rem;
-  left: 0.15rem;
-  transition: transform 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.dark .theme-toggle-btn::after {
-  transform: translateX(1.5rem);
+/* High Contrast Theme (Premium - Accessibility) */
+.theme-contrast {
+  /* High contrast colors for maximum readability */
+  --color-primary: 255, 255, 0;        /* Yellow */
+  --color-primary-light: 255, 255, 128; /* Light yellow */
+  --color-primary-dark: 204, 204, 0;   /* Darker yellow */
+  
+  /* Accent colors - high contrast */
+  --color-accent: 0, 255, 255;         /* Cyan */
+  --color-accent-light: 128, 255, 255; /* Light cyan */
+  --color-accent-dark: 0, 204, 204;    /* Darker cyan */
+  
+  /* Success, error, warning - very distinct */
+  --color-success: 0, 255, 0;          /* Lime */
+  --color-error: 255, 0, 0;            /* Red */
+  --color-warning: 255, 255, 0;        /* Yellow */
+  --color-info: 0, 255, 255;           /* Cyan */
+  
+  /* Text and background - maximum contrast */
+  --color-text-primary: 255, 255, 255; /* White */
+  --color-text-secondary: 255, 255, 255; /* White */
+  --color-text-tertiary: 255, 255, 0;    /* Yellow */
+  
+  /* Background colors - very dark for contrast */
+  --color-bg-primary: 0, 0, 0;          /* Black */
+  --color-bg-secondary: 20, 20, 20;     /* Very dark gray */
+  --color-bg-tertiary: 40, 40, 40;      /* Dark gray */
+  
+  /* Border colors - high visibility */
+  --color-border-light: 255, 255, 0;    /* Yellow */
+  --color-border: 255, 255, 0;          /* Yellow */
+  --color-border-dark: 255, 255, 0;     /* Yellow */
+  
+  /* Shadow colors */
+  --color-shadow: 0, 0, 0;
+  --shadow-opacity: 0.8;
+  
+  /* Added special properties for high contrast theme */
+  --outline-width: 2px;
+  --focus-outline-width: 4px;
 }

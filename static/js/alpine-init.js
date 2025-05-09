@@ -1,100 +1,108 @@
 /**
  * AstroBot AI - Alpine.js Initialization
- * 
- * This file handles Alpine.js initialization, including plugin registration.
+ * This file registers and initializes Alpine.js plugins and data stores
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Alpine plugins need to be registered before Alpine.start()
   try {
-    // Load the collapse plugin when available
-    if (window.Alpine && window.Alpine.plugin && typeof window.Alpine.plugin === 'function' && window.Alpine.collapse) {
-      window.Alpine.plugin(window.Alpine.collapse);
-      console.log('Alpine Collapse plugin registered');
+    if (window.Alpine) {
+      // Register theme manager data
+      window.Alpine.data('themeManager', () => {
+        return {
+          theme: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+          darkMode: localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches),
+          availableThemes: [
+            { id: 'light', name: 'Light', isPremium: false },
+            { id: 'dark', name: 'Dark', isPremium: false },
+            { id: 'space', name: 'Space', isPremium: true },
+            { id: 'neon', name: 'Neon', isPremium: true },
+            { id: 'contrast', name: 'High Contrast', isPremium: true }
+          ],
+          premium: true, // Should be dynamically set based on user's premium status
+          mounted: false,
+          init() {
+            this.setTheme(this.theme);
+            this.mounted = true;
+            
+            // Listen for OS dark mode changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+              if (!localStorage.getItem('theme')) {
+                this.darkMode = e.matches;
+                this.theme = e.matches ? 'dark' : 'light';
+                this.setTheme(this.theme);
+              }
+            });
+          },
+          toggleDarkMode() {
+            this.darkMode = !this.darkMode;
+            const newTheme = this.darkMode ? 'dark' : 'light';
+            this.setTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+          },
+          setPremiumTheme(themeId) {
+            if (this.isPremiumTheme(themeId) && !this.premium) {
+              // Handle non-premium users trying to use premium themes
+              console.log('Premium theme not available');
+              return;
+            }
+            
+            this.theme = themeId;
+            this.darkMode = themeId === 'dark' || this.isPremiumTheme(themeId);
+            this.setTheme(themeId);
+            localStorage.setItem('theme', themeId);
+          },
+          isPremiumTheme(themeId) {
+            return ['space', 'neon', 'contrast'].includes(themeId);
+          },
+          setTheme(theme) {
+            const root = document.documentElement;
+            
+            // Remove all theme classes first
+            root.classList.remove('theme-light', 'theme-dark', 'theme-space', 'theme-neon', 'theme-contrast');
+            
+            // Add the selected theme class
+            if (theme !== 'light') {
+              root.classList.add(`theme-${theme}`);
+            }
+            
+            // Set dark mode if needed
+            if (theme === 'dark' || this.isPremiumTheme(theme)) {
+              root.classList.add('dark');
+            } else {
+              root.classList.remove('dark');
+            }
+            
+            // Set data attributes
+            document.body.setAttribute('data-theme', theme);
+            
+            // Dispatch event for other components to react
+            window.dispatchEvent(new CustomEvent('theme-changed', { 
+              detail: { theme, isDark: theme === 'dark' || this.isPremiumTheme(theme) } 
+            }));
+          },
+          resetToSystemTheme() {
+            localStorage.removeItem('theme');
+            const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            this.theme = preferredTheme;
+            this.darkMode = preferredTheme === 'dark';
+            this.setTheme(preferredTheme);
+          }
+        };
+      });
+      
+      // Register collapse plugin if available
+      if (window.Alpine.plugin && window.Alpine.collapse) {
+        window.Alpine.plugin(window.Alpine.collapse);
+        console.log('Alpine Collapse plugin registered successfully');
+      } else {
+        console.warn('Alpine Collapse plugin not registered - plugin may not be available');
+      }
+      
+      console.log('Alpine.js initialization completed');
     } else {
-      console.warn('Alpine Collapse plugin not available, dynamically loading it');
-      loadCollapsePlugin();
+      console.error('Alpine.js not found. Make sure it is properly loaded before this script.');
     }
-    
-    // Register theme manager data
-    if (window.Alpine && window.ThemeManager) {
-      window.Alpine.data('themeManager', () => window.ThemeManager);
-      console.log('ThemeManager registered');
-    }
-    
-    // Add custom directives
-    addCustomDirectives();
-    
   } catch (error) {
-    console.error('Error initializing Alpine plugins:', error);
+    console.error('Error initializing Alpine.js:', error);
   }
 });
-
-/**
- * Dynamically load the Alpine Collapse plugin
- * This function will add the plugin to the page if it's not already loaded
- */
-function loadCollapsePlugin() {
-  // Create script tag
-  const script = document.createElement('script');
-  script.setAttribute('src', 'https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js');
-  script.setAttribute('defer', 'true');
-  document.head.appendChild(script);
-  
-  // Register after load
-  script.onload = () => {
-    if (window.Alpine && window.Alpine.plugin && window.Alpine.collapse) {
-      window.Alpine.plugin(window.Alpine.collapse);
-      console.log('Alpine Collapse plugin loaded and registered');
-      
-      // Restart Alpine if it's already started
-      if (window.Alpine.version) {
-        window.dispatchEvent(new CustomEvent('alpine:init'));
-      }
-    }
-  };
-}
-
-/**
- * Add custom Alpine.js directives for enhanced functionality
- */
-function addCustomDirectives() {
-  if (!window.Alpine || !window.Alpine.directive) return;
-  
-  // Add a smooth transition directive for theme changes
-  window.Alpine.directive('theme-transition', (el, { expression }, { effect, evaluateLater }) => {
-    const duration = expression ? parseInt(expression) : 400;
-    
-    el.style.transition = `background-color ${duration}ms ease, 
-                           color ${duration}ms ease, 
-                           border-color ${duration}ms ease, 
-                           box-shadow ${duration}ms ease`;
-  });
-  
-  // Loading state directive
-  window.Alpine.directive('loading', (el, { modifiers, expression }, { effect, evaluateLater }) => {
-    const evaluate = evaluateLater(expression);
-    
-    effect(() => {
-      evaluate(loading => {
-        if (loading) {
-          el.setAttribute('disabled', true);
-          if (modifiers.includes('spinner')) {
-            // Add loading spinner
-            const originalContent = el.innerHTML;
-            el.dataset.originalContent = originalContent;
-            el.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>${modifiers.includes('text') ? 'Loading...' : originalContent}`;
-          }
-        } else {
-          el.removeAttribute('disabled');
-          if (modifiers.includes('spinner') && el.dataset.originalContent) {
-            el.innerHTML = el.dataset.originalContent;
-          }
-        }
-      });
-    });
-  });
-}
