@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Premium Features Management</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Premium Features</li>
+    </ol>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-gem me-1"></i>
+                    Available Premium Features
+                </div>
+                <div class="card-body">
+                    {% if not features %}
+                    <div class="alert alert-info">
+                        No premium features found. Add your first feature using the form.
+                    </div>
+                    {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="featuresTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Key</th>
+                                    <th>Description</th>
+                                    <th>Price Tier</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feature in features %}
+                                <tr>
+                                    <td>{{ feature.name }}</td>
+                                    <td><code>{{ feature.feature_key }}</code></td>
+                                    <td>{{ feature.description }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ feature.tier }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input feature-active-toggle" type="checkbox" 
+                                                   id="active-{{ feature.id }}" 
+                                                   data-feature-id="{{ feature.id }}"
+                                                   {% if feature.is_active %}checked{% endif %}>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary edit-feature-btn" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editFeatureModal" 
+                                                data-feature-id="{{ feature.id }}"
+                                                data-name="{{ feature.name }}"
+                                                data-key="{{ feature.feature_key }}"
+                                                data-description="{{ feature.description }}"
+                                                data-tier="{{ feature.tier }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger delete-feature-btn"
+                                                data-feature-id="{{ feature.id }}"
+                                                data-name="{{ feature.name }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-plus-circle me-1"></i>
+                    Add New Premium Feature
+                </div>
+                <div class="card-body">
+                    <form id="addFeatureForm" method="POST" action="{{ url_for('add_premium_feature') }}">
+                        <div class="mb-3">
+                            <label for="featureName" class="form-label">Feature Name</label>
+                            <input type="text" class="form-control" id="featureName" name="name" required 
+                                   placeholder="e.g. Bot Customization">
+                        </div>
+                        <div class="mb-3">
+                            <label for="featureKey" class="form-label">Feature Key</label>
+                            <input type="text" class="form-control" id="featureKey" name="feature_key" required 
+                                   placeholder="e.g. bot_customization">
+                            <div class="form-text">Unique identifier used in code (no spaces, lowercase)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="featureDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="featureDescription" name="description" rows="3" 
+                                      placeholder="What does this premium feature provide?"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="featureTier" class="form-label">Price Tier</label>
+                            <select class="form-select" id="featureTier" name="tier" required>
+                                <option value="basic">Basic</option>
+                                <option value="standard">Standard</option>
+                                <option value="premium">Premium</option>
+                                <option value="enterprise">Enterprise</option>
+                            </select>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Add Feature
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Feature Modal -->
+<div class="modal fade" id="editFeatureModal" tabindex="-1" aria-labelledby="editFeatureModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editFeatureModalLabel">Edit Premium Feature</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editFeatureForm" method="POST" action="{{ url_for('update_premium_feature') }}">
+                    <input type="hidden" id="editFeatureId" name="feature_id">
+                    <div class="mb-3">
+                        <label for="editFeatureName" class="form-label">Feature Name</label>
+                        <input type="text" class="form-control" id="editFeatureName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFeatureKey" class="form-label">Feature Key</label>
+                        <input type="text" class="form-control" id="editFeatureKey" name="feature_key" required>
+                        <div class="form-text">Unique identifier used in code (no spaces, lowercase)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFeatureDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editFeatureDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFeatureTier" class="form-label">Price Tier</label>
+                        <select class="form-select" id="editFeatureTier" name="tier" required>
+                            <option value="basic">Basic</option>
+                            <option value="standard">Standard</option>
+                            <option value="premium">Premium</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="updateFeatureButton">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle feature active toggles
+    const featureToggles = document.querySelectorAll('.feature-active-toggle');
+    featureToggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const featureId = this.dataset.featureId;
+            const isActive = this.checked;
+            
+            // Send API request to update feature status
+            fetch('/api/admin/toggle-feature', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ feature_id: featureId, is_active: isActive })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success toast or alert
+                    alert(data.message);
+                } else {
+                    // Show error toast or alert
+                    alert('Error: ' + data.message);
+                    // Revert the toggle
+                    this.checked = !isActive;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating feature status');
+                // Revert the toggle
+                this.checked = !isActive;
+            });
+        });
+    });
+    
+    // Handle Edit Feature button click
+    const editButtons = document.querySelectorAll('.edit-feature-btn');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Get feature data from data attributes
+            const featureId = this.dataset.featureId;
+            const name = this.dataset.name;
+            const key = this.dataset.key;
+            const description = this.dataset.description;
+            const tier = this.dataset.tier;
+            
+            // Populate the modal with feature data
+            document.getElementById('editFeatureId').value = featureId;
+            document.getElementById('editFeatureName').value = name;
+            document.getElementById('editFeatureKey').value = key;
+            document.getElementById('editFeatureDescription').value = description;
+            document.getElementById('editFeatureTier').value = tier;
+        });
+    });
+    
+    // Handle Update Feature button click
+    document.getElementById('updateFeatureButton').addEventListener('click', function() {
+        document.getElementById('editFeatureForm').submit();
+    });
+    
+    // Handle Delete Feature button click
+    const deleteButtons = document.querySelectorAll('.delete-feature-btn');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const featureId = this.dataset.featureId;
+            const name = this.dataset.name;
+            
+            if (confirm(`Are you sure you want to delete the feature "${name}"? This cannot be undone.`)) {
+                // Send API request to delete feature
+                fetch('/api/admin/delete-feature', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ feature_id: featureId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Show success toast or alert
+                        alert(data.message);
+                        // Reload the page to refresh the data
+                        location.reload();
+                    } else {
+                        // Show error toast or alert
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the feature');
+                });
+            }
+        });
+    });
+    
+    // Initialize DataTable if available
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('#featuresTable').DataTable({
+            responsive: true
+        });
+    }
+});
+</script>
+{% endblock %}

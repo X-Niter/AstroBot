@@ -1,0 +1,499 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Server Showcase Management</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Server Showcase</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-server me-1"></i>
+            Manage Server Showcase
+        </div>
+        <div class="card-body">
+            {% if not servers %}
+            <div class="alert alert-info">
+                No servers found in the system. Servers will appear here once the bot joins them.
+            </div>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="serversTable">
+                    <thead>
+                        <tr>
+                            <th>Server Name</th>
+                            <th>Members</th>
+                            <th>Owner</th>
+                            <th>Premium</th>
+                            <th>Featured</th>
+                            <th>Visibility</th>
+                            <th>Bot Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for server in servers %}
+                        <tr>
+                            <td>
+                                {% if server.icon_url %}
+                                <img src="{{ server.icon_url }}" alt="{{ server.name }} icon" class="rounded-circle me-2" style="width: 32px; height: 32px;">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary me-2 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; color: white;">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                                {% endif %}
+                                {{ server.name }}
+                            </td>
+                            <td>{{ server.member_count }}</td>
+                            <td>
+                                {% if server.owner %}
+                                {{ server.owner.username }}
+                                {% else %}
+                                <span class="text-muted">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input premium-toggle" type="checkbox" 
+                                           id="premium-{{ server.id }}" 
+                                           data-server-id="{{ server.id }}"
+                                           {% if server.is_premium %}checked{% endif %}>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input featured-toggle" type="checkbox" 
+                                           id="featured-{{ server.id }}" 
+                                           data-server-id="{{ server.id }}"
+                                           {% if server.is_featured %}checked{% endif %}>
+                                </div>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm visibility-select" 
+                                        data-server-id="{{ server.id }}">
+                                    <option value="public" {% if server.is_public %}selected{% endif %}>Public</option>
+                                    <option value="private" {% if not server.is_public %}selected{% endif %}>Private</option>
+                                </select>
+                            </td>
+                            <td>
+                                {% if server.bot_joined_at %}
+                                {{ server.bot_joined_at.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                <span class="text-muted">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-primary view-server-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewServerModal" 
+                                        data-server-id="{{ server.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success edit-server-btn"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editServerModal" 
+                                        data-server-id="{{ server.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- View Server Modal -->
+<div class="modal fade" id="viewServerModal" tabindex="-1" aria-labelledby="viewServerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewServerModalLabel">Server Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="serverDetailContent">
+                    <div class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading server details...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Server Modal -->
+<div class="modal fade" id="editServerModal" tabindex="-1" aria-labelledby="editServerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editServerModalLabel">Edit Server</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editServerForm">
+                    <input type="hidden" id="editServerId" name="server_id">
+                    <div class="mb-3">
+                        <label for="editServerName" class="form-label">Server Name</label>
+                        <input type="text" class="form-control" id="editServerName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editServerDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editServerDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editServerInvite" class="form-label">Invite URL</label>
+                        <input type="url" class="form-control" id="editServerInvite" name="invite_url" 
+                               placeholder="https://discord.gg/...">
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="editServerShowConfig" name="show_config">
+                        <label class="form-check-label" for="editServerShowConfig">
+                            Show Configuration Publicly
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="updateServerButton">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle premium toggle switches
+    const premiumToggles = document.querySelectorAll('.premium-toggle');
+    premiumToggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const serverId = this.dataset.serverId;
+            const isPremium = this.checked;
+            
+            // Send API request to update premium status
+            fetch('/api/admin/toggle-server-premium', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ server_id: serverId, is_premium: isPremium })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success toast or alert
+                    alert(data.message);
+                } else {
+                    // Show error toast or alert
+                    alert('Error: ' + data.message);
+                    // Revert the toggle
+                    this.checked = !isPremium;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating premium status');
+                // Revert the toggle
+                this.checked = !isPremium;
+            });
+        });
+    });
+    
+    // Handle featured toggle switches
+    const featuredToggles = document.querySelectorAll('.featured-toggle');
+    featuredToggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const serverId = this.dataset.serverId;
+            const isFeatured = this.checked;
+            
+            // Send API request to update featured status
+            fetch('/api/admin/toggle-server-featured', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ server_id: serverId, is_featured: isFeatured })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success toast or alert
+                    alert(data.message);
+                } else {
+                    // Show error toast or alert
+                    alert('Error: ' + data.message);
+                    // Revert the toggle
+                    this.checked = !isFeatured;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating featured status');
+                // Revert the toggle
+                this.checked = !isFeatured;
+            });
+        });
+    });
+    
+    // Handle visibility select changes
+    const visibilitySelects = document.querySelectorAll('.visibility-select');
+    visibilitySelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const serverId = this.dataset.serverId;
+            const isPublic = this.value === 'public';
+            
+            // Send API request to update visibility
+            fetch('/api/admin/update-server-visibility', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ server_id: serverId, is_public: isPublic })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success toast or alert
+                    alert(data.message);
+                } else {
+                    // Show error toast or alert
+                    alert('Error: ' + data.message);
+                    // Revert the select
+                    this.value = isPublic ? 'private' : 'public';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating visibility');
+                // Revert the select
+                this.value = isPublic ? 'private' : 'public';
+            });
+        });
+    });
+    
+    // Handle View Server button click
+    const viewButtons = document.querySelectorAll('.view-server-btn');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const serverId = this.dataset.serverId;
+            
+            // Clear previous content and show loading spinner
+            const contentDiv = document.getElementById('serverDetailContent');
+            contentDiv.innerHTML = `
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading server details...</p>
+                </div>
+            `;
+            
+            // Fetch server details
+            fetch(`/api/admin/server-details/${serverId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update modal with server details
+                    const server = data.server;
+                    let html = `
+                        <div class="row">
+                            <div class="col-md-4 text-center mb-3">
+                                <div class="position-relative">
+                                    <div class="server-icon-container bg-light rounded-circle mb-2 mx-auto d-flex align-items-center justify-content-center" style="width: 128px; height: 128px; overflow: hidden;">
+                                        ${server.icon_url ? 
+                                          `<img src="${server.icon_url}" alt="${server.name}" class="img-fluid">` : 
+                                          `<i class="fas fa-server fa-4x text-secondary"></i>`
+                                        }
+                                    </div>
+                                    ${server.is_premium ? 
+                                      `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                                          <i class="fas fa-gem"></i> Premium
+                                      </span>` : ''
+                                    }
+                                </div>
+                                <h4>${server.name}</h4>
+                                <p class="text-muted">${server.member_count} members</p>
+                                ${server.invite_url ? 
+                                  `<a href="${server.invite_url}" target="_blank" class="btn btn-sm btn-primary">
+                                      <i class="fas fa-sign-in-alt me-1"></i> Join Server
+                                  </a>` : ''
+                                }
+                            </div>
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <h5>Description</h5>
+                                    <p>${server.description || 'No description available.'}</p>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5>Server Info</h5>
+                                        <ul class="list-group list-group-flush small">
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Server ID:</span>
+                                                <span class="text-muted">${server.server_id}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Owner:</span>
+                                                <span class="text-muted">${server.owner ? server.owner.username : 'Unknown'}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Bot Joined:</span>
+                                                <span class="text-muted">${server.bot_joined_at || 'Unknown'}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Visibility:</span>
+                                                <span class="badge ${server.is_public ? 'bg-success' : 'bg-secondary'}">
+                                                    ${server.is_public ? 'Public' : 'Private'}
+                                                </span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Featured:</span>
+                                                <span class="badge ${server.is_featured ? 'bg-primary' : 'bg-secondary'}">
+                                                    ${server.is_featured ? 'Featured' : 'Not Featured'}
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5>Configuration</h5>
+                                        ${server.configurations && server.configurations.length > 0 ? 
+                                          `<ul class="list-group list-group-flush small">
+                                              ${server.configurations.map(config => 
+                                                `<li class="list-group-item">
+                                                    <strong>${config.name}</strong>
+                                                    <p class="mb-1 text-muted">Purpose: ${config.server_purpose}</p>
+                                                    <p class="mb-0 text-muted">Status: 
+                                                        <span class="badge ${
+                                                            config.status === 'configured' ? 'bg-success' : 
+                                                            config.status === 'pending' ? 'bg-warning' : 'bg-danger'
+                                                        }">
+                                                            ${config.status}
+                                                        </span>
+                                                    </p>
+                                                </li>`
+                                              ).join('')}
+                                          </ul>` : 
+                                          `<p class="text-muted">No configurations available.</p>`
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    contentDiv.innerHTML = html;
+                } else {
+                    // Show error message
+                    contentDiv.innerHTML = `<div class="alert alert-danger">${data.message || 'Failed to load server details'}</div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                contentDiv.innerHTML = `<div class="alert alert-danger">An error occurred while loading server details</div>`;
+            });
+        });
+    });
+    
+    // Handle Edit Server button click
+    const editButtons = document.querySelectorAll('.edit-server-btn');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const serverId = this.dataset.serverId;
+            
+            // Fetch server details for editing
+            fetch(`/api/admin/server-details/${serverId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Populate form with server details
+                    const server = data.server;
+                    document.getElementById('editServerId').value = server.id;
+                    document.getElementById('editServerName').value = server.name || '';
+                    document.getElementById('editServerDescription').value = server.description || '';
+                    document.getElementById('editServerInvite').value = server.invite_url || '';
+                    document.getElementById('editServerShowConfig').checked = server.show_config;
+                } else {
+                    // Show error message
+                    alert('Error: ' + (data.message || 'Failed to load server details'));
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editServerModal'));
+                    modal.hide();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while loading server details');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editServerModal'));
+                modal.hide();
+            });
+        });
+    });
+    
+    // Handle Update Server button click
+    document.getElementById('updateServerButton').addEventListener('click', function() {
+        const form = document.getElementById('editServerForm');
+        const formData = new FormData(form);
+        const serverId = formData.get('server_id');
+        
+        // Prepare data for API request
+        const data = {
+            server_id: serverId,
+            name: formData.get('name'),
+            description: formData.get('description'),
+            invite_url: formData.get('invite_url'),
+            show_config: formData.get('show_config') === 'on'
+        };
+        
+        // Send API request to update server
+        fetch('/api/admin/update-server', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editServerModal'));
+                modal.hide();
+                
+                // Show success toast or alert
+                alert(data.message);
+                
+                // Reload the page to refresh the data
+                location.reload();
+            } else {
+                // Show error toast or alert
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the server');
+        });
+    });
+    
+    // Initialize DataTable if available
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('#serversTable').DataTable({
+            responsive: true,
+            order: [[4, 'desc'], [3, 'desc']]  // Sort by featured and premium status
+        });
+    }
+});
+</script>
+{% endblock %}

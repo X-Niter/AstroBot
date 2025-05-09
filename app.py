@@ -1,12 +1,12 @@
 import os
 import logging
 import json
+from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, redirect, url_for, request, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import traceback
-import datetime
 from sqlalchemy.orm import DeclarativeBase
 from flask_sqlalchemy import SQLAlchemy
 
@@ -133,7 +133,7 @@ def login():
         user = WebsiteUser.query.filter_by(username=form.username.data).first()
         if user and user.check_password(form.password.data):
             login_user(user)
-            user.last_login = datetime.datetime.utcnow()
+            user.last_login = datetime.utcnow()
             db.session.commit()
             next_page = request.args.get('next')
             return redirect(next_page or url_for('index'))
@@ -292,7 +292,7 @@ def api_status():
         "mongodb_connected": mongodb_available,
         "bot_running": True,
         "api_version": "1.0.0",
-        "server_time": datetime.datetime.now().isoformat()
+        "server_time": datetime.now().isoformat()
     })
 
 # Minecraft management routes
@@ -492,6 +492,186 @@ def assign_premium_feature():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error assigning premium feature: {str(e)}")
+        return jsonify({'status': 'error', 'message': f"Error: {str(e)}"}), 500
+
+@app.route('/api/admin/remove-feature', methods=['POST'])
+@login_required
+def remove_premium_feature():
+    """Remove a premium feature from a user"""
+    if not current_user.is_admin:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    
+    data = request.json
+    if not data or 'user_feature_id' not in data:
+        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    
+    try:
+        user_feature = UserPremiumFeature.query.get(data['user_feature_id'])
+        if not user_feature:
+            return jsonify({'status': 'error', 'message': 'User feature not found'}), 404
+        
+        feature_name = user_feature.feature.name
+        username = user_feature.user.username
+        
+        db.session.delete(user_feature)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f"Feature '{feature_name}' removed from {username}"
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error removing premium feature: {str(e)}")
+        return jsonify({'status': 'error', 'message': f"Error: {str(e)}"}), 500
+
+@app.route('/admin/premium-features/add', methods=['POST'])
+@login_required
+def add_premium_feature():
+    """Add a new premium feature"""
+    if not current_user.is_admin:
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        name = request.form.get('name')
+        feature_key = request.form.get('feature_key')
+        description = request.form.get('description', '')
+        tier = request.form.get('tier', 'standard')
+        
+        # Check if feature with this key already exists
+        existing = PremiumFeature.query.filter_by(feature_key=feature_key).first()
+        if existing:
+            flash(f'A feature with key "{feature_key}" already exists.', 'danger')
+            return redirect(url_for('premium_features'))
+        
+        # Create new feature
+        feature = PremiumFeature(
+            name=name,
+            feature_key=feature_key,
+            description=description,
+            tier=tier,
+            is_active=True,
+            created_by_id=current_user.id
+        )
+        
+        db.session.add(feature)
+        db.session.commit()
+        
+        flash(f'Premium feature "{name}" has been added successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error adding premium feature: {str(e)}")
+        flash(f'Error adding premium feature: {str(e)}', 'danger')
+    
+    return redirect(url_for('premium_features'))
+
+@app.route('/admin/premium-features/update', methods=['POST'])
+@login_required
+def update_premium_feature():
+    """Update an existing premium feature"""
+    if not current_user.is_admin:
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        feature_id = request.form.get('feature_id')
+        name = request.form.get('name')
+        feature_key = request.form.get('feature_key')
+        description = request.form.get('description', '')
+        tier = request.form.get('tier', 'standard')
+        
+        feature = PremiumFeature.query.get(feature_id)
+        if not feature:
+            flash('Feature not found.', 'danger')
+            return redirect(url_for('premium_features'))
+        
+        # Check if another feature with this key already exists
+        if feature.feature_key != feature_key:
+            existing = PremiumFeature.query.filter_by(feature_key=feature_key).first()
+            if existing and existing.id != int(feature_id):
+                flash(f'Another feature with key "{feature_key}" already exists.', 'danger')
+                return redirect(url_for('premium_features'))
+        
+        # Update feature
+        feature.name = name
+        feature.feature_key = feature_key
+        feature.description = description
+        feature.tier = tier
+        
+        db.session.commit()
+        
+        flash(f'Premium feature "{name}" has been updated successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating premium feature: {str(e)}")
+        flash(f'Error updating premium feature: {str(e)}', 'danger')
+    
+    return redirect(url_for('premium_features'))
+
+@app.route('/api/admin/toggle-feature', methods=['POST'])
+@login_required
+def toggle_feature():
+    """Toggle active status for a premium feature"""
+    if not current_user.is_admin:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    
+    data = request.json
+    if not data or 'feature_id' not in data:
+        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    
+    try:
+        feature = PremiumFeature.query.get(data['feature_id'])
+        if not feature:
+            return jsonify({'status': 'error', 'message': 'Feature not found'}), 404
+        
+        feature.is_active = data.get('is_active', not feature.is_active)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f"Feature '{feature.name}' is now {'active' if feature.is_active else 'inactive'}"
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling feature status: {str(e)}")
+        return jsonify({'status': 'error', 'message': f"Error: {str(e)}"}), 500
+
+@app.route('/api/admin/delete-feature', methods=['POST'])
+@login_required
+def delete_feature():
+    """Delete a premium feature"""
+    if not current_user.is_admin:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    
+    data = request.json
+    if not data or 'feature_id' not in data:
+        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    
+    try:
+        feature = PremiumFeature.query.get(data['feature_id'])
+        if not feature:
+            return jsonify({'status': 'error', 'message': 'Feature not found'}), 404
+        
+        # Check if feature is assigned to any users
+        user_features = UserPremiumFeature.query.filter_by(feature_id=feature.id).count()
+        if user_features > 0:
+            return jsonify({
+                'status': 'error',
+                'message': f"Cannot delete feature '{feature.name}' because it is assigned to {user_features} users"
+            }), 400
+        
+        feature_name = feature.name
+        db.session.delete(feature)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f"Feature '{feature_name}' has been deleted"
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting feature: {str(e)}")
         return jsonify({'status': 'error', 'message': f"Error: {str(e)}"}), 500
 
 # Settings routes
