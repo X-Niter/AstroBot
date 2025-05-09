@@ -1,5 +1,5 @@
 /**
- * Light Theme - Default theme with clean light interface
+ * Light Theme - Clean light mode for readability
  */
 :root {
     --primary-bg: #ffffff;
@@ -20,6 +20,100 @@
     --footer-text: #f8f9fa;
 }
 
+.theme-light body {
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+}
+
+.theme-light .navbar {
+    background-color: var(--nav-bg) !important;
+}
+
+.theme-light .navbar-dark .navbar-nav .nav-link {
+    color: var(--nav-text);
+}
+
 .theme-light .card {
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.theme-light .card-header {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+}
+
+.theme-light .modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.theme-light .dropdown-menu {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.theme-light .dropdown-item {
+    color: var(--text-color);
+}
+
+.theme-light .dropdown-item:hover {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+}
+
+.theme-light .form-control,
+.theme-light .form-select {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-light .form-control:focus,
+.theme-light .form-select:focus {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(52, 83, 209, 0.25);
+}
+
+.theme-light .input-group-text {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-light .table {
+    color: var(--text-color);
+}
+
+.theme-light .text-muted {
+    color: var(--muted-text) !important;
+}
+
+.theme-light .list-group-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.theme-light .border-bottom {
+    border-color: var(--border-color) !important;
+}
+
+.theme-light .border-top {
+    border-color: var(--border-color) !important;
+}
+
+.theme-light pre, 
+.theme-light code {
+    background-color: #f8f9fa;
+    color: #212529;
+    border-color: #dee2e6;
+}
+
+.theme-light .alert-secondary {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
 }
