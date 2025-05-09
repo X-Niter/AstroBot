@@ -4,6 +4,19 @@ on:
   schedule:
     - cron: '*/30 * * * *'  # Run every 30 minutes
   workflow_dispatch:  # Allow manual triggering
+    inputs:
+      task_type:
+        description: 'Task type to run'
+        required: false
+        default: 'code-health'
+        type: choice
+        options:
+          - code-health
+          - dependency-updates
+          - performance
+          - test-improvements
+          - documentation
+          - workflow-health
   issues:
     types: [opened, reopened, edited, labeled]
   issue_comment:
@@ -350,6 +363,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       # Scheduled scanning - perform periodic health check
+      - name: Set task type from input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "TASK_TYPE=${{ github.event.inputs.task_type }}" >> $GITHUB_ENV
+      
       - name: Periodic health check and improvement scanning
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
@@ -362,6 +380,153 @@ jobs:
           import time
           from datetime import datetime, timedelta
 
+          def check_workflow_health():
+              """Check GitHub workflow files for potential issues"""
+              try:
+                  # Find all workflow files
+                  workflow_files = os.popen("find .github/workflows -name '*.yml' -o -name '*.yaml'").read().strip().split('\n')
+                  issues_found = []
+                  
+                  for file in workflow_files:
+                      # Skip empty lines or non-existent files
+                      if not file or not os.path.exists(file):
+                          continue
+                          
+                      print(f"Checking workflow file: {file}")
+                      
+                      # Basic YAML syntax check
+                      try:
+                          import yaml
+                          with open(file, 'r') as f:
+                              yaml.safe_load(f)
+                      except Exception as e:
+                          issues_found.append({
+                              "file": file,
+                              "issue_type": "yaml_syntax",
+                              "description": f"YAML syntax error: {str(e)}"
+                          })
+                          continue
+                      
+                      # Read file content
+                      with open(file, 'r') as f:
+                          content = f.read()
+                          
+                      # Check for heredoc indentation issues
+                      heredoc_start_pattern = r'<<.*EOF'
+                      heredoc_end_pattern = r'^(\s*)EOF'
+                      
+                      import re
+                      lines = content.split('\n')
+                      in_heredoc = False
+                      start_line = 0
+                      start_indent = ""
+                      
+                      for i, line in enumerate(lines):
+                          # Check for heredoc start
+                          if re.search(heredoc_start_pattern, line) and not in_heredoc:
+                              in_heredoc = True
+                              start_line = i
+                              start_indent = re.match(r'^(\s*)', line).group(1)
+                          # Check for heredoc end
+                          elif in_heredoc and re.search(heredoc_end_pattern, line):
+                              in_heredoc = False
+                              end_indent = re.match(r'^(\s*)', line).group(1)
+                              if start_indent != end_indent:
+                                  issues_found.append({
+                                      "file": file,
+                                      "issue_type": "heredoc_indentation",
+                                      "description": f"Heredoc indentation mismatch: start line {start_line+1} vs end line {i+1}",
+                                      "start_line": start_line + 1,
+                                      "end_line": i + 1
+                                  })
+                      
+                      # Check for common workflow issues
+                      if "on:" not in content:
+                          issues_found.append({
+                              "file": file,
+                              "issue_type": "missing_trigger",
+                              "description": "Missing workflow trigger (on:) section",
+                              "suggest_fix": "Add a trigger section like 'on: [push, pull_request]' or 'on: workflow_dispatch'"
+                          })
+                      
+                      if "jobs:" not in content:
+                          issues_found.append({
+                              "file": file,
+                              "issue_type": "missing_jobs",
+                              "description": "Missing jobs section",
+                              "suggest_fix": "Add at least one job with a name, runs-on, and steps"
+                          })
+                      
+                      # Check for potential YAML anchor issues
+                      anchor_pattern = r'&\w+'
+                      alias_pattern = r'\*\w+'
+                      anchors = re.findall(anchor_pattern, content)
+                      aliases = re.findall(alias_pattern, content)
+                      
+                      anchor_names = [a[1:] for a in anchors]  # Remove the & prefix
+                      alias_names = [a[1:] for a in aliases]   # Remove the * prefix
+                      
+                      # Check for aliases without anchors
+                      for alias in alias_names:
+                          if alias not in anchor_names:
+                              issues_found.append({
+                                  "file": file,
+                                  "issue_type": "undefined_yaml_alias",
+                                  "description": f"YAML alias '*{alias}' is used but anchor '&{alias}' is not defined",
+                                  "suggest_fix": f"Define an anchor '&{alias}' before using the alias '*{alias}'"
+                              })
+                      
+                      # Check for bad tab characters
+                      if '\t' in content:
+                          tab_lines = [i+1 for i, line in enumerate(lines) if '\t' in line]
+                          issues_found.append({
+                              "file": file,
+                              "issue_type": "tab_character",
+                              "description": f"Tab characters found in YAML (lines: {', '.join(map(str, tab_lines))}) - use spaces instead",
+                              "lines": tab_lines,
+                              "suggest_fix": "Replace tab characters with spaces (2 or 4 spaces per indentation level)"
+                          })
+                          
+                      # Check for inconsistent indentation
+                      spaces_pattern = re.compile(r'^( +)[^ ]')
+                      indent_sizes = {}
+                      
+                      for i, line in enumerate(lines):
+                          if not line.strip() or line.strip().startswith('#'):
+                              continue  # Skip empty lines and comments
+                              
+                          match = spaces_pattern.match(line)
+                          if match:
+                              indent = len(match.group(1))
+                              if indent > 0:
+                                  indent_sizes[indent] = indent_sizes.get(indent, 0) + 1
+                      
+                      # Find the most common indentation
+                      if len(indent_sizes) > 1:
+                          # If we have multiple indentation sizes, check if they're inconsistent
+                          # (Allow 2, 4, 6, 8 for step increases, but not mixed like 2 and 3)
+                          indent_bases = set()
+                          for indent in indent_sizes.keys():
+                              if indent % 2 == 0:
+                                  indent_bases.add(2)
+                              elif indent % 4 == 0:
+                                  indent_bases.add(4)
+                              else:
+                                  indent_bases.add(indent)
+                          
+                          if len(indent_bases) > 1:
+                              issues_found.append({
+                                  "file": file,
+                                  "issue_type": "inconsistent_indent",
+                                  "description": f"Inconsistent indentation found: {', '.join(map(str, indent_sizes.keys()))} spaces",
+                                  "suggest_fix": "Use consistent indentation (2 or 4 spaces recommended)"
+                              })
+                      
+                  return issues_found
+              except Exception as e:
+                  print(f"Error checking workflow health: {str(e)}")
+                  return []
+          
           def check_recent_activity():
               """Check if there have been recent workflow runs or commits"""
               try:
@@ -430,9 +595,36 @@ jobs:
           def determine_periodic_actions():
               """Determine which actions to take for periodic scanning"""
               workflows = []
+              task_type = os.environ.get("TASK_TYPE", "code-health")
+              print(f"Running periodic scan with task type: {task_type}")
+              
+              # Check for workflow health issues if requested or during scheduled runs
+              if task_type == "workflow-health" or task_type == "all":
+                  print("Checking workflow health...")
+                  workflow_issues = check_workflow_health()
+                  
+                  if workflow_issues:
+                      print(f"Found {len(workflow_issues)} workflow issues:")
+                      for issue in workflow_issues:
+                          print(f"  - {issue['file']}: {issue['issue_type']} - {issue['description']}")
+                      
+                      # Create a report
+                      os.makedirs(".github/reports", exist_ok=True)
+                      with open(".github/reports/workflow-health-issues.json", "w") as f:
+                          json.dump(workflow_issues, f, indent=2)
+                      
+                      # Trigger auto-fix-code-issues with focus on workflow issues
+                      workflows.append({
+                          "name": "auto-fix-code-issues.yml",
+                          "priority": 1,
+                          "inputs": {
+                              "fix_type": "syntax",
+                              "workflow_focus": "true"
+                          }
+                      })
               
               # Check if there's been recent activity
-              if check_recent_activity():
+              if check_recent_activity() and task_type != "workflow-health":
                   print("Recent activity detected, skipping some scans")
               
               # Always do a self-healing scan
@@ -469,10 +661,51 @@ jobs:
                       }
                   })
               
+              # Add task-type specific workflows
+              if task_type == "dependency-updates" or (task_type == "all" and random.randint(1, 6) == 1):
+                  # Check for dependency updates weekly (or when explicitly requested)
+                  workflows.append({
+                      "name": "dependency-update-check.yml",
+                      "priority": 2,
+                      "inputs": {
+                          "auto_merge": "false" # For safety, don't auto-merge by default
+                      }
+                  })
+              
+              if task_type == "performance" or (task_type == "all" and random.randint(1, 10) == 1):
+                  # Look for performance improvements
+                  workflows.append({
+                      "name": "performance-analysis.yml",
+                      "priority": 3,
+                      "inputs": {
+                          "analyze_type": "all"
+                      }
+                  })
+              
+              if task_type == "test-improvements" or (task_type == "all" and random.randint(1, 8) == 1):
+                  # Look for testing improvements
+                  workflows.append({
+                      "name": "test-coverage-improvement.yml",
+                      "priority": 3,
+                      "inputs": {
+                          "improve_type": "all"
+                      }
+                  })
+                  
+              if task_type == "documentation" or (task_type == "all" and random.randint(1, 12) == 1):
+                  # Improve documentation
+                  workflows.append({
+                      "name": "documentation-improvement.yml",
+                      "priority": 4,
+                      "inputs": {
+                          "target": "all"
+                      }
+                  })
+              
               # Check if we should run the auto-fix-code-issues workflow
-              # We'll do this roughly once per day (1/48 chance every 30 minutes)
+              # Run it when explicitly requested or randomly
               import random
-              if random.randint(1, 48) == 1:
+              if task_type == "code-health" or (task_type == "all" and random.randint(1, 48) == 1):
                   workflows.append({
                       "name": "auto-fix-code-issues.yml",
                       "priority": 3,

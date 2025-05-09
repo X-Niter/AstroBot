@@ -117,6 +117,76 @@ jobs:
             echo "SYNTAX_ERRORS=true" >> $GITHUB_ENV
             echo "Found syntax errors in Python files"
           fi
+          
+      # Check workflow YAML files for errors and indentation issues
+      - name: Check for workflow YAML issues
+        run: |
+          echo "Checking workflow YAML files for issues..."
+          mkdir -p .github/diagnostics
+          
+          # Function to check for heredoc indentation issues
+          check_heredoc_indentation() {
+            local file="$1"
+            local issues_found=0
+            
+            # Find all instances of heredoc markers
+            echo "Checking for heredoc indentation issues in $file"
+            local start_markers=$(grep -n "<<.*EOF" "$file" | cut -d: -f1)
+            
+            for start_line in $start_markers; do
+              # Find the matching end marker (if exists)
+              end_line=$(tail -n +$start_line "$file" | grep -n "^[[:space:]]*EOF" | head -1 | cut -d: -f1)
+              if [ -n "$end_line" ]; then
+                end_line=$((start_line + end_line - 1))
+                
+                # Get the indentation of the starting line
+                start_indent=$(sed -n "${start_line}p" "$file" | grep -o "^[[:space:]]*" | wc -c)
+                
+                # Get the indentation of the ending line
+                end_indent=$(sed -n "${end_line}p" "$file" | grep -o "^[[:space:]]*" | wc -c)
+                
+                # Compare indentation levels
+                if [ "$start_indent" != "$end_indent" ]; then
+                  echo "Heredoc indentation mismatch in $file (lines $start_line-$end_line)"
+                  echo "$file:$start_line:$end_line:heredoc_indentation" >> .github/diagnostics/workflow-yaml-issues.txt
+                  issues_found=$((issues_found + 1))
+                fi
+              fi
+            done
+            
+            return $issues_found
+          }
+          
+          # Find all workflow files
+          WORKFLOW_FILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml")
+          WORKFLOW_ISSUES=0
+          
+          for file in $WORKFLOW_FILES; do
+            echo "Checking $file..."
+            
+            # Basic YAML syntax check
+            python -c "import yaml; yaml.safe_load(open('$file'))" 2> .github/diagnostics/yaml-error.tmp
+            
+            if [ $? -ne 0 ]; then
+              echo "YAML syntax error in $file"
+              cat .github/diagnostics/yaml-error.tmp
+              echo "$file:yaml_syntax:$(cat .github/diagnostics/yaml-error.tmp | tr '\n' ' ')" >> .github/diagnostics/workflow-yaml-issues.txt
+              WORKFLOW_ISSUES=$((WORKFLOW_ISSUES + 1))
+            else
+              # Check for heredoc indentation issues
+              check_heredoc_indentation "$file"
+              if [ $? -gt 0 ]; then
+                WORKFLOW_ISSUES=$((WORKFLOW_ISSUES + 1))
+              fi
+            fi
+          done
+          
+          if [ $WORKFLOW_ISSUES -gt 0 ]; then
+            echo "WORKFLOW_YAML_ISSUES=true" >> $GITHUB_ENV
+            echo "Found $WORKFLOW_ISSUES workflow YAML issues"
+          else
+            echo "No workflow YAML issues found"
+          fi
       
       # Check for model-related issues (commonly seen in the error logs)
       - name: Check for model issues
@@ -278,6 +348,83 @@ jobs:
               # Filter to only include workflow files
               workflow_files = [f for f in workflow_files if '/.github/workflows/' in f]
               
+              # Also check for workflow_yaml_issues.txt
+              workflow_yaml_issues = []
+              try:
+                  if os.path.exists('.github/diagnostics/workflow-yaml-issues.txt'):
+                      with open('.github/diagnostics/workflow-yaml-issues.txt', 'r') as f:
+                          workflow_yaml_issues = [line.strip() for line in f.readlines()]
+              except:
+                  print("No workflow YAML issues file found")
+                  
+              # Process specific workflow YAML issues first
+              for issue_line in workflow_yaml_issues:
+                  parts = issue_line.split(':', 3)
+                  if len(parts) >= 3:
+                      file_path = parts[0]
+                      if len(parts) >= 4:
+                          issue_type = parts[2]
+                          issue_details = parts[3]
+                      else:
+                          issue_type = "yaml"
+                          issue_details = "YAML syntax issue"
+                      
+                      content = read_file(file_path)
+                      if not content:
+                          continue
+                          
+                      # Handle heredoc indentation issues specifically
+                      if "heredoc_indentation" in issue_line:
+                          # Extract line numbers
+                          line_parts = parts[1].split(':')
+                          if len(line_parts) >= 2:
+                              start_line = int(line_parts[0])
+                              end_line = int(line_parts[1])
+                              
+                              # Fix heredoc indentation manually 
+                              lines = content.split('\n')
+                              if start_line <= len(lines) and end_line <= len(lines):
+                                  # Get indentation from start line
+                                  start_indent = re.match(r'^(\s*)', lines[start_line-1]).group(1)
+                                  # Apply same indentation to end line
+                                  lines[end_line-1] = start_indent + lines[end_line-1].lstrip()
+                                  fixed_content = '\n'.join(lines)
+                                  
+                                  if write_file(file_path, fixed_content):
+                                      results.append({
+                                          "file": file_path,
+                                          "issue": "Heredoc indentation mismatch",
+                                          "fix": f"Fixed indentation of EOF marker at line {end_line} to match line {start_line}",
+                                          "fixed": True
+                                      })
+                                      continue
+                          
+                      # Use AI for more complex issues
+                      fixed_content = fix_with_ai(
+                          file_path=file_path,
+                          content=content,
+                          issue_type="workflow_yaml",
+                          issue_details=issue_details
+                      )
+                      
+                      if fixed_content and fixed_content != content:
+                          # Validate the fixed YAML
+                          is_valid = False
+                          try:
+                              import yaml
+                              yaml.safe_load(fixed_content)
+                              is_valid = True
+                          except Exception as e:
+                              print(f"AI fix resulted in invalid YAML: {str(e)}")
+                          
+                          if is_valid and write_file(file_path, fixed_content):
+                              results.append({
+                                  "file": file_path,
+                                  "issue": f"YAML syntax issue: {issue_details}",
+                                  "fix": "Fixed YAML syntax with AI assistance",
+                                  "fixed": True
+                              })
+              
               for file_path in workflow_files:
                   content = read_file(file_path)
                   if not content:
@@ -431,8 +578,20 @@ jobs:
               # Add specific guidance based on issue type
               if issue_type == "syntax":
                   system_content += " Fix Python syntax errors without changing the functionality."
-              elif issue_type == "yaml":
-                  system_content += " Fix YAML syntax and indentation issues, especially in multiline strings and with special characters."
+              elif issue_type == "yaml" or issue_type == "workflow_yaml":
+                  system_content += """
+                  Fix YAML syntax and indentation issues with special attention to:
+                  1. Heredoc (EOF) blocks - ensure indentation of the closing EOF marker exactly matches the indentation of the line with the opening <<EOF
+                  2. Multiline strings - ensure proper indentation for multiline blocks using | or >
+                  3. Special characters - ensure proper quoting for strings containing special characters like {}, [], :, etc.
+                  4. List formatting - ensure consistent indentation for list items
+                  
+                  When working with GitHub Actions workflow files, pay special attention to:
+                  - actions/checkout@v3 references
+                  - uses and run sections indentation
+                  - environment variable definitions
+                  - heredoc syntax for multiline commands
+                  """
               elif issue_type == "model":
                   system_content += " Fix SQLAlchemy or ORM model definitions, addressing type issues, property overrides, and undefined references."
               elif issue_type == "database":

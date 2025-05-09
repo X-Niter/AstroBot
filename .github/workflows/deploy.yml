@@ -105,7 +105,7 @@ jobs:
             * :ref:`genindex`
             * :ref:`modindex`
             * :ref:`search`
-EOF
+            EOF
           fi
           
           # Generate API documentation

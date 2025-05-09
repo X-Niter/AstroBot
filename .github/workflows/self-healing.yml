@@ -349,6 +349,104 @@ jobs:
             echo "DATABASE_ISSUES=0" >> $GITHUB_ENV
           fi
       
+      # Enhanced Workflow Syntax Check
+      - name: Workflow Syntax Check
+        if: env.SCAN_TYPE == 'all' || env.SCAN_TYPE == 'syntax' || env.SCAN_TYPE == 'deployment'
+        run: |
+          echo "Running workflow syntax check..."
+          
+          # Function to check YAML indentation issues in heredocs
+          check_heredoc_indentation() {
+            local file="$1"
+            local issues_found=0
+            
+            # Find all instances of heredoc markers
+            echo "Checking for heredoc indentation issues in $file"
+            local start_markers=$(grep -n "<<.*'EOF'" "$file" | cut -d: -f1)
+            
+            for start_line in $start_markers; do
+              # Find the matching end marker
+              end_line=$(tail -n +$start_line "$file" | grep -n "^[[:space:]]*EOF" | head -1 | cut -d: -f1)
+              if [ -n "$end_line" ]; then
+                end_line=$((start_line + end_line - 1))
+                
+                # Get the indentation of the starting line
+                start_indent=$(sed -n "${start_line}p" "$file" | grep -o "^[[:space:]]*" | wc -c)
+                
+                # Get the indentation of the ending line
+                end_indent=$(sed -n "${end_line}p" "$file" | grep -o "^[[:space:]]*" | wc -c)
+                
+                # Compare indentation levels
+                if [ "$start_indent" != "$end_indent" ]; then
+                  echo "  Heredoc indentation mismatch found in $file: start line $start_line (indent $start_indent), end line $end_line (indent $end_indent)"
+                  issues_found=$((issues_found + 1))
+                fi
+              fi
+            done
+            
+            return $issues_found
+          }
+          
+          # Find workflow files
+          WORKFLOW_FILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml" | tr '\n' ' ')
+          WORKFLOW_ISSUES=0
+          
+          # Create directory for workflow issue reports
+          mkdir -p .github/workflow_checks
+          
+          echo "Found $(echo $WORKFLOW_FILES | wc -w) workflow files to check."
+          
+          # Advanced syntax checking for all workflow files
+          for file in $WORKFLOW_FILES; do
+            echo "Checking $file for syntax issues..."
+            
+            # Basic YAML syntax check
+            python -c "import yaml; yaml.safe_load(open('$file'))" 2> ".github/workflow_checks/$(basename "$file").yaml-error.txt"
+            
+            if [ $? -ne 0 ]; then
+              echo "  YAML syntax error in $file"
+              cat ".github/workflow_checks/$(basename "$file").yaml-error.txt"
+              WORKFLOW_ISSUES=$((WORKFLOW_ISSUES + 1))
+              
+              # Add to the issues list
+              echo "$file: YAML syntax error" >> .github/scan_results/workflow-issues.txt
+            else
+              echo "  Basic YAML syntax is valid"
+              
+              # Check for heredoc indentation issues
+              check_heredoc_indentation "$file"
+              if [ $? -gt 0 ]; then
+                WORKFLOW_ISSUES=$((WORKFLOW_ISSUES + 1))
+                # Add to the issues list
+                echo "$file: Heredoc indentation error" >> .github/scan_results/workflow-issues.txt
+              fi
+            fi
+            
+            # Check for GitHub Actions-specific syntax
+            grep -q "on:" "$file" || {
+              echo "  Missing trigger definition (on:) in $file"
+              WORKFLOW_ISSUES=$((WORKFLOW_ISSUES + 1))
+              echo "$file: Missing trigger definition" >> .github/scan_results/workflow-issues.txt
+            }
+            
+            grep -q "jobs:" "$file" || {
+              echo "  Missing jobs section in $file"
+              WORKFLOW_ISSUES=$((WORKFLOW_ISSUES + 1))
+              echo "$file: Missing jobs section" >> .github/scan_results/workflow-issues.txt
+            }
+            
+            # Check for proper indentation and structure
+            grep -n "uses:" "$file" | grep -v "^[[:space:]]*- uses:" | while read -r line; do
+              line_num=$(echo "$line" | cut -d: -f1)
+              echo "  Line $line_num: Incorrect 'uses:' indentation"
+              WORKFLOW_ISSUES=$((WORKFLOW_ISSUES + 1))
+              echo "$file:$line_num: Incorrect 'uses:' indentation" >> .github/scan_results/workflow-issues.txt
+            done
+          done
+          
+          echo "WORKFLOW_ISSUES=$WORKFLOW_ISSUES" >> $GITHUB_ENV
+          echo "Found $WORKFLOW_ISSUES workflow issues"
+          
       # Check for deployment issues
       - name: Deployment check
         if: env.SCAN_TYPE == 'all' || env.SCAN_TYPE == 'deployment'
