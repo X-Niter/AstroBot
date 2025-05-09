@@ -2,7 +2,20 @@ name: Self-Healing Workflow
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Run daily at midnight
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  push:
+    branches: [ main, master, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  pull_request:
+    branches: [ main, master, develop ]
+    types: [opened, synchronize, reopened]
+  issues:
+    types: [opened, edited, labeled, commented]
+  issue_comment:
+    types: [created, edited]
   workflow_dispatch:
     inputs:
       scan_type:
@@ -15,6 +28,7 @@ on:
           - dependencies
           - linting
           - tests
+          - improvements
 
 jobs:
   detect-and-fix:

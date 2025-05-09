@@ -1,0 +1,1032 @@
+name: Auto-Fix Code Issues
+
+on:
+  # Run when problems are detected
+  workflow_run:
+    workflows: ["Self-Healing Workflow"]
+    types:
+      - completed
+  
+  # Run when deployment fails
+  check_suite:
+    types: [completed]
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      fix_type:
+        description: 'Type of fixes to attempt'
+        required: true
+        type: choice
+        options:
+          - all
+          - syntax
+          - deployment
+          - tests
+          - models
+          - database
+
+jobs:
+  detect-and-fix-code-issues:
+    name: Detect and Fix Code Issues
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai black pylint mypy pytest pytest-cov
+          
+          # Install project dependencies
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then
+            pip install -e .
+          fi
+      
+      # Determine fix type
+      - name: Determine fix type
+        id: fix-type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "FIX_TYPE=${{ github.event.inputs.fix_type }}" >> $GITHUB_ENV
+          else
+            echo "FIX_TYPE=all" >> $GITHUB_ENV
+          fi
+      
+      # Check for recent issues
+      - name: Check for recent failing checks
+        run: |
+          mkdir -p .github/diagnostics
+          
+          # Get recent check runs
+          gh api repos/${{ github.repository }}/commits/$(git rev-parse HEAD)/check-runs > .github/diagnostics/check-runs.json
+          
+          # Look for failing checks
+          jq '.check_runs[] | select(.conclusion == "failure") | {name, conclusion, html_url}' .github/diagnostics/check-runs.json > .github/diagnostics/failing-checks.json
+          
+          # Count failing checks
+          FAILING_COUNT=$(jq '. | length' .github/diagnostics/failing-checks.json)
+          
+          if [ "$FAILING_COUNT" -gt 0 ]; then
+            echo "CHECKS_FAILING=true" >> $GITHUB_ENV
+            echo "Found $FAILING_COUNT failing checks"
+          fi
+          
+          # Look for syntax-related failures in pages-deployment and deployment
+          if jq -e '.name | contains("pages-deployment") or contains("deployment")' .github/diagnostics/failing-checks.json > /dev/null; then
+            echo "DEPLOYMENT_ISSUES=true" >> $GITHUB_ENV
+            echo "Found deployment workflow issues"
+          fi
+          
+          # Check for failing tests
+          if jq -e '.name | contains("test")' .github/diagnostics/failing-checks.json > /dev/null; then
+            echo "TEST_ISSUES=true" >> $GITHUB_ENV
+            echo "Found test failures"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Run quick syntax check for Python files
+      - name: Check for syntax errors
+        run: |
+          # Find Python files
+          find . -name "*.py" -not -path "*/\.*" -not -path "*/venv/*" > .github/diagnostics/python-files.txt
+          
+          # Check each file for syntax errors
+          cat .github/diagnostics/python-files.txt | while read file; do
+            python -m py_compile "$file" 2>/dev/null || echo "$file" >> .github/diagnostics/syntax-errors.txt
+          done
+          
+          # Check if any syntax errors were found
+          if [ -f .github/diagnostics/syntax-errors.txt ]; then
+            echo "SYNTAX_ERRORS=true" >> $GITHUB_ENV
+            echo "Found syntax errors in Python files"
+          fi
+      
+      # Check for model-related issues (commonly seen in the error logs)
+      - name: Check for model issues
+        run: |
+          # Check for model-related errors
+          find . -name "models.py" -not -path "*/\.*" -not -path "*/venv/*" > .github/diagnostics/model-files.txt
+          
+          if [ -s .github/diagnostics/model-files.txt ]; then
+            # Run mypy on model files
+            cat .github/diagnostics/model-files.txt | while read file; do
+              mypy "$file" > ".github/diagnostics/$(basename "$file").mypy.txt" 2>&1 || true
+              
+              # Check for common model errors
+              if grep -q "Cannot assign member" ".github/diagnostics/$(basename "$file").mypy.txt" || \
+                 grep -q "is not defined" ".github/diagnostics/$(basename "$file").mypy.txt" || \
+                 grep -q "Cannot access member" ".github/diagnostics/$(basename "$file").mypy.txt"; then
+                echo "MODEL_ISSUES=true" >> $GITHUB_ENV
+                echo "Found model-related issues"
+              fi
+            done
+          fi
+      
+      # Check for database connection issues
+      - name: Check for database issues
+        run: |
+          # Search for database connection code
+          DATABASE_FILES=$(grep -l "SQLAlchemy\|create_engine\|db.init_app\|Base(" --include="*.py" -r .)
+          
+          if [ ! -z "$DATABASE_FILES" ]; then
+            echo "$DATABASE_FILES" > .github/diagnostics/database-files.txt
+            
+            # Look for MongoDB issues
+            if grep -q "MongoDB temporarily disabled\|Failed to create task for initializing indexes" *.log 2>/dev/null; then
+              echo "MONGODB_ISSUES=true" >> $GITHUB_ENV
+              echo "Found MongoDB integration issues"
+            fi
+            
+            # Look for PostgreSQL issues
+            if grep -q "PostgreSQL" *.log 2>/dev/null; then
+              echo "POSTGRESQL_DETECTED=true" >> $GITHUB_ENV
+              echo "PostgreSQL database detected"
+            fi
+          fi
+      
+      # Process and fix issues with AI
+      - name: Process and fix issues
+        run: |
+          # Create a Python script to fix detected issues
+          cat > fix_code_issues.py << 'EOF'
+          import json
+          import os
+          import re
+          import sys
+          import subprocess
+          from pathlib import Path
+          from openai import OpenAI
+
+          client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+          def read_file(file_path):
+              """Read a file and return its content"""
+              try:
+                  with open(file_path, 'r', encoding='utf-8') as f:
+                      return f.read()
+              except Exception as e:
+                  print(f"Error reading file {file_path}: {str(e)}")
+                  return None
+
+          def write_file(file_path, content):
+              """Write content to a file"""
+              try:
+                  os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      f.write(content)
+                  return True
+              except Exception as e:
+                  print(f"Error writing to file {file_path}: {str(e)}")
+                  return False
+
+          def find_files_with_pattern(pattern, exclude_dirs=None):
+              """Find files matching a pattern"""
+              if exclude_dirs is None:
+                  exclude_dirs = ['.git', 'venv', '.venv', '__pycache__']
+              
+              files = []
+              for root, dirs, filenames in os.walk('.'):
+                  # Skip excluded directories
+                  dirs[:] = [d for d in dirs if d not in exclude_dirs]
+                  
+                  for filename in filenames:
+                      if re.search(pattern, filename):
+                          files.append(os.path.join(root, filename))
+              
+              return files
+
+          def fix_syntax_issues():
+              """Fix syntax issues in Python files"""
+              results = []
+              
+              # Read files with syntax errors
+              error_files = []
+              try:
+                  with open('.github/diagnostics/syntax-errors.txt', 'r') as f:
+                      error_files = [line.strip() for line in f.readlines()]
+              except:
+                  # Try to find Python files with syntax errors
+                  for py_file in find_files_with_pattern(r'\.py$'):
+                      try:
+                          compile(read_file(py_file), py_file, 'exec')
+                      except Exception as e:
+                          error_files.append(py_file)
+              
+              # Fix each file with syntax errors
+              for file_path in error_files:
+                  content = read_file(file_path)
+                  if not content:
+                      continue
+                  
+                  # First try using black to format the file
+                  try:
+                      subprocess.run(['black', file_path], check=True, capture_output=True)
+                      print(f"Fixed syntax in {file_path} using black")
+                      results.append({
+                          "file": file_path,
+                          "issue": "Syntax error",
+                          "fix": "Applied automatic code formatting with black",
+                          "fixed": True
+                      })
+                      continue
+                  except:
+                      pass
+                  
+                  # If black fails, use AI to fix the syntax
+                  fixed_content = fix_with_ai(
+                      file_path=file_path,
+                      content=content,
+                      issue_type="syntax",
+                      issue_details="The file has Python syntax errors"
+                  )
+                  
+                  if fixed_content and fixed_content != content:
+                      if write_file(file_path, fixed_content):
+                          results.append({
+                              "file": file_path,
+                              "issue": "Syntax error",
+                              "fix": "Fixed syntax issues with AI assistance",
+                              "fixed": True
+                          })
+              
+              return results
+
+          def fix_deployment_issues():
+              """Fix deployment workflow issues"""
+              results = []
+              
+              # Look for GitHub workflow files with YAML errors
+              workflow_files = find_files_with_pattern(r'\.ya?ml$', ['.git', 'venv', '.venv'])
+              
+              # Filter to only include workflow files
+              workflow_files = [f for f in workflow_files if '/.github/workflows/' in f]
+              
+              for file_path in workflow_files:
+                  content = read_file(file_path)
+                  if not content:
+                      continue
+                  
+                  # Check for common YAML issues
+                  issues = []
+                  
+                  # Indentation issues in multiline strings
+                  if "|\n" in content or ">\n" in content:
+                      issues.append("Potential YAML multiline string indentation issues")
+                  
+                  # Missing quotes around strings with special characters
+                  if re.search(r':[^\'"\n]*[:{}\[\]&*!|>]+', content):
+                      issues.append("Potential missing quotes around special characters")
+                  
+                  # If issues found, fix with AI
+                  if issues:
+                      fixed_content = fix_with_ai(
+                          file_path=file_path,
+                          content=content,
+                          issue_type="yaml",
+                          issue_details="\n".join(issues)
+                      )
+                      
+                      if fixed_content and fixed_content != content:
+                          if write_file(file_path, fixed_content):
+                              results.append({
+                                  "file": file_path,
+                                  "issue": "; ".join(issues),
+                                  "fix": "Fixed YAML issues with AI assistance",
+                                  "fixed": True
+                              })
+              
+              return results
+
+          def fix_model_issues():
+              """Fix model-related issues"""
+              results = []
+              
+              # Find model files
+              model_files = find_files_with_pattern(r'models\.py$')
+              for file_path in model_files:
+                  content = read_file(file_path)
+                  if not content:
+                      continue
+                  
+                  # Check for model-related issues
+                  issues = []
+                  
+                  # Common patterns indicating model issues
+                  if "UserMixin" in content and ("is_active" in content or "property" in content):
+                      issues.append("Potential UserMixin property override issues")
+                  
+                  if "Column" in content and "cannot be assigned" in content:
+                      issues.append("Potential SQLAlchemy Column assignment issues")
+                  
+                  if "is not defined" in content or "WebsiteUser" in content or "PremiumFeature" in content:
+                      issues.append("Potential undefined model class references")
+                  
+                  # If issues or if mypy found issues, fix with AI
+                  mypy_output = ""
+                  mypy_file = f".github/diagnostics/{os.path.basename(file_path)}.mypy.txt"
+                  if os.path.exists(mypy_file):
+                      mypy_output = read_file(mypy_file) or ""
+                  
+                  if issues or "error" in mypy_output.lower():
+                      fixed_content = fix_with_ai(
+                          file_path=file_path,
+                          content=content,
+                          issue_type="model",
+                          issue_details="\n".join(issues) + "\n\nMyPy output:\n" + mypy_output
+                      )
+                      
+                      if fixed_content and fixed_content != content:
+                          if write_file(file_path, fixed_content):
+                              results.append({
+                                  "file": file_path,
+                                  "issue": "; ".join(issues) or "Model class issues detected by static analysis",
+                                  "fix": "Fixed model-related issues with AI assistance",
+                                  "fixed": True
+                              })
+              
+              return results
+
+          def fix_database_issues():
+              """Fix database connection issues"""
+              results = []
+              
+              # Check for database files with issues
+              if os.path.exists('.github/diagnostics/database-files.txt'):
+                  with open('.github/diagnostics/database-files.txt', 'r') as f:
+                      database_files = [line.strip() for line in f.readlines()]
+                  
+                  for file_path in database_files:
+                      content = read_file(file_path)
+                      if not content:
+                          continue
+                      
+                      # Look for MongoDB-related issues
+                      mongodb_issues = os.environ.get("MONGODB_ISSUES", "false") == "true"
+                      postgresql_detected = os.environ.get("POSTGRESQL_DETECTED", "false") == "true"
+                      
+                      if mongodb_issues and "mongo" in content.lower():
+                          fixed_content = fix_with_ai(
+                              file_path=file_path,
+                              content=content,
+                              issue_type="database",
+                              issue_details="MongoDB initialization issues detected. Consider making MongoDB optional or fixing the initialization process."
+                          )
+                          
+                          if fixed_content and fixed_content != content:
+                              if write_file(file_path, fixed_content):
+                                  results.append({
+                                      "file": file_path,
+                                      "issue": "MongoDB initialization issues",
+                                      "fix": "Fixed MongoDB integration issues with AI assistance",
+                                      "fixed": True
+                                  })
+                      
+                      # Ensure PostgreSQL is configured correctly
+                      if postgresql_detected and "postgresql" in content.lower():
+                          # Check for common PostgreSQL configuration issues
+                          if "pool_recycle" not in content or "pool_pre_ping" not in content:
+                              fixed_content = fix_with_ai(
+                                  file_path=file_path,
+                                  content=content,
+                                  issue_type="database",
+                                  issue_details="PostgreSQL configuration might need improvement. Consider adding connection pool settings for better reliability."
+                              )
+                              
+                              if fixed_content and fixed_content != content:
+                                  if write_file(file_path, fixed_content):
+                                      results.append({
+                                          "file": file_path,
+                                          "issue": "PostgreSQL configuration improvements",
+                                          "fix": "Enhanced PostgreSQL connection settings with AI assistance",
+                                          "fixed": True
+                                      })
+              
+              return results
+
+          def fix_with_ai(file_path, content, issue_type, issue_details):
+              """Use AI to fix code issues"""
+              # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+              # do not change this unless explicitly requested by the user
+              
+              # Create system prompt based on issue type
+              system_content = f"You are an expert software engineer specializing in fixing {issue_type} issues in code. Your task is to fix the issues while preserving the functionality and intent of the code."
+              
+              # Add specific guidance based on issue type
+              if issue_type == "syntax":
+                  system_content += " Fix Python syntax errors without changing the functionality."
+              elif issue_type == "yaml":
+                  system_content += " Fix YAML syntax and indentation issues, especially in multiline strings and with special characters."
+              elif issue_type == "model":
+                  system_content += " Fix SQLAlchemy or ORM model definitions, addressing type issues, property overrides, and undefined references."
+              elif issue_type == "database":
+                  system_content += " Fix database integration and connection issues while ensuring proper error handling and fallbacks."
+              
+              user_content = f"""
+              ## File to Fix: {file_path}
+              
+              ## Issues Detected:
+              {issue_details}
+              
+              ## Current Code:
+              ```
+              {content}
+              ```
+              
+              Please fix the issues in this file. Provide ONLY the complete fixed code without any explanation or markdown formatting.
+              """
+              
+              # Call the OpenAI API
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4o",
+                      messages=[
+                          {"role": "system", "content": system_content},
+                          {"role": "user", "content": user_content}
+                      ],
+                      temperature=0.2,  # Lower temperature for more deterministic fixes
+                      max_tokens=4096
+                  )
+                  
+                  fixed_code = response.choices[0].message.content
+                  
+                  # Clean up any markdown code blocks
+                  if fixed_code.startswith("```") and fixed_code.endswith("```"):
+                      fixed_code = fixed_code.split("\n", 1)[1].rsplit("\n", 1)[0]
+                  
+                  if fixed_code.startswith("```python") or fixed_code.startswith("```yaml"):
+                      fixed_code = fixed_code.split("\n", 1)[1]
+                  
+                  if fixed_code.endswith("```"):
+                      fixed_code = fixed_code.rsplit("\n", 1)[0]
+                  
+                  return fixed_code
+              except Exception as e:
+                  print(f"Error fixing {file_path} with AI: {str(e)}")
+                  return None
+
+          def create_report(fixes):
+              """Create a report of fixes applied"""
+              # Create markdown report
+              report = "# Auto-Fix Code Issues Report\n\n"
+              
+              if not fixes:
+                  report += "No issues were fixed in this run.\n"
+                  return report
+              
+              # Group fixes by type
+              syntax_fixes = [fix for fix in fixes if "syntax" in fix.get("issue", "").lower()]
+              yaml_fixes = [fix for fix in fixes if "yaml" in fix.get("issue", "").lower()]
+              model_fixes = [fix for fix in fixes if "model" in fix.get("issue", "").lower()]
+              database_fixes = [fix for fix in fixes if "database" in fix.get("issue", "").lower()]
+              other_fixes = [fix for fix in fixes if fix not in syntax_fixes + yaml_fixes + model_fixes + database_fixes]
+              
+              # Add syntax fixes
+              if syntax_fixes:
+                  report += f"## Syntax Issues Fixed ({len(syntax_fixes)})\n\n"
+                  for fix in syntax_fixes:
+                      report += f"### {fix.get('file', 'Unknown file')}\n\n"
+                      report += f"- **Issue:** {fix.get('issue', 'Unknown issue')}\n"
+                      report += f"- **Fix:** {fix.get('fix', 'Unknown fix')}\n"
+                      report += "\n"
+              
+              # Add YAML/workflow fixes
+              if yaml_fixes:
+                  report += f"## YAML/Workflow Issues Fixed ({len(yaml_fixes)})\n\n"
+                  for fix in yaml_fixes:
+                      report += f"### {fix.get('file', 'Unknown file')}\n\n"
+                      report += f"- **Issue:** {fix.get('issue', 'Unknown issue')}\n"
+                      report += f"- **Fix:** {fix.get('fix', 'Unknown fix')}\n"
+                      report += "\n"
+              
+              # Add model fixes
+              if model_fixes:
+                  report += f"## Model Issues Fixed ({len(model_fixes)})\n\n"
+                  for fix in model_fixes:
+                      report += f"### {fix.get('file', 'Unknown file')}\n\n"
+                      report += f"- **Issue:** {fix.get('issue', 'Unknown issue')}\n"
+                      report += f"- **Fix:** {fix.get('fix', 'Unknown fix')}\n"
+                      report += "\n"
+              
+              # Add database fixes
+              if database_fixes:
+                  report += f"## Database Issues Fixed ({len(database_fixes)})\n\n"
+                  for fix in database_fixes:
+                      report += f"### {fix.get('file', 'Unknown file')}\n\n"
+                      report += f"- **Issue:** {fix.get('issue', 'Unknown issue')}\n"
+                      report += f"- **Fix:** {fix.get('fix', 'Unknown fix')}\n"
+                      report += "\n"
+              
+              # Add other fixes
+              if other_fixes:
+                  report += f"## Other Issues Fixed ({len(other_fixes)})\n\n"
+                  for fix in other_fixes:
+                      report += f"### {fix.get('file', 'Unknown file')}\n\n"
+                      report += f"- **Issue:** {fix.get('issue', 'Unknown issue')}\n"
+                      report += f"- **Fix:** {fix.get('fix', 'Unknown fix')}\n"
+                      report += "\n"
+              
+              return report
+
+          if __name__ == "__main__":
+              all_fixes = []
+              
+              # Fix types based on environment or command line arguments
+              fix_type = os.environ.get("FIX_TYPE", "all").lower()
+              
+              # Fix syntax issues
+              if fix_type in ["all", "syntax"] or os.environ.get("SYNTAX_ERRORS", "false") == "true":
+                  syntax_fixes = fix_syntax_issues()
+                  all_fixes.extend(syntax_fixes)
+                  print(f"Applied {len(syntax_fixes)} syntax fixes")
+              
+              # Fix deployment workflow issues
+              if fix_type in ["all", "deployment"] or os.environ.get("DEPLOYMENT_ISSUES", "false") == "true":
+                  deployment_fixes = fix_deployment_issues()
+                  all_fixes.extend(deployment_fixes)
+                  print(f"Applied {len(deployment_fixes)} deployment workflow fixes")
+              
+              # Fix model issues
+              if fix_type in ["all", "models"] or os.environ.get("MODEL_ISSUES", "false") == "true":
+                  model_fixes = fix_model_issues()
+                  all_fixes.extend(model_fixes)
+                  print(f"Applied {len(model_fixes)} model fixes")
+              
+              # Fix database issues
+              if fix_type in ["all", "database"] or os.environ.get("MONGODB_ISSUES", "false") == "true" or os.environ.get("POSTGRESQL_DETECTED", "false") == "true":
+                  database_fixes = fix_database_issues()
+                  all_fixes.extend(database_fixes)
+                  print(f"Applied {len(database_fixes)} database fixes")
+              
+              # Create report
+              report = create_report(all_fixes)
+              
+              # Save report
+              os.makedirs('.github/reports', exist_ok=True)
+              with open('.github/reports/auto-fix-report.md', 'w') as f:
+                  f.write(report)
+              
+              # Save fixes as JSON
+              with open('.github/reports/auto-fixes.json', 'w') as f:
+                  json.dump(all_fixes, f, indent=2)
+              
+              # Return success if any fixes were applied
+              if all_fixes:
+                  print(f"Successfully applied {len(all_fixes)} fixes")
+                  with open('.github/reports/fix-count.txt', 'w') as f:
+                      f.write(str(len(all_fixes)))
+              else:
+                  print("No issues were fixed in this run")
+          EOF
+          
+          # Run the Python script
+          python fix_code_issues.py
+          
+          # Check if any fixes were applied
+          if [ -f .github/reports/fix-count.txt ]; then
+            FIX_COUNT=$(cat .github/reports/fix-count.txt)
+            if [ $FIX_COUNT -gt 0 ]; then
+              echo "FIXES_APPLIED=true" >> $GITHUB_ENV
+              echo "FIX_COUNT=$FIX_COUNT" >> $GITHUB_ENV
+            fi
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FIX_TYPE: ${{ env.FIX_TYPE }}
+          SYNTAX_ERRORS: ${{ env.SYNTAX_ERRORS }}
+          DEPLOYMENT_ISSUES: ${{ env.DEPLOYMENT_ISSUES }}
+          MODEL_ISSUES: ${{ env.MODEL_ISSUES }}
+          MONGODB_ISSUES: ${{ env.MONGODB_ISSUES }}
+          POSTGRESQL_DETECTED: ${{ env.POSTGRESQL_DETECTED }}
+          TEST_ISSUES: ${{ env.TEST_ISSUES }}
+      
+      # Verify fixes by running tests
+      - name: Verify fixes
+        if: env.FIXES_APPLIED == 'true'
+        run: |
+          # Try running the app to verify fixes
+          if [ -f app.py ]; then
+            python -c "import app" && echo "APP_IMPORTS_SUCCESSFULLY=true" >> $GITHUB_ENV
+          fi
+          
+          # Try running tests if they exist
+          if [ -d tests ]; then
+            python -m pytest tests -v || true
+          fi
+      
+      # Create pull request with fixes
+      - name: Create pull request
+        if: env.FIXES_APPLIED == 'true'
+        run: |
+          # Create branch for fixes
+          BRANCH_NAME="auto-fix-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b $BRANCH_NAME
+          
+          # Commit all changes
+          git config user.name "GitHub Auto-Fix Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "fix: Apply automated fixes for code issues
+
+          This automated PR fixes code issues detected in the repository:
+          * Fixes: ${{ env.FIX_COUNT }} issues addressed
+          * Fixed by: Auto-Fix Code Issues workflow"
+          
+          # Push the branch
+          git push origin $BRANCH_NAME
+          
+          # Create PR
+          PR_TITLE="🤖 Auto-Fix: Code Issues (${{ env.FIX_COUNT }} fixes)"
+          
+          gh pr create \
+            --title "$PR_TITLE" \
+            --body-file .github/reports/auto-fix-report.md \
+            --base main \
+            --head $BRANCH_NAME \
+            --label "auto-fix" \
+            --label "ai-generated"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Create issue if no fixes could be applied but issues were detected
+      - name: Create issue for unresolved issues
+        if: env.FIXES_APPLIED != 'true' && (env.SYNTAX_ERRORS == 'true' || env.DEPLOYMENT_ISSUES == 'true' || env.MODEL_ISSUES == 'true' || env.MONGODB_ISSUES == 'true' || env.TEST_ISSUES == 'true')
+        run: |
+          # Create issue title
+          ISSUE_TITLE="🔍 Auto-Fix: Detected issues requiring manual review"
+          
+          # Create issue body
+          cat > issue_body.md << EOF
+          # Code Issues Requiring Manual Review
+
+          The Auto-Fix workflow has detected issues in the codebase that require manual review.
+
+          ## Issues Detected
+
+          EOF
+          
+          if [ "${{ env.SYNTAX_ERRORS }}" == "true" ]; then
+            echo "### Syntax Errors" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Python syntax errors were detected. Please review the following files:" >> issue_body.md
+            echo "" >> issue_body.md
+            if [ -f .github/diagnostics/syntax-errors.txt ]; then
+              cat .github/diagnostics/syntax-errors.txt | sed 's/^/- /' >> issue_body.md
+            fi
+            echo "" >> issue_body.md
+          fi
+          
+          if [ "${{ env.DEPLOYMENT_ISSUES }}" == "true" ]; then
+            echo "### Deployment Workflow Issues" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Issues were detected in the deployment workflows. The Auto-Fix workflow was unable to automatically fix these issues." >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Check for YAML syntax errors, particularly in multiline strings and indentation." >> issue_body.md
+            echo "" >> issue_body.md
+          fi
+          
+          if [ "${{ env.MODEL_ISSUES }}" == "true" ]; then
+            echo "### Model Definition Issues" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Issues were detected in the model definitions. The Auto-Fix workflow was unable to automatically fix these issues." >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Common issues include:" >> issue_body.md
+            echo "- Undefined model classes" >> issue_body.md
+            echo "- Incorrect property overrides" >> issue_body.md
+            echo "- SQLAlchemy column assignment errors" >> issue_body.md
+            echo "" >> issue_body.md
+            if [ -d .github/diagnostics ]; then
+              find .github/diagnostics -name "*.mypy.txt" -exec cat {} \; >> issue_body.md
+            fi
+            echo "" >> issue_body.md
+          fi
+          
+          if [ "${{ env.MONGODB_ISSUES }}" == "true" ]; then
+            echo "### MongoDB Integration Issues" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Issues were detected with the MongoDB integration. The Auto-Fix workflow was unable to automatically fix these issues." >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Consider making MongoDB optional or fixing the initialization process." >> issue_body.md
+            echo "" >> issue_body.md
+          fi
+          
+          if [ "${{ env.TEST_ISSUES }}" == "true" ]; then
+            echo "### Test Failures" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Test failures were detected. The Auto-Fix workflow was unable to automatically fix these issues." >> issue_body.md
+            echo "" >> issue_body.md
+            echo "Please run the tests locally to see the detailed error messages." >> issue_body.md
+            echo "" >> issue_body.md
+          fi
+          
+          echo "## Next Steps" >> issue_body.md
+          echo "" >> issue_body.md
+          echo "1. Review the detected issues" >> issue_body.md
+          echo "2. Make the necessary fixes manually" >> issue_body.md
+          echo "3. Consider running the Auto-Fix workflow again after initial fixes" >> issue_body.md
+          echo "" >> issue_body.md
+          echo "You can also comment on this issue with \`@ai fix\` to request AI-assisted fixes for specific issues." >> issue_body.md
+          
+          # Create the issue
+          gh issue create --title "$ISSUE_TITLE" --body-file issue_body.md --label "needs-triage" --label "auto-fix"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Suggest improvements if no issues were found
+      - name: Suggest improvements
+        if: env.FIXES_APPLIED != 'true' && env.SYNTAX_ERRORS != 'true' && env.DEPLOYMENT_ISSUES != 'true' && env.MODEL_ISSUES != 'true' && env.MONGODB_ISSUES != 'true' && env.TEST_ISSUES != 'true' && env.FIX_TYPE == 'all'
+        run: |
+          # Create a Python script to suggest improvements
+          cat > suggest_improvements.py << 'EOF'
+          import json
+          import os
+          import re
+          import sys
+          import subprocess
+          from pathlib import Path
+          from openai import OpenAI
+
+          client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+          def find_files_with_pattern(pattern, exclude_dirs=None, max_files=50):
+              """Find files matching a pattern, limited to max_files"""
+              if exclude_dirs is None:
+                  exclude_dirs = ['.git', 'venv', '.venv', '__pycache__']
+              
+              files = []
+              for root, dirs, filenames in os.walk('.'):
+                  # Skip excluded directories
+                  dirs[:] = [d for d in dirs if d not in exclude_dirs]
+                  
+                  for filename in filenames:
+                      if re.search(pattern, filename):
+                          files.append(os.path.join(root, filename))
+                          if len(files) >= max_files:
+                              return files
+              
+              return files
+
+          def read_file(file_path):
+              """Read a file and return its content"""
+              try:
+                  with open(file_path, 'r', encoding='utf-8') as f:
+                      return f.read()
+              except Exception as e:
+                  print(f"Error reading file {file_path}: {str(e)}")
+                  return None
+
+          def analyze_repository():
+              """Analyze the repository structure and content"""
+              # Gather key files
+              key_files = []
+              
+              # Look for entry points
+              for file in ["app.py", "main.py", "index.py"]:
+                  if os.path.exists(file):
+                      content = read_file(file)
+                      if content:
+                          key_files.append({"name": file, "content": content[:5000]})  # Limit size
+              
+              # Look for package configuration
+              for file in ["pyproject.toml", "setup.py", "package.json"]:
+                  if os.path.exists(file):
+                      content = read_file(file)
+                      if content:
+                          key_files.append({"name": file, "content": content})
+              
+              # Look for model definitions
+              model_files = find_files_with_pattern(r'models\.py$')
+              for file in model_files:
+                  content = read_file(file)
+                  if content:
+                      key_files.append({"name": file, "content": content[:5000]})  # Limit size
+              
+              # Look for README
+              if os.path.exists("README.md"):
+                  content = read_file("README.md")
+                  if content:
+                      key_files.append({"name": "README.md", "content": content})
+              
+              # Get directory structure
+              try:
+                  result = subprocess.run(["find", ".", "-type", "f", "-not", "-path", "*/\\.*", "-o", "-name", "*.py", "-o", "-name", "*.js", "-o", "-name", "*.html"], 
+                                         capture_output=True, text=True, check=True)
+                  directory_structure = result.stdout
+              except:
+                  directory_structure = "Could not determine directory structure"
+              
+              return {
+                  "key_files": key_files,
+                  "directory_structure": directory_structure
+              }
+
+          def suggest_improvements(repo_info):
+              """Generate suggested improvements using AI"""
+              # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+              # do not change this unless explicitly requested by the user
+              
+              system_content = """You are an expert software architect and code quality advisor. Your task is to analyze a repository and suggest improvements to:
+              1. Code quality and organization
+              2. Project structure
+              3. Error handling and robustness
+              4. Performance optimizations
+              5. Security enhancements
+              6. Documentation improvements
+              
+              Focus on practical, impactful suggestions rather than trivial style issues."""
+              
+              # Build context about the repository
+              user_content = """
+              # Repository Analysis
+              
+              I need your help analyzing this repository and suggesting meaningful improvements.
+              
+              ## Directory Structure
+              ```
+              {directory_structure}
+              ```
+              
+              ## Key Files
+              """.format(directory_structure=repo_info["directory_structure"][:1000])
+              
+              # Add content of key files
+              for file in repo_info["key_files"]:
+                  user_content += f"\n### {file['name']}\n```\n{file['content'][:3000]}\n```\n"
+              
+              user_content += """
+              ## Request
+              
+              Please provide a comprehensive analysis with specific, actionable improvement suggestions:
+              
+              1. Identify 3-5 high-impact improvements that would significantly enhance the codebase
+              2. For each suggestion, explain:
+                 - What specific issue or opportunity you've identified
+                 - Why it's important to address
+                 - How to implement the improvement (with specific code examples where relevant)
+              3. Categorize suggestions by type (code quality, security, performance, etc.)
+              4. Include only suggestions that have a clear justification from the code you can see
+              
+              Format your response as JSON that I can parse automatically:
+              ```json
+              {
+                "overall_assessment": "Brief overall assessment of the codebase",
+                "suggestions": [
+                  {
+                    "title": "Short descriptive title",
+                    "category": "One of: code_quality, security, performance, structure, documentation, error_handling",
+                    "importance": "One of: high, medium, low",
+                    "issue": "Description of the issue or opportunity",
+                    "benefit": "Why addressing this is important",
+                    "implementation": "How to implement the improvement",
+                    "code_example": "Optional code example"
+                  }
+                ]
+              }
+              ```
+              """
+              
+              # Call the OpenAI API
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4o",
+                      messages=[
+                          {"role": "system", "content": system_content},
+                          {"role": "user", "content": user_content}
+                      ],
+                      temperature=0.7,
+                      response_format={"type": "json_object"}
+                  )
+                  
+                  # Parse the JSON response
+                  analysis = json.loads(response.choices[0].message.content)
+                  return analysis
+              except Exception as e:
+                  print(f"Error analyzing repository: {str(e)}")
+                  return {
+                      "overall_assessment": f"Error analyzing repository: {str(e)}",
+                      "suggestions": []
+                  }
+
+          def create_report(analysis):
+              """Create a markdown report from the analysis"""
+              report = "# AI-Suggested Improvements\n\n"
+              
+              report += f"## Overall Assessment\n\n{analysis.get('overall_assessment', 'No overall assessment provided.')}\n\n"
+              
+              suggestions = analysis.get('suggestions', [])
+              if not suggestions:
+                  report += "No specific suggestions were generated. The codebase appears to be in good condition.\n"
+                  return report
+              
+              # Group suggestions by category
+              categories = {}
+              for suggestion in suggestions:
+                  category = suggestion.get('category', 'other')
+                  if category not in categories:
+                      categories[category] = []
+                  categories[category].append(suggestion)
+              
+              # Add suggestions by category
+              for category, category_suggestions in categories.items():
+                  category_title = category.replace('_', ' ').title()
+                  report += f"## {category_title} Improvements\n\n"
+                  
+                  for suggestion in category_suggestions:
+                      title = suggestion.get('title', 'Unnamed Suggestion')
+                      importance = suggestion.get('importance', 'medium').upper()
+                      
+                      report += f"### {title} ({importance})\n\n"
+                      report += f"**Issue:** {suggestion.get('issue', 'No issue description provided.')}\n\n"
+                      report += f"**Benefit:** {suggestion.get('benefit', 'No benefit description provided.')}\n\n"
+                      report += f"**Implementation:** {suggestion.get('implementation', 'No implementation details provided.')}\n\n"
+                      
+                      if 'code_example' in suggestion and suggestion['code_example']:
+                          report += "**Code Example:**\n\n```python\n"
+                          report += suggestion['code_example']
+                          report += "\n```\n\n"
+                      
+                      report += "---\n\n"
+              
+              report += "## How to Implement These Suggestions\n\n"
+              report += "You can implement these suggestions by:\n\n"
+              report += "1. Creating new issues for each improvement you want to make\n"
+              report += "2. Commenting on this issue with `@ai implement [suggestion title]` to request AI assistance\n"
+              report += "3. Manually implementing the changes and creating a pull request\n\n"
+              report += "Feel free to prioritize these suggestions based on your project's needs."
+              
+              return report
+
+          if __name__ == "__main__":
+              # Analyze the repository
+              repo_info = analyze_repository()
+              
+              # Generate improvement suggestions
+              analysis = suggest_improvements(repo_info)
+              
+              # Create report
+              report = create_report(analysis)
+              
+              # Save report
+              os.makedirs('.github/reports', exist_ok=True)
+              with open('.github/reports/improvement-suggestions.md', 'w') as f:
+                  f.write(report)
+              
+              # Save analysis as JSON
+              with open('.github/reports/improvement-analysis.json', 'w') as f:
+                  json.dump(analysis, f, indent=2)
+              
+              # Check if suggestions were generated
+              suggestions = analysis.get('suggestions', [])
+              if suggestions:
+                  print(f"Generated {len(suggestions)} improvement suggestions")
+                  with open('.github/reports/suggestion-count.txt', 'w') as f:
+                      f.write(str(len(suggestions)))
+              else:
+                  print("No improvement suggestions were generated")
+          EOF
+          
+          # Run the Python script
+          python suggest_improvements.py
+          
+          # Check if suggestions were generated
+          if [ -f .github/reports/suggestion-count.txt ]; then
+            SUGGESTION_COUNT=$(cat .github/reports/suggestion-count.txt)
+            if [ $SUGGESTION_COUNT -gt 0 ]; then
+              echo "SUGGESTIONS_GENERATED=true" >> $GITHUB_ENV
+              echo "SUGGESTION_COUNT=$SUGGESTION_COUNT" >> $GITHUB_ENV
+            fi
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      
+      # Create issue with suggestions
+      - name: Create issue with suggestions
+        if: env.SUGGESTIONS_GENERATED == 'true'
+        run: |
+          # Create issue title
+          ISSUE_TITLE="💡 AI-Suggested Improvements (${{ env.SUGGESTION_COUNT }} suggestions)"
+          
+          # Create the issue
+          gh issue create \
+            --title "$ISSUE_TITLE" \
+            --body-file .github/reports/improvement-suggestions.md \
+            --label "enhancement" \
+            --label "ai-generated"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

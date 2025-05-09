@@ -1,0 +1,397 @@
+name: AI Conversation Handler
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, edited]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  handle-conversation:
+    name: Process and Respond to Conversation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      # Set up environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai pyyaml
+      
+      # Determine event type and extract conversation
+      - name: Extract conversation context
+        id: extract-context
+        run: |
+          # Determine event type and set variables
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            echo "CONVERSATION_TYPE=issue" >> $GITHUB_ENV
+            echo "ITEM_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+            echo "BODY=${{ github.event.issue.body }}" >> $GITHUB_ENV
+            echo "AUTHOR=${{ github.event.issue.user.login }}" >> $GITHUB_ENV
+            
+            # Check if this is a direct question to the AI
+            if [[ "${{ github.event.issue.title }}" =~ ^@ai|@bot ]]; then
+              echo "DIRECT_AI_QUESTION=true" >> $GITHUB_ENV
+            fi
+            
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            echo "CONVERSATION_TYPE=issue_comment" >> $GITHUB_ENV
+            echo "ITEM_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "COMMENT_ID=${{ github.event.comment.id }}" >> $GITHUB_ENV
+            echo "BODY=${{ github.event.comment.body }}" >> $GITHUB_ENV
+            echo "AUTHOR=${{ github.event.comment.user.login }}" >> $GITHUB_ENV
+            
+            # Check if this comment is addressing the AI
+            if [[ "${{ github.event.comment.body }}" =~ ^@ai|@bot ]]; then
+              echo "DIRECT_AI_QUESTION=true" >> $GITHUB_ENV
+            fi
+            
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "CONVERSATION_TYPE=pr" >> $GITHUB_ENV
+            echo "ITEM_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
+            echo "BODY=${{ github.event.pull_request.body }}" >> $GITHUB_ENV
+            echo "AUTHOR=${{ github.event.pull_request.user.login }}" >> $GITHUB_ENV
+            
+          elif [[ "${{ github.event_name }}" == "pull_request_review_comment" ]]; then
+            echo "CONVERSATION_TYPE=pr_comment" >> $GITHUB_ENV
+            echo "ITEM_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "COMMENT_ID=${{ github.event.comment.id }}" >> $GITHUB_ENV
+            echo "BODY=${{ github.event.comment.body }}" >> $GITHUB_ENV
+            echo "AUTHOR=${{ github.event.comment.user.login }}" >> $GITHUB_ENV
+            
+            # Check if this comment is addressing the AI
+            if [[ "${{ github.event.comment.body }}" =~ ^@ai|@bot ]]; then
+              echo "DIRECT_AI_QUESTION=true" >> $GITHUB_ENV
+            fi
+          fi
+          
+          # Check if this is from bot to avoid loops
+          if [[ "${{ env.AUTHOR }}" == "github-actions[bot]" || "${{ env.AUTHOR }}" == "github-actions" ]]; then
+            echo "FROM_BOT=true" >> $GITHUB_ENV
+          else
+            echo "FROM_BOT=false" >> $GITHUB_ENV
+          fi
+      
+      # Get conversation history for context
+      - name: Retrieve conversation history
+        if: env.FROM_BOT == 'false'
+        run: |
+          mkdir -p .github/conversation_history
+          
+          if [[ "${{ env.CONVERSATION_TYPE }}" == "issue" || "${{ env.CONVERSATION_TYPE }}" == "issue_comment" ]]; then
+            # Get issue details and comments
+            gh issue view ${{ env.ITEM_NUMBER }} --json title,body,comments > .github/conversation_history/conversation.json
+          elif [[ "${{ env.CONVERSATION_TYPE }}" == "pr" || "${{ env.CONVERSATION_TYPE }}" == "pr_comment" ]]; then
+            # Get PR details and comments
+            gh pr view ${{ env.ITEM_NUMBER }} --json title,body,comments > .github/conversation_history/conversation.json
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Process with OpenAI and generate response
+      - name: Process conversation with AI
+        if: env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true'
+        id: process-conversation
+        run: |
+          # Create Python script to generate response
+          cat > process_conversation.py << 'EOF'
+          import json
+          import os
+          import sys
+          import yaml
+          import random
+          from openai import OpenAI
+
+          client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+          def load_conversation_history():
+              """Load the conversation history from the JSON file"""
+              try:
+                  with open('.github/conversation_history/conversation.json', 'r') as f:
+                      return json.load(f)
+              except Exception as e:
+                  print(f"Error loading conversation history: {str(e)}")
+                  return {}
+
+          def extract_command(text):
+              """Extract AI command from text"""
+              lines = text.strip().split('\n')
+              first_line = lines[0].lower()
+              
+              # Check for command patterns
+              if first_line.startswith('@ai ') or first_line.startswith('@bot '):
+                  parts = first_line.split(' ', 2)
+                  if len(parts) >= 2:
+                      return parts[1], ' '.join(parts[2:] if len(parts) > 2 else []) + '\n'.join(lines[1:])
+              
+              # No command found, treat as general question
+              return "respond", text.strip()
+
+          def format_messages_for_context(history):
+              """Format conversation history into chat messages"""
+              messages = []
+              
+              # Add title and initial post
+              if 'title' in history:
+                  messages.append({"role": "system", "content": f"Conversation title: {history['title']}"})
+              
+              if 'body' in history:
+                  messages.append({"role": "user", "content": history['body']})
+              
+              # Add comments in order
+              if 'comments' in history:
+                  for comment in history['comments']:
+                      role = "assistant" if comment.get('author', {}).get('login', '') in ['github-actions[bot]', 'github-actions'] else "user"
+                      messages.append({"role": role, "content": comment['body']})
+              
+              return messages
+
+          def get_repo_info():
+              """Get information about the repository"""
+              repo = os.environ.get("GITHUB_REPOSITORY", "")
+              try:
+                  # Try to load project configuration
+                  config_files = [
+                      'package.json',
+                      'pyproject.toml',
+                      'setup.py',
+                      'requirements.txt',
+                      'README.md',
+                      '.github/config.yml'
+                  ]
+                  
+                  info = []
+                  for file in config_files:
+                      if os.path.exists(file):
+                          with open(file, 'r') as f:
+                              info.append(f"Content of {file}:\n{f.read()[:1000]}")  # First 1000 chars
+                  
+                  if info:
+                      return "\n\n".join(info)
+                  return f"Repository: {repo}"
+              except Exception as e:
+                  return f"Repository: {repo}"
+
+          def get_capabilities():
+              """Define the AI assistant's capabilities"""
+              capabilities = {
+                  "analyze": "Analyze code or issues in the repository",
+                  "improve": "Suggest improvements to code quality or architecture",
+                  "fix": "Fix bugs or issues in the code",
+                  "implement": "Implement new features or functionality",
+                  "test": "Create or improve tests for the codebase",
+                  "explain": "Explain how code works or concepts related to the repository",
+                  "respond": "Answer general questions about coding or the repository",
+                  "self-diagnose": "Run diagnostics on the codebase and report issues",
+                  "scan": "Perform security scanning on the repository",
+                  "suggest": "Make suggestions for improving the project"
+              }
+              return capabilities
+
+          def generate_ai_response(command, body, conversation_history):
+              """Generate a response from the AI assistant"""
+              capabilities = get_capabilities()
+              repo_info = get_repo_info()
+              
+              # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+              # do not change this unless explicitly requested by the user
+              
+              # Create system message based on command
+              if command in capabilities:
+                  system_content = f"""You are an AI assistant for a GitHub repository, specialized in helping with code and providing technical assistance.
+                  
+                  The user has asked you to {command}: {capabilities[command]}
+                  
+                  Repository information:
+                  {repo_info}
+                  
+                  When responding:
+                  1. Be helpful, concise, and focus on the user's question
+                  2. If you need to see code that isn't in the conversation, suggest using the @ai analyze [file path] command
+                  3. If code changes are needed, suggest using the @ai fix or @ai implement commands
+                  4. Use markdown formatting in your response including code blocks with language specifiers
+                  5. You can create code suggestions but cannot directly modify files unless the user uses specific commands
+                  6. Always offer a next step or follow-up action the user can take
+                  
+                  Your capabilities include:
+                  {yaml.dump(capabilities)}
+                  """
+              else:
+                  system_content = f"""You are an AI assistant for a GitHub repository, specialized in helping with code and providing technical assistance.
+                  
+                  Repository information:
+                  {repo_info}
+                  
+                  When responding:
+                  1. Be helpful, concise, and focus on the user's question
+                  2. If you need to see code that isn't in the conversation, suggest using the @ai analyze [file path] command
+                  3. If code changes are needed, suggest using the @ai fix or @ai implement commands
+                  4. Use markdown formatting in your response including code blocks with language specifiers
+                  5. You can create code suggestions but cannot directly modify files unless the user uses specific commands
+                  6. Always offer a next step or follow-up action the user can take
+                  
+                  Your capabilities include:
+                  {yaml.dump(capabilities)}
+                  """
+              
+              # Prepare messages
+              messages = format_messages_for_context(conversation_history)
+              
+              # Add system message at the beginning
+              messages = [{"role": "system", "content": system_content}] + messages
+              
+              # Add the current message if it's not already in the history
+              if not any(msg.get("content", "") == body for msg in messages):
+                  messages.append({"role": "user", "content": body})
+              
+              # Cap the number of messages to avoid token limits
+              if len(messages) > 10:
+                  # Keep system, last messages, and latest user message
+                  messages = [messages[0]] + messages[-9:]
+              
+              # Call the OpenAI API
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4o",
+                      messages=messages,
+                      temperature=0.7,
+                      max_tokens=2048
+                  )
+                  
+                  return response.choices[0].message.content
+              except Exception as e:
+                  print(f"Error calling OpenAI API: {str(e)}")
+                  return f"""I apologize, but I encountered an error while processing your request.
+                  
+                  Error details: {str(e)}
+                  
+                  Please try again with a simpler query, or contact the repository administrators for assistance."""
+
+          if __name__ == "__main__":
+              conversation_type = os.environ.get("CONVERSATION_TYPE", "")
+              direct_question = os.environ.get("DIRECT_AI_QUESTION", "false") == "true"
+              body = os.environ.get("BODY", "")
+              
+              # Skip if this is not a direct question to the AI
+              if not direct_question:
+                  print("This is not a direct question to the AI, skipping.")
+                  sys.exit(0)
+              
+              # Extract command from the message
+              command, message = extract_command(body)
+              
+              # Load conversation history
+              conversation_history = load_conversation_history()
+              
+              # Generate AI response
+              response = generate_ai_response(command, message, conversation_history)
+              
+              # Add a personalized touch - sometimes include a "thinking emoji" at the start
+              if random.random() < 0.2:
+                  thinking_emojis = ["🤔", "💭", "🧠", "⚙️", "🔍"]
+                  response = f"{random.choice(thinking_emojis)} {response}"
+              
+              # Add a signature
+              response += "\n\n---\n*I'm an AI assistant helping maintain this repository. Use `@ai help` to see what I can do.*"
+              
+              # Write response to file
+              with open('ai_response.md', 'w') as f:
+                  f.write(response)
+              
+              print(f"Generated response for command: {command}")
+          EOF
+          
+          # Run the script
+          python process_conversation.py
+          
+          # Check if a response was generated
+          if [ -f ai_response.md ]; then
+            echo "AI_RESPONSE_GENERATED=true" >> $GITHUB_ENV
+          else
+            echo "AI_RESPONSE_GENERATED=false" >> $GITHUB_ENV
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CONVERSATION_TYPE: ${{ env.CONVERSATION_TYPE }}
+          DIRECT_AI_QUESTION: ${{ env.DIRECT_AI_QUESTION }}
+          TITLE: ${{ env.TITLE }}
+          BODY: ${{ env.BODY }}
+      
+      # Post the AI response
+      - name: Post AI response
+        if: env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true' && env.AI_RESPONSE_GENERATED == 'true'
+        run: |
+          if [[ "${{ env.CONVERSATION_TYPE }}" == "issue" ]]; then
+            # Comment on the issue
+            gh issue comment ${{ env.ITEM_NUMBER }} --body-file ai_response.md
+            
+          elif [[ "${{ env.CONVERSATION_TYPE }}" == "issue_comment" ]]; then
+            # Reply to the comment
+            gh issue comment ${{ env.ITEM_NUMBER }} --body-file ai_response.md
+            
+          elif [[ "${{ env.CONVERSATION_TYPE }}" == "pr" ]]; then
+            # Comment on the PR
+            gh pr comment ${{ env.ITEM_NUMBER }} --body-file ai_response.md
+            
+          elif [[ "${{ env.CONVERSATION_TYPE }}" == "pr_comment" ]]; then
+            # Reply to the PR comment
+            gh pr comment ${{ env.ITEM_NUMBER }} --body-file ai_response.md
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Handle special commands and actions
+      - name: Handle action commands
+        if: env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true' && env.AI_RESPONSE_GENERATED == 'true'
+        run: |
+          # Extract the command
+          COMMAND=$(echo "${{ env.BODY }}" | grep -oE '^@ai [a-z\-]+' | sed 's/@ai //')
+          
+          if [[ "$COMMAND" == "fix" || "$COMMAND" == "implement" || "$COMMAND" == "improve" ]]; then
+            # Trigger the AI issue processor workflow for implementation
+            gh workflow run ai-issue-processor.yml -f issue_number=${{ env.ITEM_NUMBER }} -f action_type=${COMMAND}
+            
+            # Add a follow-up comment
+            echo "I've started working on implementing your request through our automated workflow. You'll receive a pull request shortly with the changes." > action_response.md
+            
+            if [[ "${{ env.CONVERSATION_TYPE }}" == "issue" || "${{ env.CONVERSATION_TYPE }}" == "issue_comment" ]]; then
+              gh issue comment ${{ env.ITEM_NUMBER }} --body-file action_response.md
+            elif [[ "${{ env.CONVERSATION_TYPE }}" == "pr" || "${{ env.CONVERSATION_TYPE }}" == "pr_comment" ]]; then
+              gh pr comment ${{ env.ITEM_NUMBER }} --body-file action_response.md
+            fi
+            
+          elif [[ "$COMMAND" == "scan" || "$COMMAND" == "self-diagnose" ]]; then
+            # Trigger the self-healing workflow
+            gh workflow run self-healing.yml -f scan_type=all
+            
+            # Add a follow-up comment
+            echo "I've initiated a comprehensive scan of the repository. I'll create an issue with my findings once the scan is complete." > action_response.md
+            
+            if [[ "${{ env.CONVERSATION_TYPE }}" == "issue" || "${{ env.CONVERSATION_TYPE }}" == "issue_comment" ]]; then
+              gh issue comment ${{ env.ITEM_NUMBER }} --body-file action_response.md
+            elif [[ "${{ env.CONVERSATION_TYPE }}" == "pr" || "${{ env.CONVERSATION_TYPE }}" == "pr_comment" ]]; then
+              gh pr comment ${{ env.ITEM_NUMBER }} --body-file action_response.md
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
