@@ -1,0 +1,783 @@
+name: GitHub Pages Deployment
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/pages-deployment.yml'
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild of all documentation'
+        required: false
+        type: boolean
+        default: false
+      theme:
+        description: 'Documentation theme'
+        required: false
+        type: choice
+        options:
+          - default
+          - dark
+          - modern
+          - minimal
+        default: 'default'
+
+jobs:
+  build-docs:
+    name: Build Documentation Site
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      # Configure GitHub Pages
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v3
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-jupyter pymdown-extensions pygments
+          pip install sphinx sphinx_rtd_theme
+      
+      # Check if documentation directory exists, create if not
+      - name: Check/create documentation structure
+        run: |
+          if [ ! -d "docs" ]; then
+            mkdir -p docs
+            echo "# AstroBot Documentation" > docs/index.md
+            echo "Welcome to the AstroBot documentation site." >> docs/index.md
+          fi
+          
+          # Create mkdocs.yml if it doesn't exist
+          if [ ! -f "mkdocs.yml" ]; then
+            cat > mkdocs.yml << EOL
+            site_name: AstroBot Documentation
+            site_description: Documentation for AstroBot - AI-Powered Discord Bot for Minecraft and Twitch
+            site_author: AstroBot Team
+            copyright: Copyright &copy; $(date +%Y) AstroBot Team
+            
+            theme:
+              name: material
+              palette:
+                # Palette toggle for light mode
+                - scheme: default
+                  primary: indigo
+                  accent: indigo
+                  toggle:
+                    icon: material/brightness-7
+                    name: Switch to dark mode
+                # Palette toggle for dark mode
+                - scheme: slate
+                  primary: blue
+                  accent: blue
+                  toggle:
+                    icon: material/brightness-4
+                    name: Switch to light mode
+              features:
+                - navigation.instant
+                - navigation.tracking
+                - navigation.tabs
+                - navigation.top
+                - search.suggest
+                - search.highlight
+                - content.code.copy
+                - content.action.edit
+            
+            plugins:
+              - search
+            
+            markdown_extensions:
+              - admonition
+              - codehilite:
+                  guess_lang: false
+              - toc:
+                  permalink: true
+              - pymdownx.highlight
+              - pymdownx.superfences
+              - pymdownx.tabbed
+              - pymdownx.emoji
+              - pymdownx.tasklist
+              - pymdownx.details
+              - pymdownx.inlinehilite
+            
+            nav:
+              - Home: index.md
+              - Getting Started: getting-started.md
+              - User Guide: user-guide.md
+              - API Reference: api-reference.md
+              - Contributing: contributing.md
+            EOL
+          fi
+      
+      # Generate automatic API documentation
+      - name: Generate API documentation
+        run: |
+          mkdir -p docs/api
+          
+          # Auto-generate API docs from Python files
+          find . -type f -name "*.py" -not -path "./venv/*" -not -path "./.git/*" | while read file; do
+            # Extract module name
+            MODULE_NAME=$(basename "$file" .py)
+            OUTPUT_FILE="docs/api/$MODULE_NAME.md"
+            
+            echo "Generating docs for $MODULE_NAME from $file"
+            
+            # Create markdown file
+            echo "# $MODULE_NAME Module" > "$OUTPUT_FILE"
+            echo "" >> "$OUTPUT_FILE"
+            
+            # Extract file description from docstring if available
+            MODULE_DESC=$(grep -A 20 '"""' "$file" | grep -v '"""' | head -n 1)
+            if [ -n "$MODULE_DESC" ]; then
+              echo "$MODULE_DESC" >> "$OUTPUT_FILE"
+            else
+              echo "Module for $MODULE_NAME functionality." >> "$OUTPUT_FILE"
+            fi
+            echo "" >> "$OUTPUT_FILE"
+            
+            # Create API reference
+            echo "## API Reference" >> "$OUTPUT_FILE"
+            echo "" >> "$OUTPUT_FILE"
+            
+            # Extract classes
+            echo "### Classes" >> "$OUTPUT_FILE"
+            echo "" >> "$OUTPUT_FILE"
+            
+            # Find class definitions
+            grep -n "^class " "$file" | while read -r line; do
+              LINE_NUM=$(echo "$line" | cut -d: -f1)
+              CLASS_DEF=$(echo "$line" | cut -d: -f2-)
+              CLASS_NAME=$(echo "$CLASS_DEF" | awk '{print $2}' | cut -d'(' -f1)
+              
+              echo "#### $CLASS_NAME" >> "$OUTPUT_FILE"
+              echo "" >> "$OUTPUT_FILE"
+              
+              # Check for class docstring (next line after class definition)
+              DOC_LINE=$((LINE_NUM + 1))
+              CLASS_DOC=$(sed -n "${DOC_LINE}p" "$file" | grep -o '""".*"""' | sed 's/"""//g')
+              
+              if [ -n "$CLASS_DOC" ]; then
+                echo "$CLASS_DOC" >> "$OUTPUT_FILE"
+              else
+                echo "No documentation available." >> "$OUTPUT_FILE"
+              fi
+              echo "" >> "$OUTPUT_FILE"
+            done
+            
+            # Extract functions
+            echo "### Functions" >> "$OUTPUT_FILE"
+            echo "" >> "$OUTPUT_FILE"
+            
+            # Find function definitions
+            grep -n "^def " "$file" | while read -r line; do
+              LINE_NUM=$(echo "$line" | cut -d: -f1)
+              FUNC_DEF=$(echo "$line" | cut -d: -f2-)
+              FUNC_NAME=$(echo "$FUNC_DEF" | awk '{print $2}' | cut -d'(' -f1)
+              
+              echo "#### $FUNC_NAME" >> "$OUTPUT_FILE"
+              echo "" >> "$OUTPUT_FILE"
+              
+              # Extract func signature
+              FUNC_SIG=$(echo "$FUNC_DEF" | sed 's/def //')
+              echo "\`\`\`python" >> "$OUTPUT_FILE"
+              echo "def $FUNC_SIG" >> "$OUTPUT_FILE"
+              echo "\`\`\`" >> "$OUTPUT_FILE"
+              echo "" >> "$OUTPUT_FILE"
+              
+              # Check for function docstring
+              DOC_LINE=$((LINE_NUM + 1))
+              FUNC_DOC=$(sed -n "${DOC_LINE}p" "$file" | grep -o '""".*"""' | sed 's/"""//g')
+              
+              if [ -n "$FUNC_DOC" ]; then
+                echo "$FUNC_DOC" >> "$OUTPUT_FILE"
+              else
+                echo "No documentation available." >> "$OUTPUT_FILE"
+              fi
+              echo "" >> "$OUTPUT_FILE"
+            done
+          done
+      
+      # Create basic documentation pages if they don't exist
+      - name: Create basic documentation
+        run: |
+          # Getting Started guide
+          if [ ! -f "docs/getting-started.md" ]; then
+            cat > docs/getting-started.md << EOL
+            # Getting Started with AstroBot
+            
+            This guide will help you get started with AstroBot, from installation to basic usage.
+            
+            ## Requirements
+            
+            Before installing AstroBot, make sure you have:
+            
+            - Python 3.11 or higher
+            - Node.js 20 or higher
+            - PostgreSQL database
+            - Discord Bot Token (for bot functionality)
+            - Twitch API credentials (for Twitch integration)
+            
+            ## Installation
+            
+            1. Clone the repository:
+            
+               \`\`\`bash
+               git clone https://github.com/yourusername/astrobot.git
+               cd astrobot
+               \`\`\`
+            
+            2. Install dependencies:
+            
+               \`\`\`bash
+               pip install -r requirements.txt
+               npm install
+               \`\`\`
+            
+            3. Set up environment variables (see \`.env.example\`)
+            
+            4. Initialize the database:
+            
+               \`\`\`bash
+               python -m flask db upgrade
+               \`\`\`
+            
+            5. Start the application:
+            
+               \`\`\`bash
+               python main.py
+               \`\`\`
+            
+            ## Basic Usage
+            
+            ### Inviting the Bot to Your Discord Server
+            
+            1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+            2. Select your application
+            3. Go to the "OAuth2" tab
+            4. In the "OAuth2 URL Generator", select the "bot" scope
+            5. Select the required permissions
+            6. Copy the generated URL and open it in your browser
+            7. Select the server to invite the bot to
+            
+            ### Basic Commands
+            
+            - \`!help\` - Display help message
+            - \`!status\` - Check bot status
+            - \`!config\` - Configure bot settings
+            
+            ## Next Steps
+            
+            Check out the [User Guide](user-guide.md) for more detailed information.
+            EOL
+          fi
+          
+          # User Guide
+          if [ ! -f "docs/user-guide.md" ]; then
+            cat > docs/user-guide.md << EOL
+            # AstroBot User Guide
+            
+            This guide covers all the features and functionality of AstroBot.
+            
+            ## Discord Bot Commands
+            
+            ### General Commands
+            
+            | Command | Description |
+            | ------- | ----------- |
+            | \`!help\` | Display help message |
+            | \`!status\` | Check bot status |
+            | \`!config\` | Configure bot settings |
+            
+            ### Minecraft Integration
+            
+            | Command | Description |
+            | ------- | ----------- |
+            | \`!mc status\` | Check Minecraft server status |
+            | \`!mc players\` | List online players |
+            | \`!mc whitelist add <player>\` | Add player to whitelist |
+            
+            ### Twitch Integration
+            
+            | Command | Description |
+            | ------- | ----------- |
+            | \`!twitch link <channel>\` | Link Twitch channel |
+            | \`!twitch live\` | Check if channel is live |
+            | \`!twitch notify\` | Toggle stream notifications |
+            
+            ## Web Dashboard
+            
+            The web dashboard provides a user-friendly interface for managing your AstroBot configuration.
+            
+            ### Accessing the Dashboard
+            
+            1. Ensure the web server is running
+            2. Open your browser and navigate to \`http://localhost:5000\`
+            3. Log in with your credentials
+            
+            ### Dashboard Features
+            
+            - **Overview**: General statistics and status
+            - **Bot Settings**: Configure bot behavior
+            - **Minecraft**: Manage Minecraft integration
+            - **Twitch**: Configure Twitch integration
+            - **Commands**: Customize and manage commands
+            - **Logs**: View bot activity logs
+            
+            ## Premium Features
+            
+            AstroBot offers premium features for enhanced functionality:
+            
+            - **Custom Bot Appearance**: Customize bot name and avatar
+            - **Advanced Analytics**: Detailed usage and performance metrics
+            - **Priority Support**: Get faster support from our team
+            - **Extended Integrations**: Additional third-party service integrations
+            
+            ### Upgrading to Premium
+            
+            Visit the Premium tab in the dashboard to view plans and upgrade your subscription.
+            EOL
+          fi
+          
+          # API Reference
+          if [ ! -f "docs/api-reference.md" ]; then
+            cat > docs/api-reference.md << EOL
+            # API Reference
+            
+            AstroBot provides a RESTful API for integrating with external services.
+            
+            ## Authentication
+            
+            All API requests require authentication using an API key.
+            
+            ### Obtaining an API Key
+            
+            1. Log in to the web dashboard
+            2. Go to Settings > API
+            3. Generate a new API key
+            
+            ### Using the API Key
+            
+            Include the API key in the request header:
+            
+            \`\`\`
+            Authorization: Bearer YOUR_API_KEY
+            \`\`\`
+            
+            ## API Endpoints
+            
+            ### Bot Status
+            
+            \`\`\`
+            GET /api/status
+            \`\`\`
+            
+            Returns the current status of the bot.
+            
+            ### Minecraft Server
+            
+            \`\`\`
+            GET /api/minecraft/status
+            \`\`\`
+            
+            Returns the status of the Minecraft server.
+            
+            \`\`\`
+            GET /api/minecraft/players
+            \`\`\`
+            
+            Returns a list of online players.
+            
+            ### Twitch Integration
+            
+            \`\`\`
+            GET /api/twitch/status
+            \`\`\`
+            
+            Returns the status of the Twitch integration.
+            
+            \`\`\`
+            POST /api/twitch/notify
+            \`\`\`
+            
+            Toggle Twitch stream notifications.
+            EOL
+          fi
+          
+          # Copy CONTRIBUTING.md to docs
+          if [ -f "CONTRIBUTING.md" ]; then
+            cp CONTRIBUTING.md docs/contributing.md
+          elif [ ! -f "docs/contributing.md" ]; then
+            cat > docs/contributing.md << EOL
+            # Contributing to AstroBot
+            
+            Thank you for considering contributing to AstroBot! This guide will help you get started with contributing to the project.
+            
+            ## Code of Conduct
+            
+            We expect all contributors to follow our Code of Conduct. By participating in this project, you agree to abide by its terms.
+            
+            ## How to Contribute
+            
+            ### Reporting Bugs
+            
+            If you find a bug, please report it by creating an issue on the GitHub repository.
+            
+            ### Suggesting Features
+            
+            If you have an idea for a new feature or improvement, please create an issue on the GitHub repository.
+            
+            ### Pull Requests
+            
+            1. Fork the repository
+            2. Create a new branch for your changes
+            3. Make your changes
+            4. Submit a pull request
+            
+            ## Development Environment
+            
+            ### Requirements
+            
+            - Python 3.11 or higher
+            - Node.js 20 or higher
+            - PostgreSQL database
+            
+            ### Setup
+            
+            1. Clone the repository
+            2. Install dependencies
+            3. Set up environment variables
+            4. Initialize the database
+            
+            ## Coding Standards
+            
+            - Follow PEP 8 for Python code
+            - Use ESLint for JavaScript code
+            - Write tests for new features
+            - Document your code
+            EOL
+          fi
+      
+      # Create interactive examples
+      - name: Generate interactive examples
+        run: |
+          mkdir -p docs/examples
+          
+          # Example: Bot configuration
+          cat > docs/examples/bot-configuration.md << EOL
+          # Bot Configuration Examples
+          
+          This page provides examples of how to configure AstroBot for different scenarios.
+          
+          ## Basic Configuration
+          
+          A simple configuration for a small Discord server:
+          
+          \`\`\`json
+          {
+            "prefix": "!",
+            "language": "en",
+            "logging_level": "info",
+            "features": {
+              "minecraft": true,
+              "twitch": false,
+              "ai": true
+            }
+          }
+          \`\`\`
+          
+          ## Minecraft Server Configuration
+          
+          Configuration for a server with Minecraft integration:
+          
+          \`\`\`json
+          {
+            "minecraft": {
+              "server_address": "mc.example.com",
+              "server_port": 25565,
+              "query_port": 25565,
+              "use_rcon": true,
+              "rcon_port": 25575,
+              "rcon_password": "your_secure_password"
+            }
+          }
+          \`\`\`
+          
+          ## Twitch Integration Configuration
+          
+          Configuration for Twitch streaming integration:
+          
+          \`\`\`json
+          {
+            "twitch": {
+              "channel": "your_channel",
+              "notifications": true,
+              "notification_channel": "stream-announcements",
+              "auto_message": "{{streamer}} is now live: {{title}} - {{url}}",
+              "check_interval": 300
+            }
+          }
+          \`\`\`
+          
+          ## Full Configuration Example
+          
+          A complete configuration example:
+          
+          \`\`\`json
+          {
+            "bot": {
+              "prefix": "!",
+              "language": "en",
+              "status": "online",
+              "activity": "Helping servers"
+            },
+            "logging": {
+              "level": "info",
+              "file": "bot.log",
+              "discord_channel": "bot-logs"
+            },
+            "features": {
+              "minecraft": true,
+              "twitch": true,
+              "ai": true,
+              "moderation": true,
+              "custom_commands": true
+            },
+            "minecraft": {
+              "server_address": "mc.example.com",
+              "server_port": 25565,
+              "query_port": 25565,
+              "use_rcon": true,
+              "rcon_port": 25575,
+              "rcon_password": "your_secure_password"
+            },
+            "twitch": {
+              "channel": "your_channel",
+              "notifications": true,
+              "notification_channel": "stream-announcements",
+              "auto_message": "{{streamer}} is now live: {{title}} - {{url}}",
+              "check_interval": 300
+            },
+            "ai": {
+              "enabled": true,
+              "model": "gpt-4o",
+              "context_limit": 10,
+              "allowed_channels": ["ai-chat", "bot-commands"],
+              "allowed_roles": ["AI Users", "Moderators", "Admins"]
+            }
+          }
+          \`\`\`
+          EOL
+          
+          # Example: API usage
+          cat > docs/examples/api-usage.md << EOL
+          # API Usage Examples
+          
+          This page provides examples of how to use the AstroBot API.
+          
+          ## Authentication
+          
+          ### Python Example
+          
+          \`\`\`python
+          import requests
+          
+          API_KEY = "your_api_key"
+          BASE_URL = "https://your-astrobot-instance.com/api"
+          
+          headers = {
+              "Authorization": f"Bearer {API_KEY}",
+              "Content-Type": "application/json"
+          }
+          
+          # Get bot status
+          response = requests.get(f"{BASE_URL}/status", headers=headers)
+          print(response.json())
+          \`\`\`
+          
+          ### JavaScript Example
+          
+          \`\`\`javascript
+          const API_KEY = "your_api_key";
+          const BASE_URL = "https://your-astrobot-instance.com/api";
+          
+          const headers = {
+            "Authorization": `Bearer ${API_KEY}`,
+            "Content-Type": "application/json"
+          };
+          
+          // Get bot status
+          fetch(`${BASE_URL}/status`, { headers })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error(error));
+          \`\`\`
+          
+          ## Minecraft Server Integration
+          
+          ### Get Server Status
+          
+          \`\`\`python
+          response = requests.get(f"{BASE_URL}/minecraft/status", headers=headers)
+          server_status = response.json()
+          
+          print(f"Server status: {server_status['status']}")
+          print(f"Online players: {server_status['online_players']}/{server_status['max_players']}")
+          \`\`\`
+          
+          ### Execute Server Command
+          
+          \`\`\`python
+          command_data = {
+              "command": "say Hello from API!"
+          }
+          
+          response = requests.post(
+              f"{BASE_URL}/minecraft/command",
+              headers=headers,
+              json=command_data
+          )
+          
+          print(response.json())
+          \`\`\`
+          
+          ## Twitch Integration
+          
+          ### Check Stream Status
+          
+          \`\`\`python
+          response = requests.get(f"{BASE_URL}/twitch/status", headers=headers)
+          stream_status = response.json()
+          
+          if stream_status["is_live"]:
+              print(f"{stream_status['channel']} is live: {stream_status['title']}")
+              print(f"Viewers: {stream_status['viewers']}")
+              print(f"Started at: {stream_status['started_at']}")
+          else:
+              print(f"{stream_status['channel']} is offline")
+          \`\`\`
+          
+          ### Update Notification Settings
+          
+          \`\`\`python
+          notification_data = {
+              "enabled": True,
+              "discord_channel": "stream-announcements",
+              "message": "{{streamer}} is now live: {{title}} - {{url}}"
+          }
+          
+          response = requests.post(
+              f"{BASE_URL}/twitch/notifications",
+              headers=headers,
+              json=notification_data
+          )
+          
+          print(response.json())
+          \`\`\`
+          EOL
+      
+      # Build documentation site
+      - name: Build MkDocs site
+        run: |
+          # Select theme if provided
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ github.event.inputs.theme }}" != "default" ]; then
+            THEME="${{ github.event.inputs.theme }}"
+            
+            # Update theme in mkdocs.yml
+            case "$THEME" in
+              dark)
+                sed -i 's/scheme: default/scheme: slate/' mkdocs.yml
+                sed -i 's/primary: indigo/primary: teal/' mkdocs.yml
+                ;;
+              modern)
+                sed -i 's/name: material/name: material\n      custom_dir: overrides/' mkdocs.yml
+                mkdir -p overrides
+                cat > overrides/main.html << EOL
+          {% extends "base.html" %}
+          
+          {% block extrahead %}
+            <style>
+              :root {
+                --md-primary-fg-color: #6200ea;
+                --md-primary-fg-color--light: #9e47ff;
+                --md-primary-fg-color--dark: #4500b0;
+                --md-accent-fg-color: #536dfe;
+              }
+            </style>
+          {% endblock %}
+          EOL
+                ;;
+              minimal)
+                sed -i 's/name: material/name: material\n      custom_dir: overrides/' mkdocs.yml
+                mkdir -p overrides
+                cat > overrides/main.html << EOL
+          {% extends "base.html" %}
+          
+          {% block extrahead %}
+            <style>
+              :root {
+                --md-primary-fg-color: #455a64;
+                --md-primary-fg-color--light: #718792;
+                --md-primary-fg-color--dark: #1c313a;
+                --md-accent-fg-color: #90a4ae;
+              }
+              .md-typeset h1, .md-typeset h2 {
+                font-weight: 300;
+                letter-spacing: -0.01em;
+              }
+              .md-typeset {
+                font-size: 0.7rem;
+              }
+            </style>
+          {% endblock %}
+          EOL
+                ;;
+            esac
+          fi
+          
+          # Build site
+          mkdocs build --verbose --site-dir _site
+      
+      # Deploy to GitHub Pages
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: _site
+          
+  deploy-docs:
+    name: Deploy to GitHub Pages
+    needs: build-docs
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

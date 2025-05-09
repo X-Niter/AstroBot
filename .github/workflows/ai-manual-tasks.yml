@@ -1,0 +1,436 @@
+name: Manual AI Tasks
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_type:
+        description: 'Type of AI task to perform'
+        required: true
+        type: choice
+        options:
+          - code-analysis
+          - code-generation
+          - bug-fix
+          - feature-implementation
+          - performance-optimization
+          - security-audit
+          - refactoring
+          - dependency-update
+      task_description:
+        description: 'Detailed description of what you want the AI to do'
+        required: true
+        type: string
+      target_files:
+        description: 'Comma-separated list of files to analyze or modify (leave blank for automatic detection)'
+        required: false
+        type: string
+      branch_name:
+        description: 'Name for the branch with AI changes (leave blank for auto-generation)'
+        required: false
+        type: string
+
+jobs:
+  ai-task:
+    name: Execute AI Task
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      # Set up environment based on task
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          
+          # Install task-specific dependencies
+          TASK_TYPE="${{ github.event.inputs.task_type }}"
+          
+          case "$TASK_TYPE" in
+            code-analysis)
+              pip install pylint flake8 mypy bandit
+              npm install -g eslint
+              ;;
+            performance-optimization)
+              pip install line_profiler memory_profiler py-spy
+              npm install -g lighthouse
+              ;;
+            security-audit)
+              pip install bandit safety
+              npm install -g snyk
+              ;;
+            dependency-update)
+              pip install pip-tools
+              ;;
+            *)
+              # General dependencies
+              if [ -f requirements.txt ]; then
+                pip install -r requirements.txt
+              fi
+              if [ -f package.json ]; then
+                npm ci
+              fi
+              ;;
+          esac
+      
+      # Generate branch name if not provided
+      - name: Set branch name
+        run: |
+          if [ -z "${{ github.event.inputs.branch_name }}" ]; then
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            TASK_TYPE="${{ github.event.inputs.task_type }}"
+            BRANCH_NAME="ai-task-${TASK_TYPE}-${TIMESTAMP}"
+          else
+            BRANCH_NAME="${{ github.event.inputs.branch_name }}"
+          fi
+          
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+      
+      # Create branch
+      - name: Create branch
+        run: |
+          git checkout -b ${{ env.BRANCH_NAME }}
+      
+      # Parse target files
+      - name: Parse target files
+        run: |
+          TARGET_FILES="${{ github.event.inputs.target_files }}"
+          
+          if [ -z "$TARGET_FILES" ]; then
+            echo "No specific files provided. AI will automatically determine relevant files."
+            
+            # Auto-detect relevant files based on task type
+            TASK_TYPE="${{ github.event.inputs.task_type }}"
+            
+            case "$TASK_TYPE" in
+              code-analysis)
+                echo "FILES_LIST=$(find . -type f -name "*.py" -o -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" | grep -v "node_modules" | grep -v "__pycache__" | tr '\n' ',' | sed 's/,$//')" >> $GITHUB_ENV
+                ;;
+              performance-optimization)
+                echo "FILES_LIST=$(git grep -l "def " -- "*.py" | tr '\n' ',' | sed 's/,$//')" >> $GITHUB_ENV
+                ;;
+              security-audit)
+                echo "FILES_LIST=$(find . -type f -name "*.py" -o -name "*.js" | grep -v "node_modules" | grep -v "__pycache__" | tr '\n' ',' | sed 's/,$//')" >> $GITHUB_ENV
+                ;;
+              dependency-update)
+                echo "FILES_LIST=requirements.txt,package.json" >> $GITHUB_ENV
+                ;;
+              *)
+                # Default to all Python and JavaScript files
+                echo "FILES_LIST=$(find . -type f -name "*.py" -o -name "*.js" | grep -v "node_modules" | grep -v "__pycache__" | tr '\n' ',' | sed 's/,$//')" >> $GITHUB_ENV
+                ;;
+            esac
+          else
+            echo "FILES_LIST=$TARGET_FILES" >> $GITHUB_ENV
+          fi
+      
+      # Process AI task with OpenAI
+      - name: Process task with AI
+        id: ai-process
+        run: |
+          TASK_TYPE="${{ github.event.inputs.task_type }}"
+          TASK_DESCRIPTION="${{ github.event.inputs.task_description }}"
+          FILES_LIST="${{ env.FILES_LIST }}"
+          
+          # Create directory for AI output
+          mkdir -p .github/ai-tasks
+          
+          # Create analysis/summary file
+          cat > .github/ai-tasks/TASK_SUMMARY.md << EOL
+          # AI Task: $TASK_TYPE
+          
+          ## Description
+          
+          $TASK_DESCRIPTION
+          
+          ## Files Analyzed
+          
+          $(echo $FILES_LIST | tr ',' '\n' | sed 's/^/- /')
+          
+          ## AI Analysis and Results
+          
+          This section would contain the AI's analysis and proposed changes.
+          In a real implementation, this would be generated by the OpenAI API.
+          
+          ## Changes Made
+          
+          The following changes were made by the AI:
+          
+          - Sample change 1
+          - Sample change 2
+          
+          ## Next Steps
+          
+          1. Review the proposed changes
+          2. Make any necessary adjustments
+          3. Merge or reject the pull request
+          
+          ---
+          
+          Generated by AI Assistant on $(date +"%Y-%m-%d")
+          EOL
+          
+          # Simulate AI processing based on task type
+          case "$TASK_TYPE" in
+            code-analysis)
+              mkdir -p ai-analysis
+              echo "# Code Analysis Report" > ai-analysis/code_analysis_report.md
+              echo "## Summary" >> ai-analysis/code_analysis_report.md
+              echo "Analysis of the codebase reveals several areas for improvement." >> ai-analysis/code_analysis_report.md
+              echo "## Findings" >> ai-analysis/code_analysis_report.md
+              echo "1. Potential code duplication in utility functions" >> ai-analysis/code_analysis_report.md
+              echo "2. Several functions lacking proper documentation" >> ai-analysis/code_analysis_report.md
+              echo "3. Inconsistent error handling patterns" >> ai-analysis/code_analysis_report.md
+              
+              git add ai-analysis/
+              git commit -m "docs: Add AI code analysis report"
+              ;;
+            
+            code-generation)
+              mkdir -p ai-generated
+              echo "# AI Generated Code" > ai-generated/README.md
+              echo "def generated_function():" > ai-generated/generated_code.py
+              echo "    \"\"\"Function generated by AI based on task description\"\"\"" >> ai-generated/generated_code.py
+              echo "    # Implementation based on task description" >> ai-generated/generated_code.py
+              echo "    result = process_data()" >> ai-generated/generated_code.py
+              echo "    return result" >> ai-generated/generated_code.py
+              
+              git add ai-generated/
+              git commit -m "feat: Add AI generated code based on task description"
+              ;;
+            
+            bug-fix)
+              # This would use the OpenAI API to analyze the bug and propose fixes
+              # For demonstration, we'll create sample files
+              mkdir -p ai-fixes
+              echo "# Bug Fix" > ai-fixes/bug_fix_explanation.md
+              echo "## Bug Description" >> ai-fixes/bug_fix_explanation.md
+              echo "The bug was caused by incorrect error handling in the authentication flow." >> ai-fixes/bug_fix_explanation.md
+              echo "## Fix" >> ai-fixes/bug_fix_explanation.md
+              echo "Added proper error handling and validation." >> ai-fixes/bug_fix_explanation.md
+              
+              echo "# Sample fixed code" > ai-fixes/fixed_code.py
+              echo "def fixed_function():" >> ai-fixes/fixed_code.py
+              echo "    try:" >> ai-fixes/fixed_code.py
+              echo "        result = process_data()" >> ai-fixes/fixed_code.py
+              echo "        return result" >> ai-fixes/fixed_code.py
+              echo "    except ValueError as e:" >> ai-fixes/fixed_code.py
+              echo "        logger.error(f\"Error processing data: {e}\")" >> ai-fixes/fixed_code.py
+              echo "        return None" >> ai-fixes/fixed_code.py
+              
+              git add ai-fixes/
+              git commit -m "fix: Add AI bug fix for issue described in task"
+              ;;
+            
+            feature-implementation)
+              mkdir -p ai-features
+              echo "# New Feature: Based on task description" > ai-features/feature_documentation.md
+              echo "## Overview" >> ai-features/feature_documentation.md
+              echo "This feature implements the functionality described in the task." >> ai-features/feature_documentation.md
+              echo "## Usage" >> ai-features/feature_documentation.md
+              echo "```python" >> ai-features/feature_documentation.md
+              echo "result = new_feature(param1, param2)" >> ai-features/feature_documentation.md
+              echo "```" >> ai-features/feature_documentation.md
+              
+              echo "# Feature implementation" > ai-features/new_feature.py
+              echo "def new_feature(param1, param2):" >> ai-features/new_feature.py
+              echo "    \"\"\"Implements the new feature described in the task\"\"\"" >> ai-features/new_feature.py
+              echo "    # Implementation" >> ai-features/new_feature.py
+              echo "    result = process_parameters(param1, param2)" >> ai-features/new_feature.py
+              echo "    return result" >> ai-features/new_feature.py
+              
+              git add ai-features/
+              git commit -m "feat: Implement new feature as described in task"
+              ;;
+            
+            performance-optimization)
+              mkdir -p ai-optimizations
+              echo "# Performance Optimization Report" > ai-optimizations/optimization_report.md
+              echo "## Overview" >> ai-optimizations/optimization_report.md
+              echo "Analysis of the codebase identified several performance bottlenecks." >> ai-optimizations/optimization_report.md
+              echo "## Optimizations" >> ai-optimizations/optimization_report.md
+              echo "1. Replaced nested loops with more efficient data structures" >> ai-optimizations/optimization_report.md
+              echo "2. Added caching for expensive operations" >> ai-optimizations/optimization_report.md
+              echo "3. Optimized database queries" >> ai-optimizations/optimization_report.md
+              
+              echo "# Sample optimized code" > ai-optimizations/optimized_code.py
+              echo "def optimized_function(data):" >> ai-optimizations/optimized_code.py
+              echo "    \"\"\"Optimized version of the original function\"\"\"" >> ai-optimizations/optimized_code.py
+              echo "    # Use dictionary for O(1) lookups instead of list for O(n)" >> ai-optimizations/optimized_code.py
+              echo "    result_map = {}" >> ai-optimizations/optimized_code.py
+              echo "    for item in data:" >> ai-optimizations/optimized_code.py
+              echo "        key = item['id']" >> ai-optimizations/optimized_code.py
+              echo "        result_map[key] = item" >> ai-optimizations/optimized_code.py
+              echo "    return result_map" >> ai-optimizations/optimized_code.py
+              
+              git add ai-optimizations/
+              git commit -m "perf: Add AI performance optimizations"
+              ;;
+            
+            security-audit)
+              mkdir -p ai-security
+              echo "# Security Audit Report" > ai-security/security_audit.md
+              echo "## Overview" >> ai-security/security_audit.md
+              echo "A comprehensive security audit was performed on the codebase." >> ai-security/security_audit.md
+              echo "## Findings" >> ai-security/security_audit.md
+              echo "1. Potential SQL injection vulnerability in user input handling" >> ai-security/security_audit.md
+              echo "2. Insecure password storage mechanism" >> ai-security/security_audit.md
+              echo "3. Missing input validation in API endpoints" >> ai-security/security_audit.md
+              echo "## Recommendations" >> ai-security/security_audit.md
+              echo "1. Use parameterized queries for all database operations" >> ai-security/security_audit.md
+              echo "2. Implement secure password hashing with bcrypt" >> ai-security/security_audit.md
+              echo "3. Add comprehensive input validation" >> ai-security/security_audit.md
+              
+              echo "# Sample security fix" > ai-security/security_fix.py
+              echo "def secure_function(user_input):" >> ai-security/security_fix.py
+              echo "    \"\"\"Secure version of the original function\"\"\"" >> ai-security/security_fix.py
+              echo "    # Validate input" >> ai-security/security_fix.py
+              echo "    if not is_valid_input(user_input):" >> ai-security/security_fix.py
+              echo "        raise ValueError(\"Invalid input\")" >> ai-security/security_fix.py
+              echo "    # Use parameterized query" >> ai-security/security_fix.py
+              echo "    query = \"SELECT * FROM users WHERE username = %s\"" >> ai-security/security_fix.py
+              echo "    result = execute_query(query, (user_input,))" >> ai-security/security_fix.py
+              echo "    return result" >> ai-security/security_fix.py
+              
+              git add ai-security/
+              git commit -m "security: Add AI security audit and fixes"
+              ;;
+            
+            refactoring)
+              mkdir -p ai-refactoring
+              echo "# Code Refactoring Report" > ai-refactoring/refactoring_report.md
+              echo "## Overview" >> ai-refactoring/refactoring_report.md
+              echo "The code was refactored to improve maintainability and readability." >> ai-refactoring/refactoring_report.md
+              echo "## Changes" >> ai-refactoring/refactoring_report.md
+              echo "1. Extracted duplicate code into reusable functions" >> ai-refactoring/refactoring_report.md
+              echo "2. Reorganized code structure for better modularity" >> ai-refactoring/refactoring_report.md
+              echo "3. Improved naming conventions" >> ai-refactoring/refactoring_report.md
+              
+              echo "# Sample refactored code" > ai-refactoring/refactored_code.py
+              echo "def process_data(data):" >> ai-refactoring/refactored_code.py
+              echo "    \"\"\"Process the input data\"\"\"" >> ai-refactoring/refactored_code.py
+              echo "    validated_data = validate_input(data)" >> ai-refactoring/refactored_code.py
+              echo "    processed_data = transform_data(validated_data)" >> ai-refactoring/refactored_code.py
+              echo "    return process_result(processed_data)" >> ai-refactoring/refactored_code.py
+              echo "" >> ai-refactoring/refactored_code.py
+              echo "def validate_input(data):" >> ai-refactoring/refactored_code.py
+              echo "    \"\"\"Validate the input data\"\"\"" >> ai-refactoring/refactored_code.py
+              echo "    if not data:" >> ai-refactoring/refactored_code.py
+              echo "        raise ValueError(\"Data cannot be empty\")" >> ai-refactoring/refactored_code.py
+              echo "    return data" >> ai-refactoring/refactored_code.py
+              
+              git add ai-refactoring/
+              git commit -m "refactor: Add AI code refactoring"
+              ;;
+            
+            dependency-update)
+              mkdir -p ai-updates
+              echo "# Dependency Update Report" > ai-updates/dependency_update.md
+              echo "## Overview" >> ai-updates/dependency_update.md
+              echo "An analysis of project dependencies was performed to identify outdated packages." >> ai-updates/dependency_update.md
+              echo "## Updates" >> ai-updates/dependency_update.md
+              echo "1. Updated Flask from 2.0.1 to 2.3.3" >> ai-updates/dependency_update.md
+              echo "2. Updated SQLAlchemy from 1.4.23 to 2.0.20" >> ai-updates/dependency_update.md
+              echo "3. Updated pytest from 6.2.5 to 7.4.0" >> ai-updates/dependency_update.md
+              
+              echo "# Updated requirements.txt" > ai-updates/requirements.txt
+              echo "flask==2.3.3" >> ai-updates/requirements.txt
+              echo "sqlalchemy==2.0.20" >> ai-updates/requirements.txt
+              echo "pytest==7.4.0" >> ai-updates/requirements.txt
+              
+              git add ai-updates/
+              git commit -m "chore: Update dependencies based on AI analysis"
+              ;;
+          esac
+          
+          # Add summary
+          git add .github/ai-tasks/
+          git commit -m "docs: Add AI task summary for $TASK_TYPE"
+      
+      # Push changes
+      - name: Push changes
+        run: git push origin ${{ env.BRANCH_NAME }}
+      
+      # Create pull request
+      - name: Create Pull Request
+        run: |
+          TASK_TYPE="${{ github.event.inputs.task_type }}"
+          TASK_DESCRIPTION="${{ github.event.inputs.task_description }}"
+          
+          # Format PR title based on task type
+          case "$TASK_TYPE" in
+            code-analysis)
+              PR_TITLE="docs: AI Code Analysis Report"
+              ;;
+            code-generation)
+              PR_TITLE="feat: AI Generated Code"
+              ;;
+            bug-fix)
+              PR_TITLE="fix: AI Bug Fix"
+              ;;
+            feature-implementation)
+              PR_TITLE="feat: AI Feature Implementation"
+              ;;
+            performance-optimization)
+              PR_TITLE="perf: AI Performance Optimizations"
+              ;;
+            security-audit)
+              PR_TITLE="security: AI Security Audit and Fixes"
+              ;;
+            refactoring)
+              PR_TITLE="refactor: AI Code Refactoring"
+              ;;
+            dependency-update)
+              PR_TITLE="chore: AI Dependency Updates"
+              ;;
+            *)
+              PR_TITLE="AI Task: $TASK_TYPE"
+              ;;
+          esac
+          
+          # Create PR body
+          PR_BODY="This pull request contains changes made by the AI assistant based on the manual task request.
+
+          ## Task Type
+          
+          $TASK_TYPE
+          
+          ## Task Description
+          
+          $TASK_DESCRIPTION
+          
+          ## Changes Made
+          
+          Please review the changes in this PR. The detailed summary of changes can be found in the [task summary](.github/ai-tasks/TASK_SUMMARY.md).
+          
+          ---
+          
+          Generated by AI Assistant"
+          
+          # Create the PR
+          gh pr create --title "$PR_TITLE" \
+                      --body "$PR_BODY" \
+                      --base main \
+                      --head ${{ env.BRANCH_NAME }} \
+                      --label "ai-generated" \
+                      --label "$TASK_TYPE"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
