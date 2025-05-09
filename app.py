@@ -315,7 +315,16 @@ def plugins():
 # Discord bot management routes
 @app.route('/discord/settings')
 def bot_settings():
-    return render_template('discord/settings.html', title="Bot Settings")
+    """Bot settings dashboard"""
+    # Get servers where user is owner
+    if current_user.is_authenticated:
+        servers = DiscordServer.query.filter_by(owner_id=current_user.id).all()
+    else:
+        servers = []
+    
+    return render_template('discord/settings.html', 
+                          title="Bot Settings",
+                          servers=servers)
 
 @app.route('/discord/commands')
 def commands_dashboard():
@@ -324,6 +333,62 @@ def commands_dashboard():
 @app.route('/discord/permissions')
 def permissions():
     return render_template('discord/permissions.html', title="Permissions")
+
+@app.route('/server/<server_id>/customize', methods=['GET', 'POST'])
+@login_required
+def bot_customization(server_id):
+    """Customize bot appearance for a specific server (premium feature)"""
+    # Get the server
+    server = DiscordServer.query.filter_by(server_id=server_id).first_or_404()
+    
+    # Check if user has permission to customize this server's bot
+    if server.owner_id != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to customize this server.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get existing customization if any
+    customization = BotCustomization.query.filter_by(server_id=server.id).first()
+    
+    # Handle form submission
+    if request.method == 'POST':
+        if not server.can_customize_bot:
+            flash('Bot customization is a premium feature. Upgrade to access this feature.', 'warning')
+            return redirect(url_for('premium_plans'))
+        
+        # Create or update customization
+        if customization is None:
+            customization = BotCustomization(
+                server_id=server.id,
+                created_by_id=current_user.id
+            )
+            db.session.add(customization)
+        
+        # Update fields
+        customization.custom_name = request.form.get('custom_name', '')
+        customization.custom_avatar_url = request.form.get('custom_avatar_url', '')
+        customization.custom_status = request.form.get('custom_status', '')
+        customization.custom_playing = request.form.get('custom_playing', '')
+        customization.theme_color = request.form.get('theme_color', '#5865F2')
+        customization.custom_prefix = request.form.get('custom_prefix', '')
+        
+        try:
+            db.session.commit()
+            flash('Bot customization saved successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error saving bot customization: {str(e)}")
+            flash(f'Error saving customization: {str(e)}', 'danger')
+        
+        return redirect(url_for('bot_customization', server_id=server_id))
+    
+    # Pass current time for preview
+    now = datetime.now()
+    
+    return render_template('server/bot_customization.html',
+                          title="Bot Customization",
+                          server=server,
+                          customization=customization,
+                          now=now)
 
 @app.route('/discord/analytics')
 def discord_analytics():

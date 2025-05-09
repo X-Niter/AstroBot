@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Bot Customization</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('bot_settings') }}">Bot Settings</a></li>
+        <li class="breadcrumb-item active">Bot Customization</li>
+    </ol>
+    
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-robot me-1"></i>
+                    Customize AstroBot's Appearance
+                </div>
+                <div class="card-body">
+                    {% if not server.can_customize_bot %}
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading"><i class="fas fa-lock me-2"></i> Premium Feature</h5>
+                        <p>Bot customization is a premium feature. Upgrade to premium to customize your bot's name, avatar, status, and more!</p>
+                        <hr>
+                        <a href="{{ url_for('premium_plans') }}" class="btn btn-primary">
+                            <i class="fas fa-gem me-1"></i> Upgrade to Premium
+                        </a>
+                    </div>
+                    {% else %}
+                    <form id="customizationForm" method="POST" action="{{ url_for('save_bot_customization') }}">
+                        <input type="hidden" name="server_id" value="{{ server.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="customName" class="form-label">Bot Name</label>
+                            <input type="text" class="form-control" id="customName" name="custom_name" 
+                                  value="{{ customization.custom_name if customization else '' }}"
+                                  placeholder="Default: AstroBot AI">
+                            <div class="form-text">The name your bot will display in your server.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="customAvatar" class="form-label">Custom Avatar URL</label>
+                            <input type="url" class="form-control" id="customAvatar" name="custom_avatar_url" 
+                                  value="{{ customization.custom_avatar_url if customization else '' }}"
+                                  placeholder="https://example.com/your-custom-avatar.png">
+                            <div class="form-text">Direct link to an image file (PNG, JPG, GIF). Square images work best.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="customStatus" class="form-label">Custom Status</label>
+                            <input type="text" class="form-control" id="customStatus" name="custom_status" 
+                                  value="{{ customization.custom_status if customization else '' }}"
+                                  placeholder="e.g. Helping {{ server.name }}">
+                            <div class="form-text">Status message shown below the bot's name in the member list.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="customPlaying" class="form-label">Custom "Playing" Status</label>
+                            <input type="text" class="form-control" id="customPlaying" name="custom_playing" 
+                                  value="{{ customization.custom_playing if customization else '' }}"
+                                  placeholder="e.g. Managing the server">
+                            <div class="form-text">Activity shown in the bot's status (e.g. "Playing Minecraft").</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="themeColor" class="form-label">Theme Color</label>
+                            <input type="color" class="form-control form-control-color" id="themeColor" name="theme_color" 
+                                  value="{{ customization.theme_color if customization else '#5865F2' }}">
+                            <div class="form-text">This color will be used for embeds and other bot messages.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="customPrefix" class="form-label">Custom Command Prefix</label>
+                            <input type="text" class="form-control" id="customPrefix" name="custom_prefix" 
+                                  value="{{ customization.custom_prefix if customization else '' }}"
+                                  placeholder="Default: !" maxlength="5">
+                            <div class="form-text">Custom prefix for bot commands (e.g. !, $, /, >, etc).</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-danger me-md-2" id="resetCustomization">
+                                <i class="fas fa-undo me-1"></i> Reset to Default
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Save Customization
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-eye me-1"></i>
+                    Preview
+                </div>
+                <div class="card-body">
+                    <div class="bot-preview p-3 border rounded">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="position-relative">
+                                <div id="previewAvatar" class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-3" style="width: 64px; height: 64px; overflow: hidden;">
+                                    {% if customization and customization.custom_avatar_url %}
+                                    <img src="{{ customization.custom_avatar_url }}" alt="Bot avatar" class="img-fluid">
+                                    {% else %}
+                                    <i class="fas fa-robot fa-2x text-light"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="position-absolute bottom-0 end-0 bg-success rounded-circle" style="width: 16px; height: 16px; border: 2px solid white;"></div>
+                            </div>
+                            <div>
+                                <h5 class="mb-0" id="previewName">
+                                    {{ customization.custom_name if customization and customization.custom_name else 'AstroBot AI' }}
+                                </h5>
+                                <div class="text-muted small" id="previewStatus">
+                                    {{ customization.custom_status if customization and customization.custom_status else 'Online' }}
+                                </div>
+                                <div class="text-muted small" id="previewPlaying">
+                                    {% if customization and customization.custom_playing %}
+                                    Playing {{ customization.custom_playing }}
+                                    {% else %}
+                                    Playing Serving your server
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bot-message-preview mb-3">
+                            <div class="d-flex align-items-start mb-2">
+                                <div id="previewMsgAvatar" class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; overflow: hidden; flex-shrink: 0;">
+                                    {% if customization and customization.custom_avatar_url %}
+                                    <img src="{{ customization.custom_avatar_url }}" alt="Bot avatar" class="img-fluid">
+                                    {% else %}
+                                    <i class="fas fa-robot text-light"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center">
+                                        <h6 class="mb-0 me-2" id="previewMsgName">
+                                            {{ customization.custom_name if customization and customization.custom_name else 'AstroBot AI' }}
+                                        </h6>
+                                        <span class="text-muted small">Today at {{ now.strftime('%I:%M %p') }}</span>
+                                    </div>
+                                    <div>Hello! I'm your customized AstroBot AI.</div>
+                                </div>
+                            </div>
+                            
+                            <div class="ms-5 ps-1 mb-3">
+                                <div class="card">
+                                    <div class="card-body p-2">
+                                        <div class="d-flex">
+                                            <div class="border-start border-4 me-2" id="previewEmbedBar" style="border-color: {{ customization.theme_color if customization and customization.theme_color else '#5865F2' }} !important;"></div>
+                                            <div>
+                                                <h6 class="mb-1">Command Example</h6>
+                                                <div class="small mb-2">Type <code id="previewPrefix">{{ customization.custom_prefix if customization and customization.custom_prefix else '!' }}help</code> for a list of commands</div>
+                                                <div class="text-muted small">Custom embed with your theme color</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="small text-muted fst-italic">
+                            Note: This preview is an approximation. Actual appearance may vary slightly in Discord.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle real-time preview updates
+    if (document.getElementById('customizationForm')) {
+        // Bot name preview updates
+        const nameInput = document.getElementById('customName');
+        nameInput.addEventListener('input', function() {
+            const previewName = document.getElementById('previewName');
+            const previewMsgName = document.getElementById('previewMsgName');
+            const name = this.value.trim() || 'AstroBot AI';
+            previewName.textContent = name;
+            previewMsgName.textContent = name;
+        });
+        
+        // Bot avatar preview updates
+        const avatarInput = document.getElementById('customAvatar');
+        avatarInput.addEventListener('input', function() {
+            const previewAvatar = document.getElementById('previewAvatar');
+            const previewMsgAvatar = document.getElementById('previewMsgAvatar');
+            const url = this.value.trim();
+            
+            if (url) {
+                // Create a test image to see if URL is valid
+                const testImg = new Image();
+                testImg.onload = function() {
+                    previewAvatar.innerHTML = `<img src="${url}" alt="Bot avatar" class="img-fluid">`;
+                    previewMsgAvatar.innerHTML = `<img src="${url}" alt="Bot avatar" class="img-fluid">`;
+                };
+                testImg.onerror = function() {
+                    previewAvatar.innerHTML = `<i class="fas fa-robot fa-2x text-light"></i>`;
+                    previewMsgAvatar.innerHTML = `<i class="fas fa-robot text-light"></i>`;
+                };
+                testImg.src = url;
+            } else {
+                previewAvatar.innerHTML = `<i class="fas fa-robot fa-2x text-light"></i>`;
+                previewMsgAvatar.innerHTML = `<i class="fas fa-robot text-light"></i>`;
+            }
+        });
+        
+        // Bot status preview
+        const statusInput = document.getElementById('customStatus');
+        statusInput.addEventListener('input', function() {
+            const previewStatus = document.getElementById('previewStatus');
+            previewStatus.textContent = this.value.trim() || 'Online';
+        });
+        
+        // Bot playing status preview
+        const playingInput = document.getElementById('customPlaying');
+        playingInput.addEventListener('input', function() {
+            const previewPlaying = document.getElementById('previewPlaying');
+            const playing = this.value.trim();
+            previewPlaying.textContent = playing ? `Playing ${playing}` : 'Playing Serving your server';
+        });
+        
+        // Theme color preview
+        const colorInput = document.getElementById('themeColor');
+        colorInput.addEventListener('input', function() {
+            const previewEmbedBar = document.getElementById('previewEmbedBar');
+            previewEmbedBar.style.borderColor = this.value;
+        });
+        
+        // Command prefix preview
+        const prefixInput = document.getElementById('customPrefix');
+        prefixInput.addEventListener('input', function() {
+            const previewPrefix = document.getElementById('previewPrefix');
+            previewPrefix.textContent = `${this.value.trim() || '!'}help`;
+        });
+        
+        // Reset button functionality
+        const resetButton = document.getElementById('resetCustomization');
+        resetButton.addEventListener('click', function() {
+            if (confirm('Are you sure you want to reset all customizations to default? This cannot be undone.')) {
+                nameInput.value = '';
+                avatarInput.value = '';
+                statusInput.value = '';
+                playingInput.value = '';
+                colorInput.value = '#5865F2';
+                prefixInput.value = '';
+                
+                // Update previews
+                document.getElementById('previewName').textContent = 'AstroBot AI';
+                document.getElementById('previewMsgName').textContent = 'AstroBot AI';
+                document.getElementById('previewAvatar').innerHTML = `<i class="fas fa-robot fa-2x text-light"></i>`;
+                document.getElementById('previewMsgAvatar').innerHTML = `<i class="fas fa-robot text-light"></i>`;
+                document.getElementById('previewStatus').textContent = 'Online';
+                document.getElementById('previewPlaying').textContent = 'Playing Serving your server';
+                document.getElementById('previewEmbedBar').style.borderColor = '#5865F2';
+                document.getElementById('previewPrefix').textContent = '!help';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

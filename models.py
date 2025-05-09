@@ -609,13 +609,19 @@ class DiscordServer(db.Model):
     
     def __repr__(self):
         return f"<DiscordServer {self.name} ({self.server_id})>"
-    
+        
     @property
     def can_customize_bot(self):
-        """Check if the server has premium features for bot customization"""
-        if not self.owner:
-            return False
-        return self.owner.has_premium_feature('bot_customization')
+        """Check if server can customize bot (premium feature)"""
+        # Server is premium
+        if self.is_premium:
+            return True
+            
+        # Owner has appropriate premium feature
+        if self.owner and self.owner.has_premium_feature('bot_customization'):
+            return True
+            
+        return False
 
 
 class ServerConfiguration(db.Model):
