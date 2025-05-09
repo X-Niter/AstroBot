@@ -36,23 +36,27 @@
         // Body attributes will be set after DOM is ready
         (function() {
             try {
-                // Theme detection
+                // Theme detection with safe fallbacks
                 function getStoredTheme() {
                     try {
-                        return localStorage.getItem('theme');
+                        if (typeof localStorage !== 'undefined') {
+                            return localStorage.getItem('theme');
+                        }
                     } catch(e) {
                         console.warn('localStorage not available:', e);
-                        return null;
                     }
+                    return null;
                 }
                 
                 function getSystemTheme() {
                     try {
-                        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                        if (typeof window !== 'undefined' && window.matchMedia) {
+                            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                        }
                     } catch(e) {
                         console.warn('matchMedia not available:', e);
-                        return 'light';
                     }
+                    return 'light';
                 }
                 
                 // Get theme with fallbacks
@@ -60,20 +64,23 @@
                 const PREMIUM_THEMES = ['space', 'neon', 'contrast'];
                 
                 // Only apply to documentElement to avoid errors with body
-                const root = document.documentElement; 
-                if (!root) return;
-                
-                // Apply theme classes
-                if (theme === 'dark' || PREMIUM_THEMES.includes(theme)) {
-                    root.classList.add('dark');
+                if (typeof document !== 'undefined' && document.documentElement) {
+                    const root = document.documentElement;
+                    
+                    // Apply theme classes
+                    if (theme === 'dark' || PREMIUM_THEMES.includes(theme)) {
+                        root.classList.add('dark');
+                    }
+                    
+                    if (PREMIUM_THEMES.includes(theme)) {
+                        root.classList.add(`theme-${theme}`);
+                    }
                 }
                 
-                if (PREMIUM_THEMES.includes(theme)) {
-                    root.classList.add(`theme-${theme}`);
+                // Store for later use - NEVER access body here
+                if (typeof window !== 'undefined') {
+                    window.__initialTheme = theme;
                 }
-                
-                // Store for later use
-                window.__initialTheme = theme;
             } catch(e) {
                 console.error('Error during initial theme setup:', e);
             }
