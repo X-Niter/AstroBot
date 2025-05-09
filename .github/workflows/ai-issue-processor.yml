@@ -2,28 +2,28 @@ name: AI Issue Processor
 
 on:
   issues:
-    types: [opened, edited, labeled]
-  issue_comment:
-    types: [created, edited]
+    types: [labeled]
   workflow_dispatch:
     inputs:
       issue_number:
         description: 'Issue number to process'
-        required: true
+        required: false
         type: number
       action_type:
-        description: 'Type of action to perform'
-        required: true
+        description: 'Type of action to take'
+        required: false
+        default: 'analyze'
         type: choice
         options:
           - analyze
-          - suggest-fix
           - implement
+          - fix
           - optimize
+          - suggest-fix
 
 jobs:
   process-issue:
-    name: Process Issue with AI
+    name: AI Issue Processor
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -36,154 +36,298 @@ jobs:
         with:
           fetch-depth: 0
       
-      # Determine issue to process
-      - name: Set issue number
-        id: set-issue
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "ISSUE_NUMBER=${{ github.event.inputs.issue_number }}" >> $GITHUB_ENV
-          else
-            echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
-          fi
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
       
-      # Get issue details
-      - name: Get issue details
-        id: get-issue
+      - name: Install dependencies
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            ISSUE_JSON=$(gh api repos/${{ github.repository }}/issues/${{ env.ISSUE_NUMBER }})
-            echo "ISSUE_TITLE=$(echo $ISSUE_JSON | jq -r '.title')" >> $GITHUB_ENV
-            echo "ISSUE_BODY=$(echo $ISSUE_JSON | jq -r '.body')" >> $GITHUB_ENV
-            echo "ISSUE_LABELS=$(echo $ISSUE_JSON | jq -r '.labels[].name')" >> $GITHUB_ENV
-          else
-            echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
-            echo "ISSUE_BODY=${{ github.event.issue.body }}" >> $GITHUB_ENV
+          python -m pip install --upgrade pip
+          pip install openai pytest pytest-cov
+      
+      # Determine issue to process
+      - name: Determine issue
+        id: determine-issue
+        run: |
+          if [[ -n "${{ github.event.inputs.issue_number }}" ]]; then
+            # Process specific issue
+            ISSUE_NUMBER="${{ github.event.inputs.issue_number }}"
+            ACTION_TYPE="${{ github.event.inputs.action_type }}"
+          elif [[ "${{ github.event_name }}" == "issues" && "${{ github.event.action }}" == "labeled" ]]; then
+            # Process labeled issue
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
             
-            # Get labels as comma-separated list
-            LABELS=$(gh api repos/${{ github.repository }}/issues/${{ env.ISSUE_NUMBER }} | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
-            echo "ISSUE_LABELS=$LABELS" >> $GITHUB_ENV
+            # Determine action type based on label
+            if [[ "${{ github.event.label.name }}" == "feature-request" ]]; then
+              ACTION_TYPE="implement"
+            elif [[ "${{ github.event.label.name }}" == "bug" ]]; then
+              ACTION_TYPE="fix"
+            elif [[ "${{ github.event.label.name }}" == "enhancement" ]]; then
+              ACTION_TYPE="optimize"
+            else
+              ACTION_TYPE="analyze"
+            fi
+          else
+            echo "No issue to process"
+            exit 1
           fi
+          
+          echo "ISSUE_NUMBER=$ISSUE_NUMBER" >> $GITHUB_ENV
+          echo "ACTION_TYPE=$ACTION_TYPE" >> $GITHUB_ENV
+          echo "Processing issue #$ISSUE_NUMBER with action $ACTION_TYPE"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      # Check if this is an AI command comment
-      - name: Check for AI command
-        id: check-command
-        if: github.event_name == 'issue_comment'
+      # Gather information about the issue
+      - name: Gather issue information
         run: |
-          COMMENT="${{ github.event.comment.body }}"
-          if [[ "$COMMENT" =~ "@ai "* ]]; then
-            COMMAND=$(echo "$COMMENT" | grep -o '@ai [a-z\-]*' | sed 's/@ai //')
-            echo "AI_COMMAND=$COMMAND" >> $GITHUB_ENV
-            echo "HAS_COMMAND=true" >> $GITHUB_ENV
-            
-            # Extract the rest as instructions
-            INSTRUCTIONS=$(echo "$COMMENT" | sed 's/@ai [a-z\-]* //')
-            echo "AI_INSTRUCTIONS=$INSTRUCTIONS" >> $GITHUB_ENV
-          else
-            echo "HAS_COMMAND=false" >> $GITHUB_ENV
-          fi
-      
-      # Determine action type
-      - name: Set action type
-        id: set-action
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "ACTION_TYPE=${{ github.event.inputs.action_type }}" >> $GITHUB_ENV
-          elif [ "${{ env.HAS_COMMAND }}" == "true" ]; then
-            echo "ACTION_TYPE=${{ env.AI_COMMAND }}" >> $GITHUB_ENV
-          else
-            # Default based on issue labels
-            if [[ "${{ env.ISSUE_LABELS }}" == *"bug"* ]]; then
-              echo "ACTION_TYPE=suggest-fix" >> $GITHUB_ENV
-            elif [[ "${{ env.ISSUE_LABELS }}" == *"enhancement"* ]]; then
-              echo "ACTION_TYPE=analyze" >> $GITHUB_ENV
-            else
-              echo "ACTION_TYPE=analyze" >> $GITHUB_ENV
+          # Get issue details
+          gh issue view ${{ env.ISSUE_NUMBER }} --json number,title,body,labels,comments > issue_details.json
+          
+          # Get repo structure
+          find . -type f -not -path "*/\.*" -not -path "*/venv/*" -not -path "*/node_modules/*" | sort > repo_files.txt
+          
+          # Get key files for context
+          KEY_FILES=(
+            "README.md"
+            "pyproject.toml"
+            "package.json"
+            "requirements.txt"
+            "main.py"
+            "app.py"
+            "models.py"
+            "routes.py"
+          )
+          
+          mkdir -p .github/issue_context
+          
+          # Copy key files to context directory
+          for file in "${KEY_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              cp "$file" .github/issue_context/
             fi
-          fi
-      
-      # Create a unique branch for this issue
-      - name: Create branch
-        run: |
-          BRANCH_NAME="ai-issue-${{ env.ISSUE_NUMBER }}"
-          git checkout -b $BRANCH_NAME
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-      
-      # Process with AI based on action type
-      - name: Process with OpenAI
-        id: openai
-        run: |
-          # Set up Python environment
-          pip install openai
+          done
           
-          ACTION="${{ env.ACTION_TYPE }}"
-          TITLE="${{ env.ISSUE_TITLE }}"
-          BODY="${{ env.ISSUE_BODY }}"
+          # Create context summary
+          echo "# Issue Context" > .github/issue_context/summary.md
+          echo "" >> .github/issue_context/summary.md
           
-          # Create a Python script to call OpenAI API
+          echo "## Issue Details" >> .github/issue_context/summary.md
+          TITLE=$(jq -r '.title' issue_details.json)
+          BODY=$(jq -r '.body' issue_details.json)
+          echo "Title: $TITLE" >> .github/issue_context/summary.md
+          echo "" >> .github/issue_context/summary.md
+          echo "Body:" >> .github/issue_context/summary.md
+          echo "$BODY" >> .github/issue_context/summary.md
+          echo "" >> .github/issue_context/summary.md
+          
+          echo "## Labels" >> .github/issue_context/summary.md
+          jq -r '.labels[].name' issue_details.json | while read label; do
+            echo "- $label" >> .github/issue_context/summary.md
+          done
+          echo "" >> .github/issue_context/summary.md
+          
+          echo "## Comments" >> .github/issue_context/summary.md
+          jq -r '.comments[] | "### " + .author.login + "\n" + .body + "\n"' issue_details.json >> .github/issue_context/summary.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Process the issue
+      - name: Process issue
+        run: |
+          # Create Python script to process the issue
           cat > process_issue.py << 'EOF'
           import json
           import os
+          import re
           import sys
+          import time
+          import subprocess
+          from pathlib import Path
           from openai import OpenAI
 
           client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-          def process_issue(action_type, title, body, repo_files=None):
+          def read_file(file_path):
+              """Read a file and return its content"""
+              try:
+                  with open(file_path, 'r', encoding='utf-8') as f:
+                      return f.read()
+              except Exception as e:
+                  print(f"Error reading file {file_path}: {str(e)}")
+                  return None
+
+          def write_file(file_path, content):
+              """Write content to a file"""
+              try:
+                  os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      f.write(content)
+                  return True
+              except Exception as e:
+                  print(f"Error writing to file {file_path}: {str(e)}")
+                  return False
+
+          def get_issue_details():
+              """Get details about the issue"""
+              try:
+                  with open('issue_details.json', 'r') as f:
+                      return json.load(f)
+              except Exception as e:
+                  print(f"Error loading issue details: {str(e)}")
+                  return None
+
+          def get_issue_context():
+              """Get context information for the issue"""
+              try:
+                  return read_file('.github/issue_context/summary.md')
+              except Exception as e:
+                  print(f"Error loading issue context: {str(e)}")
+                  return None
+
+          def get_repo_files():
+              """Get a list of files in the repository"""
+              try:
+                  with open('repo_files.txt', 'r') as f:
+                      return [line.strip() for line in f.readlines()]
+              except Exception as e:
+                  print(f"Error loading repo files: {str(e)}")
+                  return []
+
+          def get_file_content(file_path):
+              """Get the content of a file"""
+              try:
+                  with open(file_path, 'r', encoding='utf-8') as f:
+                      return f.read()
+              except Exception as e:
+                  print(f"Error reading file {file_path}: {str(e)}")
+                  return None
+
+          def find_relevant_files(issue_details, action_type, repo_files):
+              """Find files relevant to the issue"""
+              title = issue_details.get('title', '')
+              body = issue_details.get('body', '')
+              combined_text = title + '\n' + body
+              
+              # List to hold relevant files
+              relevant_files = []
+              
+              # Extract file paths mentioned in the issue
+              file_pattern = r'`([^`]+\.(py|js|jsx|ts|tsx|html|css|md|json|yml|yaml))`'
+              code_block_pattern = r'```(?:\w+)?\s*\n([\s\S]*?)\n```'
+              
+              # Extract mentions of files
+              mentioned_files = re.findall(file_pattern, combined_text)
+              mentioned_files = [f[0] for f in mentioned_files if f[0]]
+              
+              # Find files in the repo that match the mentions
+              for mention in mentioned_files:
+                  file_name = os.path.basename(mention)
+                  possible_matches = [f for f in repo_files if file_name in f]
+                  if possible_matches:
+                      relevant_files.extend(possible_matches)
+              
+              # Based on action type, find additional relevant files
+              if action_type == 'fix' or action_type == 'suggest-fix':
+                  # For bugs, look for files containing error keywords
+                  error_keywords = ['error', 'exception', 'fail', 'bug', 'issue', 'crash', 'fix']
+                  for keyword in error_keywords:
+                      if keyword.lower() in combined_text.lower():
+                          # Add Python files for backend bugs, JS files for frontend bugs
+                          if 'frontend' in combined_text.lower() or 'ui' in combined_text.lower():
+                              relevant_files.extend([f for f in repo_files if f.endswith(('.js', '.jsx', '.ts', '.tsx', '.html', '.css'))])
+                          else:
+                              relevant_files.extend([f for f in repo_files if f.endswith('.py')])
+              
+              elif action_type == 'implement':
+                  # For features, include key application files
+                  relevant_files.extend([f for f in repo_files if os.path.basename(f) in [
+                      'app.py', 'main.py', 'routes.py', 'models.py', 'views.py', 'forms.py'
+                  ]])
+              
+              elif action_type == 'optimize':
+                  # For optimization, include files mentioned plus core application files
+                  relevant_files.extend([f for f in repo_files if os.path.basename(f) in [
+                      'app.py', 'main.py', 'models.py'
+                  ]])
+              
+              # Remove duplicates and sort
+              relevant_files = sorted(list(set(relevant_files)))
+              
+              # Limit to a reasonable number
+              return relevant_files[:10]
+
+          def analyze_issue(issue_details, action_type, repo_files):
+              """Analyze the issue and determine what needs to be done"""
               # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
               # do not change this unless explicitly requested by the user
               
-              # Create system prompt based on action type
-              if action_type == "analyze":
-                  system_content = "You are an AI assistant specialized in analyzing GitHub issues. Provide a thorough analysis of the issue and suggest potential approaches."
-              elif action_type == "suggest-fix":
-                  system_content = "You are an AI assistant specialized in debugging code. Analyze the bug described in the issue and suggest specific code changes to fix it."
-              elif action_type == "implement":
-                  system_content = "You are an AI assistant specialized in implementing features. Design and implement the feature described in the issue with specific code changes."
-              elif action_type == "optimize":
-                  system_content = "You are an AI assistant specialized in optimizing code. Analyze the performance issues described and suggest specific optimizations."
-              else:
-                  system_content = "You are an AI assistant specialized in analyzing GitHub issues and suggesting code changes."
+              # Find relevant files
+              relevant_files = find_relevant_files(issue_details, action_type, repo_files)
               
-              # Create context about the repository
-              repo_context = ""
-              if repo_files:
-                  repo_context = "The repository contains the following files:\n" + "\n".join(repo_files)
+              # Read file contents
+              file_contents = {}
+              for file in relevant_files:
+                  content = get_file_content(file)
+                  if content:
+                      file_contents[file] = content
               
-              # Build the user message
-              user_content = f"""
-              ## Action Requested: {action_type.upper()}
+              # Get issue context
+              issue_context = get_issue_context() or ""
               
-              ## Issue Title: 
-              {title}
+              # Create system message
+              system_content = f"""You are an expert software engineer tasked with analyzing and addressing issues in a GitHub repository.
               
-              ## Issue Description:
-              {body}
+              Your current task is to {action_type} an issue. Based on the action type:
               
-              {repo_context}
+              - If 'analyze': Your goal is to understand the issue, identify relevant code, and suggest a plan of action.
+              - If 'implement': Your goal is to implement a new feature based on the request.
+              - If 'fix': Your goal is to fix a bug or issue in the code.
+              - If 'optimize': Your goal is to improve existing code for better performance or maintainability.
+              - If 'suggest-fix': Your goal is to suggest a fix without implementing it yourself.
               
-              Please {action_type} this issue and provide your response in JSON format with the following structure:
-              
-              {{
-                "analysis": "Your detailed analysis of the issue",
-                "suggestions": ["Suggestion 1", "Suggestion 2", ...],
-                "fix": "Detailed description of the fix (for suggest-fix)",
-                "implementation": "Implementation details (for implement)",
-                "optimization": "Optimization approach (for optimize)",
-                "code_changes": [
-                  {{
-                    "file": "path/to/file.py",
-                    "change": "The exact code to be added or modified"
-                  }},
-                  ...
-                ]
-              }}
-              
-              Ensure that your response is valid JSON and includes all relevant fields.
+              Provide a detailed analysis and create a clear, actionable plan. Be specific about which files need to be changed and how.
               """
               
-              # Call the OpenAI API
+              # Create user message
+              user_content = f"""
+              # Issue Analysis Request
+              
+              I need your help with this issue:
+              
+              ## Issue Details
+              
+              {issue_context}
+              
+              ## Action Type
+              
+              {action_type}
+              
+              ## Relevant Files
+              
+              I've identified these files as potentially relevant:
+              
+              """
+              
+              # Add file contents
+              for file_path, content in file_contents.items():
+                  file_type = Path(file_path).suffix.lower()[1:] if Path(file_path).suffix else "text"
+                  user_content += f"### {file_path}\n\n```{file_type}\n{content}\n```\n\n"
+              
+              user_content += """
+              ## Your Task
+              
+              Please provide:
+              
+              1. A detailed analysis of the issue
+              2. A clear plan of action
+              3. Specific changes that need to be made to the code
+              4. Any new files that need to be created
+              
+              Be as specific as possible, including actual code changes or new file contents where appropriate.
+              """
+              
               try:
                   response = client.chat.completions.create(
                       model="gpt-4o",
@@ -191,248 +335,354 @@ jobs:
                           {"role": "system", "content": system_content},
                           {"role": "user", "content": user_content}
                       ],
-                      temperature=0.7,
-                      response_format={"type": "json_object"}
+                      temperature=0.2,
+                      max_tokens=4096
                   )
                   
-                  # Parse the JSON response
-                  result = json.loads(response.choices[0].message.content)
-                  return result
+                  analysis = response.choices[0].message.content
+                  return analysis
               except Exception as e:
-                  return {
-                      "analysis": f"Error processing issue: {str(e)}",
-                      "suggestions": ["Try again with more detailed information."],
-                      "error": str(e)
-                  }
+                  print(f"Error analyzing issue: {str(e)}")
+                  return f"""
+                  # Error Analyzing Issue
+                  
+                  I encountered an error while trying to analyze this issue:
+                  
+                  ```
+                  {str(e)}
+                  ```
+                  
+                  Please try again or analyze the issue manually.
+                  """
 
-          if __name__ == "__main__":
-              action = sys.argv[1]
-              title = sys.argv[2]
-              body = sys.argv[3]
+          def implement_changes(issue_details, action_type, repo_files, analysis):
+              """Implement changes based on the analysis"""
+              # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+              # do not change this unless explicitly requested by the user
               
-              # Get list of repository files (could be expanded to include file contents)
-              repo_files = []
-              for root, dirs, files in os.walk('.'):
-                  for file in files:
-                      if not root.startswith('./.git') and not file.endswith('.pyc'):
-                          repo_files.append(os.path.join(root, file))
+              # Extract file changes from the analysis
+              file_changes_pattern = r"```(?:(?:python|javascript|html|css|json|yaml|typescript|jsx|tsx)\n)?(.*?)```"
+              code_blocks = re.findall(file_changes_pattern, analysis, re.DOTALL)
               
-              result = process_issue(action, title, body, repo_files[:50])  # Limit to first 50 files for context
+              # Find file paths preceding code blocks
+              file_path_pattern = r"(?:file|path|in):\s*[`\"']?([^`\"'\s]+\.[a-zA-Z0-9]+)[`\"']?"
+              file_paths = re.findall(file_path_pattern, analysis, re.IGNORECASE)
               
-              # Output the result as JSON
-              print(json.dumps(result, indent=2))
+              # If we couldn't extract file changes automatically, ask the AI to structure them
+              if not code_blocks or not file_paths or len(code_blocks) != len(file_paths):
+                  # Create system message
+                  system_content = """You are an expert software engineer tasked with implementing changes to fix an issue or implement a feature.
+                  
+                  Your task is to extract the code changes from the analysis and structure them in a clear, implementable format.
+                  
+                  For each file that needs to be changed, provide:
+                  1. The file path
+                  2. Whether the file should be created, modified, or deleted
+                  3. For new files, the complete file content
+                  4. For modified files, the specific changes to make
+                  
+                  Be extremely precise about file paths and content.
+                  """
+                  
+                  # Create user message
+                  user_content = f"""
+                  # Implementation Request
+                  
+                  Based on this issue analysis, please structure the changes in an implementable format:
+                  
+                  {analysis}
+                  
+                  ## Structured Output Format
+                  
+                  For each file change, use this structure:
+                  
+                  FILE: [file path]
+                  ACTION: [create/modify/delete]
+                  
+                  ```[language]
+                  [complete file content or changes]
+                  ```
+                  
+                  This is critical for our automated implementation system.
+                  """
+                  
+                  try:
+                      response = client.chat.completions.create(
+                          model="gpt-4o",
+                          messages=[
+                              {"role": "system", "content": system_content},
+                              {"role": "user", "content": user_content}
+                          ],
+                          temperature=0.1,
+                          max_tokens=4096
+                      )
+                      
+                      structured_changes = response.choices[0].message.content
+                      
+                      # Extract structured changes
+                      file_blocks = re.split(r"FILE:\s*", structured_changes)[1:]  # Skip the first empty split
+                      changes = []
+                      
+                      for block in file_blocks:
+                          # Extract file path
+                          file_path_match = re.match(r"([^\n]+)", block)
+                          if not file_path_match:
+                              continue
+                          
+                          file_path = file_path_match.group(1).strip()
+                          
+                          # Extract action
+                          action_match = re.search(r"ACTION:\s*([^\n]+)", block)
+                          action = action_match.group(1).strip() if action_match else "modify"
+                          
+                          # Extract code content
+                          code_match = re.search(r"```(?:[a-zA-Z0-9]+)?\n([\s\S]*?)\n```", block)
+                          if not code_match:
+                              continue
+                          
+                          code_content = code_match.group(1)
+                          
+                          changes.append({
+                              "file": file_path,
+                              "action": action,
+                              "content": code_content
+                          })
+                      
+                      return changes
+                  except Exception as e:
+                      print(f"Error structuring changes: {str(e)}")
+                      return []
               
-              # Also write to a file
-              with open('ai_response.json', 'w') as f:
-                  json.dump(result, f, indent=2)
-          EOF
-          
-          # Make the script executable
-          chmod +x process_issue.py
-          
-          # Run the Python script
-          python process_issue.py "$ACTION" "$TITLE" "$BODY" > ai_response.json
-          
-          echo "AI_RESPONSE_FILE=ai_response.json" >> $GITHUB_ENV
-          
-          # Comment the analysis on the issue
-          jq -r '.analysis' ai_response.json | gh issue comment ${{ env.ISSUE_NUMBER }} --body-file -
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        continue-on-error: true
-      
-      # Create a summary file
-      - name: Create AI summary
-        run: |
-          mkdir -p .github/ai-changes
-          
-          cat > .github/ai-changes/SUMMARY.md << EOL
-          # AI-Generated Changes for Issue #${{ env.ISSUE_NUMBER }}
-          
-          ## Issue Details
-          
-          **Title:** ${{ env.ISSUE_TITLE }}
-          
-          ## AI Analysis
-          
-          $(jq -r '.analysis' ${{ env.AI_RESPONSE_FILE }})
-          
-          ## Proposed Changes
-          
-          $(jq -r '.suggestions // .fix // .implementation // .optimization // "No specific changes proposed"' ${{ env.AI_RESPONSE_FILE }})
-          
-          ## Code Changes
-          
-          The following files would be modified:
-          
-          $(jq -r '.code_changes[] | "- `" + .file + "`"' ${{ env.AI_RESPONSE_FILE }} 2>/dev/null || echo "- No code changes specified")
-          
-          ---
-          
-          Generated by AI Assistant
-          EOL
-          
-          git add .github/ai-changes/SUMMARY.md
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "GitHub AI Assistant"
-          git commit -m "docs: Add AI analysis summary for issue #${{ env.ISSUE_NUMBER }}"
-      
-      # Apply the changes if action type is implement, suggest-fix, or optimize
-      - name: Apply AI suggested changes
-        if: env.ACTION_TYPE == 'implement' || env.ACTION_TYPE == 'suggest-fix' || env.ACTION_TYPE == 'optimize'
-        run: |
-          # Create a Python script to apply the changes
-          cat > apply_changes.py << 'EOF'
-          import json
-          import os
-          import sys
+              # If we have code blocks and file paths, try to match them
+              changes = []
+              for i, code_block in enumerate(code_blocks):
+                  if i < len(file_paths):
+                      file_path = file_paths[i]
+                      # Determine if this is a new file or a modification
+                      action = "create" if file_path not in repo_files else "modify"
+                      changes.append({
+                          "file": file_path,
+                          "action": action,
+                          "content": code_block
+                      })
+              
+              return changes
 
-          def apply_changes(response_file):
-              try:
-                  # Load the AI response
-                  with open(response_file, 'r') as f:
-                      response = json.load(f)
+          def apply_changes(changes):
+              """Apply the changes to the repository"""
+              applied_changes = []
+              
+              for change in changes:
+                  file_path = change["file"]
+                  action = change["action"]
+                  content = change["content"]
                   
-                  # Check if there are code changes to apply
-                  if 'code_changes' not in response or not response['code_changes']:
-                      print("No code changes to apply")
-                      return False
-                  
-                  changes_applied = 0
-                  
-                  # Apply each code change
-                  for change in response['code_changes']:
-                      if 'file' not in change or 'change' not in change:
-                          print(f"Invalid change format: {change}")
-                          continue
-                      
-                      file_path = change['file']
-                      code_content = change['change']
-                      
-                      # Make sure the directory exists
-                      os.makedirs(os.path.dirname(file_path) or '.', exist_ok=True)
-                      
-                      # Check if we're modifying an existing file or creating a new one
-                      if os.path.exists(file_path):
-                          print(f"Modifying existing file: {file_path}")
-                          
-                          # Read existing content
-                          with open(file_path, 'r') as f:
-                              existing_content = f.read()
-                          
-                          # Handle replacements if specified in the change
-                          if 'replace' in change and change['replace']:
-                              if 'pattern' in change and 'with' in change:
-                                  # Replace specific pattern
-                                  modified_content = existing_content.replace(change['pattern'], change['with'])
-                              else:
-                                  # Replace entire file
-                                  modified_content = code_content
+                  if action == "create":
+                      # Create new file
+                      if write_file(file_path, content):
+                          applied_changes.append(f"Created {file_path}")
+                  elif action == "modify":
+                      # Modify existing file
+                      existing_content = get_file_content(file_path)
+                      if existing_content is not None:
+                          if existing_content == content:
+                              # No changes needed
+                              applied_changes.append(f"No changes needed for {file_path}")
                           else:
-                              # Append to file by default
-                              modified_content = existing_content + "\n\n" + code_content
-                          
-                          # Write back the modified content
-                          with open(file_path, 'w') as f:
-                              f.write(modified_content)
-                      else:
-                          print(f"Creating new file: {file_path}")
-                          
-                          # Create new file with the content
-                          with open(file_path, 'w') as f:
-                              f.write(code_content)
-                      
-                      changes_applied += 1
+                              # Write the complete new content
+                              if write_file(file_path, content):
+                                  applied_changes.append(f"Modified {file_path}")
+                  elif action == "delete":
+                      # Delete file
+                      try:
+                          os.remove(file_path)
+                          applied_changes.append(f"Deleted {file_path}")
+                      except Exception as e:
+                          print(f"Error deleting file {file_path}: {str(e)}")
+              
+              return applied_changes
+
+          def create_pr(issue_number, action_type, analysis, applied_changes):
+              """Create a pull request with the changes"""
+              # Create a branch for the changes
+              timestamp = int(time.time())
+              branch_name = f"ai-{action_type}-issue-{issue_number}-{timestamp}"
+              
+              try:
+                  # Configure git
+                  subprocess.run(["git", "config", "user.name", "GitHub AI Processor"], check=True)
+                  subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], check=True)
                   
-                  print(f"Applied {changes_applied} code changes")
+                  # Create branch
+                  subprocess.run(["git", "checkout", "-b", branch_name], check=True)
+                  
+                  # Commit changes
+                  subprocess.run(["git", "add", "."], check=True)
+                  
+                  # Create commit message
+                  action_verb = {
+                      "implement": "Implement",
+                      "fix": "Fix",
+                      "optimize": "Optimize",
+                      "suggest-fix": "Suggest fix for",
+                      "analyze": "Analyze"
+                  }.get(action_type, "Address")
+                  
+                  commit_message = f"{action_verb} issue #{issue_number}"
+                  subprocess.run(["git", "commit", "-m", commit_message], check=True)
+                  
+                  # Push branch
+                  subprocess.run(["git", "push", "-u", "origin", branch_name], check=True)
+                  
+                  # Create PR body
+                  pr_body = f"""
+                  # AI {action_verb.title()} for Issue #{issue_number}
+                  
+                  This PR was automatically generated to address issue #{issue_number}.
+                  
+                  ## Changes Made
+                  
+                  {chr(10).join(f"- {change}" for change in applied_changes)}
+                  
+                  ## Analysis
+                  
+                  {analysis}
+                  
+                  ---
+                  
+                  This PR was created by the AI Issue Processor.
+                  """
+                  
+                  # Create PR title
+                  issue_details = get_issue_details()
+                  issue_title = issue_details.get("title", f"Issue #{issue_number}")
+                  pr_title = f"{action_verb} {issue_title}"
+                  if len(pr_title) > 60:
+                      pr_title = f"{pr_title[:57]}..."
+                  
+                  # Create PR
+                  result = subprocess.run(
+                      ["gh", "pr", "create", "--title", pr_title, "--body", pr_body, "--base", "main"],
+                      capture_output=True,
+                      text=True,
+                      check=True
+                  )
+                  
+                  pr_url = result.stdout.strip()
+                  return pr_url
+              except subprocess.CalledProcessError as e:
+                  print(f"Error creating PR: {e.stderr if hasattr(e, 'stderr') else str(e)}")
+                  return None
+
+          def add_issue_comment(issue_number, action_type, analysis, applied_changes, pr_url=None):
+              """Add a comment to the issue"""
+              action_verb = {
+                  "implement": "implemented",
+                  "fix": "fixed",
+                  "optimize": "optimized",
+                  "suggest-fix": "suggested a fix for",
+                  "analyze": "analyzed"
+              }.get(action_type, "addressed")
+              
+              comment = f"""
+              # AI Issue Processor
+              
+              I've {action_verb} this issue. Here's what I did:
+              
+              """
+              
+              if applied_changes:
+                  comment += "## Changes Made\n\n"
+                  comment += "\n".join(f"- {change}" for change in applied_changes) + "\n\n"
+              
+              if pr_url:
+                  comment += f"## Pull Request\n\n"
+                  comment += f"I've created a pull request with these changes: {pr_url}\n\n"
+              
+              comment += f"## Analysis\n\n{analysis}\n\n"
+              
+              comment += """
+              ---
+              
+              This comment was generated by the AI Issue Processor. If you have any questions or need further clarification, please let me know.
+              """
+              
+              try:
+                  with open('issue_comment.md', 'w') as f:
+                      f.write(comment)
+                  
+                  subprocess.run(
+                      ["gh", "issue", "comment", str(issue_number), "--body-file", "issue_comment.md"],
+                      check=True
+                  )
+                  
                   return True
               except Exception as e:
-                  print(f"Error applying changes: {str(e)}")
+                  print(f"Error adding comment to issue: {str(e)}")
                   return False
 
           if __name__ == "__main__":
-              if len(sys.argv) < 2:
-                  print("Usage: python apply_changes.py <response_file>")
+              issue_number = os.environ.get("ISSUE_NUMBER")
+              action_type = os.environ.get("ACTION_TYPE", "analyze")
+              
+              if not issue_number:
+                  print("Issue number not provided")
                   sys.exit(1)
               
-              response_file = sys.argv[1]
-              success = apply_changes(response_file)
+              # Get issue details
+              issue_details = get_issue_details()
+              if not issue_details:
+                  print(f"Failed to get details for issue #{issue_number}")
+                  sys.exit(1)
               
-              if not success:
-                  # Create a fallback file with explanation
-                  os.makedirs('ai_changes', exist_ok=True)
-                  with open('ai_changes/IMPLEMENTATION.md', 'w') as f:
-                      try:
-                          with open(response_file, 'r') as rf:
-                              response = json.load(rf)
-                          
-                          f.write("# AI Implementation Notes\n\n")
-                          f.write("## Analysis\n\n")
-                          f.write(response.get('analysis', 'No analysis provided') + "\n\n")
-                          
-                          f.write("## Implementation Details\n\n")
-                          f.write(response.get('implementation', response.get('fix', response.get('optimization', 'No implementation details provided'))) + "\n\n")
-                          
-                          f.write("## Code Changes\n\n")
-                          f.write("```python\n")
-                          for change in response.get('code_changes', []):
-                              f.write(f"# File: {change.get('file', 'unknown')}\n")
-                              f.write(change.get('change', '# No changes specified') + "\n\n")
-                          f.write("```\n")
-                      except Exception as e:
-                          f.write(f"# Error creating implementation notes: {str(e)}")
+              # Get list of repository files
+              repo_files = get_repo_files()
+              
+              # Analyze the issue
+              print(f"Analyzing issue #{issue_number}...")
+              analysis = analyze_issue(issue_details, action_type, repo_files)
+              
+              # For analyze-only, comment on the issue and exit
+              if action_type == "analyze":
+                  success = add_issue_comment(issue_number, action_type, analysis, [], None)
+                  sys.exit(0 if success else 1)
+              
+              # For suggest-fix, comment on the issue and exit
+              if action_type == "suggest-fix":
+                  success = add_issue_comment(issue_number, action_type, analysis, [], None)
+                  sys.exit(0 if success else 1)
+              
+              # For other action types, implement the changes
+              print(f"Implementing changes for issue #{issue_number}...")
+              changes = implement_changes(issue_details, action_type, repo_files, analysis)
+              
+              # Apply the changes
+              if changes:
+                  print(f"Applying {len(changes)} changes...")
+                  applied_changes = apply_changes(changes)
+                  print(f"Applied {len(applied_changes)} changes")
+                  
+                  # Create a PR
+                  print("Creating PR...")
+                  pr_url = create_pr(issue_number, action_type, analysis, applied_changes)
+                  
+                  # Add a comment to the issue
+                  print("Adding comment to issue...")
+                  success = add_issue_comment(issue_number, action_type, analysis, applied_changes, pr_url)
+                  
+                  sys.exit(0 if success else 1)
+              else:
+                  print(f"No changes to implement for issue #{issue_number}")
+                  # Add a comment to the issue
+                  success = add_issue_comment(issue_number, action_type, analysis, [], None)
+                  
+                  sys.exit(0 if success else 1)
           EOF
           
-          # Make the script executable
-          chmod +x apply_changes.py
-          
-          # Run the Python script to apply changes
-          python apply_changes.py "${{ env.AI_RESPONSE_FILE }}"
-          
-          # Add all changes to git
-          git add .
-          git commit -m "feat: Apply AI-suggested changes for issue #${{ env.ISSUE_NUMBER }}"
-      
-      # Push changes to the branch
-      - name: Push changes
-        run: git push origin ${{ env.BRANCH_NAME }}
-      
-      # Create pull request
-      - name: Create Pull Request
-        run: |
-          ACTION_NAME="${{ env.ACTION_TYPE }}"
-          
-          # Capitalize first letter for title
-          ACTION_NAME_CAPITALIZED=$(echo "$ACTION_NAME" | sed 's/^\(.\)/\U\1/')
-          
-          # Create PR with appropriate title and body based on action type
-          PR_BODY="This pull request was automatically generated by the AI assistant in response to issue #${{ env.ISSUE_NUMBER }}.
-
-          ## AI $ACTION_NAME_CAPITALIZED
-          
-          $(jq -r '.analysis' ${{ env.AI_RESPONSE_FILE }})
-          
-          ## Changes Included
-          
-          $(jq -r '.suggestions // .fix // .implementation // .optimization // "No specific changes described"' ${{ env.AI_RESPONSE_FILE }})
-          
-          ## Implementation Details
-          
-          $(jq -r '.code_changes[] | "- `" + .file + "`: " + (.change | split("\n") | first)' ${{ env.AI_RESPONSE_FILE }} 2>/dev/null || echo "- Implementation details not available")
-          
-          ---
-          
-          To provide feedback on these changes, please comment on this PR or the original issue.
-          To request further adjustments, add a comment with \`@ai adjust [your instructions]\`.
-          
-          Closes #${{ env.ISSUE_NUMBER }}"
-          
-          # Create the PR
-          gh pr create --title "[$ACTION_NAME_CAPITALIZED] ${{ env.ISSUE_TITLE }}" \
-                      --body "$PR_BODY" \
-                      --base main \
-                      --head ${{ env.BRANCH_NAME }} \
-                      --label "ai-generated"
+          # Run the script
+          python process_issue.py
         env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+          ACTION_TYPE: ${{ env.ACTION_TYPE }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

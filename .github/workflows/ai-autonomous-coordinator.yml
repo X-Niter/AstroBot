@@ -1,0 +1,679 @@
+name: AI Autonomous Coordinator
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Run every 30 minutes
+  workflow_dispatch:  # Allow manual triggering
+  issues:
+    types: [opened, reopened, edited, labeled]
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+  pull_request_review:
+    types: [submitted]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  autonomous-coordination:
+    name: Autonomous Development Coordination
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      actions: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai python-dateutil pyyaml
+      
+      # Determine event type and set variables
+      - name: Determine event type
+        id: event-type
+        run: |
+          echo "EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
+          echo "REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
+          echo "ACTOR=${{ github.actor }}" >> $GITHUB_ENV
+          
+          # Issues and PR settings
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            echo "ITEM_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "ITEM_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+            echo "ITEM_BODY=${{ github.event.issue.body }}" >> $GITHUB_ENV
+            echo "ITEM_AUTHOR=${{ github.event.issue.user.login }}" >> $GITHUB_ENV
+            echo "ITEM_TYPE=issue" >> $GITHUB_ENV
+            echo "ITEM_CREATED_AT=${{ github.event.issue.created_at }}" >> $GITHUB_ENV
+            echo "ITEM_UPDATED_AT=${{ github.event.issue.updated_at }}" >> $GITHUB_ENV
+            
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            echo "ITEM_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "COMMENT_ID=${{ github.event.comment.id }}" >> $GITHUB_ENV
+            echo "COMMENT_BODY=${{ github.event.comment.body }}" >> $GITHUB_ENV
+            echo "COMMENT_AUTHOR=${{ github.event.comment.user.login }}" >> $GITHUB_ENV
+            echo "ITEM_TYPE=issue" >> $GITHUB_ENV
+            
+          elif [[ "${{ github.event_name }}" == "pull_request" || "${{ github.event_name }}" == "pull_request_target" ]]; then
+            echo "ITEM_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "ITEM_TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
+            echo "ITEM_BODY=${{ github.event.pull_request.body }}" >> $GITHUB_ENV
+            echo "ITEM_AUTHOR=${{ github.event.pull_request.user.login }}" >> $GITHUB_ENV
+            echo "ITEM_TYPE=pr" >> $GITHUB_ENV
+            echo "ITEM_CREATED_AT=${{ github.event.pull_request.created_at }}" >> $GITHUB_ENV
+            echo "ITEM_UPDATED_AT=${{ github.event.pull_request.updated_at }}" >> $GITHUB_ENV
+            echo "PR_BASE_REF=${{ github.event.pull_request.base.ref }}" >> $GITHUB_ENV
+            echo "PR_HEAD_REF=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+            
+          elif [[ "${{ github.event_name }}" == "pull_request_review" ]]; then
+            echo "ITEM_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "REVIEW_ID=${{ github.event.review.id }}" >> $GITHUB_ENV
+            echo "REVIEW_BODY=${{ github.event.review.body }}" >> $GITHUB_ENV
+            echo "REVIEW_AUTHOR=${{ github.event.review.user.login }}" >> $GITHUB_ENV
+            echo "REVIEW_STATE=${{ github.event.review.state }}" >> $GITHUB_ENV
+            echo "ITEM_TYPE=pr" >> $GITHUB_ENV
+            
+          elif [[ "${{ github.event_name }}" == "pull_request_review_comment" ]]; then
+            echo "ITEM_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "COMMENT_ID=${{ github.event.comment.id }}" >> $GITHUB_ENV
+            echo "COMMENT_BODY=${{ github.event.comment.body }}" >> $GITHUB_ENV
+            echo "COMMENT_AUTHOR=${{ github.event.comment.user.login }}" >> $GITHUB_ENV
+            echo "ITEM_TYPE=pr" >> $GITHUB_ENV
+          fi
+          
+          # Check if this is from a bot to avoid loops
+          if [[ "${{ github.actor }}" == "github-actions"* || "${{ github.actor }}" == "dependabot"* ]]; then
+            echo "FROM_BOT=true" >> $GITHUB_ENV
+          else
+            echo "FROM_BOT=false" >> $GITHUB_ENV
+          fi
+      
+      # Analyze event and determine actions
+      - name: Analyze event and determine actions
+        if: env.EVENT_NAME != 'schedule' && env.EVENT_NAME != 'workflow_dispatch'
+        run: |
+          # Create Python script to analyze the event
+          cat > analyze_event.py << 'EOF'
+          import json
+          import os
+          import sys
+          import time
+          import yaml
+          from datetime import datetime, timezone
+          from dateutil import parser
+          from openai import OpenAI
+
+          client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+          def get_issue_or_pr_details(item_number, item_type="issue"):
+              """Get details about an issue or PR using GitHub CLI"""
+              try:
+                  command = "gh issue view" if item_type == "issue" else "gh pr view"
+                  result = os.popen(f"{command} {item_number} --json number,title,body,labels,assignees,comments,state").read()
+                  return json.loads(result)
+              except Exception as e:
+                  print(f"Error getting details for {item_type} #{item_number}: {str(e)}")
+                  return None
+
+          def analyze_content(content, item_type, item_details=None):
+              """Analyze content using AI to determine action"""
+              # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+              # do not change this unless explicitly requested by the user
+              
+              system_content = f"""You are an AI assistant that analyzes GitHub {item_type}s and comments to determine what action should be taken.
+              
+              Your task is to:
+              1. Understand the content and intent of the {item_type} or comment
+              2. Classify it into one of these categories based on what the user is requesting or what would be most helpful:
+                 - feature-request: User is requesting a new feature
+                 - bug-report: User is reporting a bug
+                 - help-question: User is asking for help or has a question
+                 - code-improvement: User is suggesting code improvements
+                 - documentation: User is asking about or suggesting documentation changes
+                 - general-feedback: User is providing general feedback
+                 - direct-ai-request: User is directly asking the AI to do something (fix, implement, etc.)
+                 - none: No specific action needed
+              3. Extract any specific requests like:
+                 - fix-bug: Fix a specific bug
+                 - implement-feature: Implement a specific feature
+                 - review-code: Review specific code
+                 - explain-code: Explain how code works
+                 - improve-code: Improve specific code
+                 - create-tests: Create tests
+                 - documentation: Create or update documentation
+              4. Determine the level of response needed:
+                 - autonomous-fix: AI can handle this completely without human involvement
+                 - human-review-needed: Requires human review but AI can suggest a solution
+                 - information-only: Just requires information response
+              
+              Return your analysis in JSON format."""
+              
+              # Add any context about the issue/PR if available
+              context = ""
+              if item_details:
+                  context = f"\n\nAdditional context:\n"
+                  if "title" in item_details:
+                      context += f"Title: {item_details['title']}\n"
+                  if "state" in item_details:
+                      context += f"State: {item_details['state']}\n"
+                  if "labels" in item_details and item_details["labels"]:
+                      labels = ", ".join([label.get("name", "") for label in item_details["labels"]])
+                      context += f"Labels: {labels}\n"
+                  if "comments" in item_details and item_details["comments"]:
+                      # Add a few most recent comments for context
+                      comments = item_details["comments"][-3:] if len(item_details["comments"]) > 3 else item_details["comments"]
+                      context += "Recent comments:\n"
+                      for comment in comments:
+                          author = comment.get("author", {}).get("login", "Unknown")
+                          body = comment.get("body", "").strip()
+                          if len(body) > 200:
+                              body = body[:200] + "..."
+                          context += f"- {author}: {body}\n"
+              
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4o",
+                      messages=[
+                          {"role": "system", "content": system_content},
+                          {"role": "user", "content": f"Content to analyze:\n\n{content}{context}"}
+                      ],
+                      temperature=0.3,
+                      response_format={"type": "json_object"}
+                  )
+                  
+                  result = json.loads(response.choices[0].message.content)
+                  return result
+              except Exception as e:
+                  print(f"Error analyzing content: {str(e)}")
+                  return {
+                      "category": "none",
+                      "specific_request": "none",
+                      "response_level": "information-only",
+                      "error": str(e)
+                  }
+
+          def determine_workflow(analysis):
+              """Determine which workflow to trigger based on analysis"""
+              category = analysis.get("category", "none")
+              specific_request = analysis.get("specific_request", "none")
+              response_level = analysis.get("response_level", "information-only")
+              
+              workflows = []
+              
+              # Conversation handler is always triggered for non-bot content that needs AI response
+              if response_level != "none":
+                  workflows.append({
+                      "name": "ai-conversation-handler.yml",
+                      "priority": 1,
+                      "inputs": {}
+                  })
+              
+              # For autonomous fixes and implementations
+              if response_level == "autonomous-fix" or specific_request in ["fix-bug", "implement-feature", "improve-code"]:
+                  if category == "bug-report" or specific_request == "fix-bug":
+                      workflows.append({
+                          "name": "ai-issue-processor.yml",
+                          "priority": 2,
+                          "inputs": {
+                              "action_type": "suggest-fix"
+                          }
+                      })
+                  elif category == "feature-request" or specific_request == "implement-feature":
+                      workflows.append({
+                          "name": "ai-issue-processor.yml",
+                          "priority": 2,
+                          "inputs": {
+                              "action_type": "implement"
+                          }
+                      })
+                  elif category == "code-improvement" or specific_request == "improve-code":
+                      workflows.append({
+                          "name": "ai-issue-processor.yml",
+                          "priority": 2,
+                          "inputs": {
+                              "action_type": "optimize"
+                          }
+                      })
+              
+              # For code review requests
+              if specific_request == "review-code":
+                  workflows.append({
+                      "name": "ai-pr-review.yml",
+                      "priority": 3,
+                      "inputs": {}
+                  })
+              
+              # For test creation
+              if specific_request == "create-tests":
+                  workflows.append({
+                      "name": "auto-fix-code-issues.yml",
+                      "priority": 3,
+                      "inputs": {
+                          "fix_type": "tests"
+                      }
+                  })
+              
+              # For documentation requests
+              if category == "documentation" or specific_request == "documentation":
+                  workflows.append({
+                      "name": "ai-issue-processor.yml",
+                      "priority": 3,
+                      "inputs": {
+                          "action_type": "analyze"
+                      }
+                  })
+              
+              return workflows
+
+          def save_action_plan(item_number, item_type, analysis, workflows):
+              """Save the action plan to a file"""
+              output_dir = ".github/ai-actions"
+              os.makedirs(output_dir, exist_ok=True)
+              
+              action_plan = {
+                  "item_number": item_number,
+                  "item_type": item_type,
+                  "analysis": analysis,
+                  "workflows": workflows,
+                  "timestamp": datetime.now().isoformat()
+              }
+              
+              with open(f"{output_dir}/{item_type}-{item_number}-plan.json", "w") as f:
+                  json.dump(action_plan, f, indent=2)
+              
+              return f"{output_dir}/{item_type}-{item_number}-plan.json"
+
+          if __name__ == "__main__":
+              # Get environment variables
+              item_number = os.environ.get("ITEM_NUMBER")
+              item_type = os.environ.get("ITEM_TYPE", "issue")
+              content_to_analyze = ""
+              
+              # Determine what content to analyze
+              if os.environ.get("EVENT_NAME") in ["issues", "pull_request"]:
+                  content_to_analyze = os.environ.get("ITEM_BODY", "")
+              elif os.environ.get("EVENT_NAME") in ["issue_comment", "pull_request_review_comment"]:
+                  content_to_analyze = os.environ.get("COMMENT_BODY", "")
+              elif os.environ.get("EVENT_NAME") == "pull_request_review":
+                  content_to_analyze = os.environ.get("REVIEW_BODY", "")
+              
+              if not content_to_analyze or not item_number:
+                  print("No content to analyze or missing item number")
+                  sys.exit(0)
+              
+              # Get details about the issue or PR
+              item_details = get_issue_or_pr_details(item_number, item_type)
+              
+              # Analyze the content
+              analysis = analyze_content(content_to_analyze, item_type, item_details)
+              print(f"Analysis: {json.dumps(analysis, indent=2)}")
+              
+              # Determine which workflows to trigger
+              workflows = determine_workflow(analysis)
+              print(f"Workflows to trigger: {json.dumps(workflows, indent=2)}")
+              
+              # Save the action plan
+              action_plan_file = save_action_plan(item_number, item_type, analysis, workflows)
+              print(f"Action plan saved to: {action_plan_file}")
+              
+              # Create environment file for GitHub Actions
+              with open(os.environ["GITHUB_ENV"], "a") as env_file:
+                  env_file.write(f"ANALYSIS_CATEGORY={analysis.get('category', 'none')}\n")
+                  env_file.write(f"ANALYSIS_REQUEST={analysis.get('specific_request', 'none')}\n")
+                  env_file.write(f"RESPONSE_LEVEL={analysis.get('response_level', 'information-only')}\n")
+                  env_file.write(f"WORKFLOWS_TO_TRIGGER={len(workflows)}\n")
+                  for i, workflow in enumerate(workflows):
+                      env_file.write(f"WORKFLOW_{i}_NAME={workflow['name']}\n")
+                      env_file.write(f"WORKFLOW_{i}_PRIORITY={workflow['priority']}\n")
+                      
+                      # Handle inputs as a JSON string
+                      inputs_json = json.dumps(workflow.get('inputs', {}))
+                      env_file.write(f"WORKFLOW_{i}_INPUTS={inputs_json}\n")
+          EOF
+          
+          # Run the Python script
+          python analyze_event.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Scheduled scanning - perform periodic health check
+      - name: Periodic health check and improvement scanning
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          # Create Python script for periodic scanning
+          cat > periodic_scan.py << 'EOF'
+          import json
+          import os
+          import re
+          import sys
+          import time
+          from datetime import datetime, timedelta
+
+          def check_recent_activity():
+              """Check if there have been recent workflow runs or commits"""
+              try:
+                  # Check recent workflow runs
+                  recent_runs = os.popen("gh run list --limit 10 --json conclusion,createdAt").read()
+                  runs = json.loads(recent_runs)
+                  
+                  # Get the most recent run timestamp
+                  if runs:
+                      most_recent = max(runs, key=lambda x: x.get("createdAt", ""))
+                      created_at = most_recent.get("createdAt", "")
+                      
+                      if created_at:
+                          created_date = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                          time_diff = datetime.now().astimezone() - created_date
+                          
+                          # If there's been a run in the last 3 hours, no need to do another scan
+                          if time_diff < timedelta(hours=3) and time_diff.total_seconds() > 0:
+                              return True
+                  
+                  # Check recent commits
+                  recent_commits = os.popen("git log --since='3 hours ago' --pretty=format:'%h'").read()
+                  if recent_commits.strip():
+                      return True
+                  
+                  return False
+              except Exception as e:
+                  print(f"Error checking recent activity: {str(e)}")
+                  return False
+
+          def count_open_issues_and_prs():
+              """Count open issues and PRs that haven't been acted upon"""
+              try:
+                  # Count open issues without comments
+                  open_issues = os.popen("gh issue list --state open --json number,comments,labels").read()
+                  issues = json.loads(open_issues)
+                  
+                  # Count issues without AI response
+                  unresponded_issues = 0
+                  for issue in issues:
+                      comments = issue.get("comments", [])
+                      has_ai_response = any(comment.get("author", {}).get("login", "") == "github-actions[bot]" for comment in comments)
+                      has_ai_label = any(label.get("name", "") in ["ai-reviewed", "ai-working", "auto-fix"] for label in issue.get("labels", []))
+                      
+                      if not has_ai_response and not has_ai_label:
+                          unresponded_issues += 1
+                  
+                  # Count open PRs without reviews
+                  open_prs = os.popen("gh pr list --state open --json number,reviews").read()
+                  prs = json.loads(open_prs)
+                  
+                  # Count PRs without AI review
+                  unreviewed_prs = 0
+                  for pr in prs:
+                      reviews = pr.get("reviews", [])
+                      has_ai_review = any(review.get("author", {}).get("login", "") == "github-actions[bot]" for review in reviews)
+                      
+                      if not has_ai_review:
+                          unreviewed_prs += 1
+                  
+                  return unresponded_issues, unreviewed_prs
+              except Exception as e:
+                  print(f"Error counting open issues and PRs: {str(e)}")
+                  return 0, 0
+
+          def determine_periodic_actions():
+              """Determine which actions to take for periodic scanning"""
+              workflows = []
+              
+              # Check if there's been recent activity
+              if check_recent_activity():
+                  print("Recent activity detected, skipping some scans")
+              
+              # Always do a self-healing scan
+              workflows.append({
+                  "name": "self-healing.yml",
+                  "priority": 1,
+                  "inputs": {
+                      "scan_type": "all"
+                  }
+              })
+              
+              # Check unresponded issues and unreviewed PRs
+              unresponded_issues, unreviewed_prs = count_open_issues_and_prs()
+              
+              if unresponded_issues > 0:
+                  print(f"Found {unresponded_issues} issues without AI response")
+                  # Add tasks to process these
+                  workflows.append({
+                      "name": "process-unresponded-issues.yml",
+                      "priority": 2,
+                      "inputs": {
+                          "count": unresponded_issues
+                      }
+                  })
+              
+              if unreviewed_prs > 0:
+                  print(f"Found {unreviewed_prs} PRs without AI review")
+                  # Add tasks to process these
+                  workflows.append({
+                      "name": "ai-pr-review.yml",
+                      "priority": 2,
+                      "inputs": {
+                          "review_all": "true"
+                      }
+                  })
+              
+              # Check if we should run the auto-fix-code-issues workflow
+              # We'll do this roughly once per day (1/48 chance every 30 minutes)
+              import random
+              if random.randint(1, 48) == 1:
+                  workflows.append({
+                      "name": "auto-fix-code-issues.yml",
+                      "priority": 3,
+                      "inputs": {
+                          "fix_type": "all"
+                      }
+                  })
+              
+              return workflows
+
+          if __name__ == "__main__":
+              # Determine periodic actions
+              workflows = determine_periodic_actions()
+              print(f"Periodic workflows to trigger: {json.dumps(workflows, indent=2)}")
+              
+              # Create environment file for GitHub Actions
+              with open(os.environ["GITHUB_ENV"], "a") as env_file:
+                  env_file.write(f"WORKFLOWS_TO_TRIGGER={len(workflows)}\n")
+                  for i, workflow in enumerate(workflows):
+                      env_file.write(f"WORKFLOW_{i}_NAME={workflow['name']}\n")
+                      env_file.write(f"WORKFLOW_{i}_PRIORITY={workflow['priority']}\n")
+                      
+                      # Handle inputs as a JSON string
+                      inputs_json = json.dumps(workflow.get('inputs', {}))
+                      env_file.write(f"WORKFLOW_{i}_INPUTS={inputs_json}\n")
+          EOF
+          
+          # Run the Python script
+          python periodic_scan.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Process unresponded issues - a separate workflow when needed
+      - name: Create process-unresponded-issues workflow
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          mkdir -p .github/workflows
+          
+          # Check if the workflow already exists
+          if [ ! -f .github/workflows/process-unresponded-issues.yml ]; then
+            cat > .github/workflows/process-unresponded-issues.yml << 'EOF'
+            name: Process Unresponded Issues
+
+            on:
+              workflow_dispatch:
+                inputs:
+                  count:
+                    description: 'Number of issues to process'
+                    required: false
+                    default: '10'
+                    type: string
+
+            jobs:
+              process-issues:
+                name: Process Unresponded Issues
+                runs-on: ubuntu-latest
+                permissions:
+                  issues: write
+                  pull-requests: write
+                
+                steps:
+                  - name: Checkout repository
+                    uses: actions/checkout@v3
+                  
+                  - name: Get unresponded issues
+                    id: get-issues
+                    run: |
+                      # Get open issues without AI response
+                      gh issue list --state open --json number,title,body,comments,labels --limit ${{ github.event.inputs.count || '10' }} > issues.json
+                      
+                      # Filter to issues without AI response
+                      jq '[.[] | select(
+                        (.comments | map(.author.login == "github-actions[bot]") | any | not) and
+                        (.labels | map(.name == "ai-reviewed" or .name == "ai-working" or .name == "auto-fix") | any | not)
+                      )]' issues.json > unresponded_issues.json
+                      
+                      # Count unresponded issues
+                      COUNT=$(jq 'length' unresponded_issues.json)
+                      echo "UNRESPONDED_COUNT=$COUNT" >> $GITHUB_ENV
+                      
+                      # Output the numbers for processing
+                      jq -r '.[].number' unresponded_issues.json > issue_numbers.txt
+                    env:
+                      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  
+                  # Process each issue by triggering the conversation handler
+                  - name: Process each issue
+                    if: env.UNRESPONDED_COUNT > 0
+                    run: |
+                      while read -r ISSUE_NUMBER; do
+                        echo "Processing issue #$ISSUE_NUMBER"
+                        
+                        # Get the issue details
+                        ISSUE_DETAILS=$(jq '.[] | select(.number == '$ISSUE_NUMBER')' unresponded_issues.json)
+                        
+                        # Add the ai-working label
+                        gh issue edit "$ISSUE_NUMBER" --add-label "ai-working"
+                        
+                        # Trigger the conversation handler for this issue
+                        gh workflow run ai-conversation-handler.yml -f issue_number="$ISSUE_NUMBER" -f auto_process="true"
+                        
+                        # Wait a bit to avoid rate limits
+                        sleep 5
+                      done < issue_numbers.txt
+                    env:
+                      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            EOF
+            
+            echo "Created process-unresponded-issues.yml workflow"
+            
+            # Add to git
+            git config user.name "GitHub Auto-Coordinator"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .github/workflows/process-unresponded-issues.yml
+            git commit -m "feat: Add workflow to process unresponded issues"
+            git push
+          else
+            echo "process-unresponded-issues.yml workflow already exists"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Trigger identified workflows
+      - name: Trigger workflows
+        if: env.WORKFLOWS_TO_TRIGGER > 0
+        run: |
+          # Create Python script to trigger workflows in priority order
+          cat > trigger_workflows.py << 'EOF'
+          import json
+          import os
+          import time
+          import subprocess
+
+          def trigger_workflow(workflow_name, input_json, item_number=None, item_type=None):
+              """Trigger a workflow with the given inputs"""
+              args = ["gh", "workflow", "run", workflow_name]
+              
+              # Add item_number and item_type if available
+              if item_number:
+                  args.extend(["-f", f"item_number={item_number}"])
+              if item_type:
+                  args.extend(["-f", f"item_type={item_type}"])
+              
+              # Add inputs
+              inputs = json.loads(input_json) if input_json else {}
+              for key, value in inputs.items():
+                  args.extend(["-f", f"{key}={value}"])
+              
+              # Run the command
+              result = subprocess.run(args, capture_output=True, text=True)
+              return result.returncode == 0, result.stdout, result.stderr
+
+          if __name__ == "__main__":
+              # Get the number of workflows to trigger
+              workflow_count = int(os.environ.get("WORKFLOWS_TO_TRIGGER", "0"))
+              
+              if workflow_count <= 0:
+                  print("No workflows to trigger")
+                  exit(0)
+              
+              # Get item details if available
+              item_number = os.environ.get("ITEM_NUMBER")
+              item_type = os.environ.get("ITEM_TYPE")
+              
+              # Collect workflow information
+              workflows = []
+              for i in range(workflow_count):
+                  name = os.environ.get(f"WORKFLOW_{i}_NAME")
+                  priority = int(os.environ.get(f"WORKFLOW_{i}_PRIORITY", "999"))
+                  inputs = os.environ.get(f"WORKFLOW_{i}_INPUTS", "{}")
+                  
+                  if name:
+                      workflows.append({
+                          "name": name,
+                          "priority": priority,
+                          "inputs": inputs
+                      })
+              
+              # Sort by priority
+              workflows.sort(key=lambda w: w["priority"])
+              
+              # Trigger workflows
+              for workflow in workflows:
+                  print(f"Triggering workflow: {workflow['name']}")
+                  success, stdout, stderr = trigger_workflow(
+                      workflow["name"], 
+                      workflow["inputs"], 
+                      item_number, 
+                      item_type
+                  )
+                  
+                  if success:
+                      print(f"Successfully triggered {workflow['name']}")
+                  else:
+                      print(f"Failed to trigger {workflow['name']}: {stderr}")
+                  
+                  # Add a small delay between triggers to avoid rate limits
+                  time.sleep(2)
+          EOF
+          
+          # Run the Python script
+          python trigger_workflows.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

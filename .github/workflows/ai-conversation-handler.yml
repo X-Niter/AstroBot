@@ -9,6 +9,29 @@ on:
     types: [opened, edited]
   pull_request_review_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: false
+        type: number
+      pr_number:
+        description: 'PR number to process'
+        required: false
+        type: number
+      item_type:
+        description: 'Type of item to process'
+        required: false
+        default: 'issue'
+        type: choice
+        options:
+          - issue
+          - pr
+      auto_process:
+        description: 'Automatically process without @ai mention'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   handle-conversation:
@@ -83,6 +106,23 @@ jobs:
             if [[ "${{ github.event.comment.body }}" =~ ^@ai|@bot ]]; then
               echo "DIRECT_AI_QUESTION=true" >> $GITHUB_ENV
             fi
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # If triggered from workflow_dispatch, use the parameters
+            if [[ "${{ github.event.inputs.item_type }}" == "pr" ]]; then
+              echo "CONVERSATION_TYPE=pr" >> $GITHUB_ENV
+              echo "ITEM_NUMBER=${{ github.event.inputs.pr_number }}" >> $GITHUB_ENV
+            else
+              echo "CONVERSATION_TYPE=issue" >> $GITHUB_ENV
+              echo "ITEM_NUMBER=${{ github.event.inputs.issue_number }}" >> $GITHUB_ENV
+            fi
+            
+            # Set auto_process flag
+            if [[ "${{ github.event.inputs.auto_process }}" == "true" ]]; then
+              echo "DIRECT_AI_QUESTION=true" >> $GITHUB_ENV
+            fi
+            
+            # Set a synthetic author to avoid bot detection
+            echo "AUTHOR=workflow_dispatch" >> $GITHUB_ENV
           fi
           
           # Check if this is from bot to avoid loops
@@ -110,7 +150,7 @@ jobs:
       
       # Process with OpenAI and generate response
       - name: Process conversation with AI
-        if: env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true'
+        if: env.FROM_BOT == 'false' && (env.DIRECT_AI_QUESTION == 'true' || github.event.inputs.auto_process == 'true')
         id: process-conversation
         run: |
           # Create Python script to generate response
@@ -339,7 +379,7 @@ jobs:
       
       # Post the AI response
       - name: Post AI response
-        if: env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true' && env.AI_RESPONSE_GENERATED == 'true'
+        if: (env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true' && env.AI_RESPONSE_GENERATED == 'true') || github.event.inputs.auto_process == 'true'
         run: |
           if [[ "${{ env.CONVERSATION_TYPE }}" == "issue" ]]; then
             # Comment on the issue
@@ -362,7 +402,7 @@ jobs:
       
       # Handle special commands and actions
       - name: Handle action commands
-        if: env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true' && env.AI_RESPONSE_GENERATED == 'true'
+        if: (env.FROM_BOT == 'false' && env.DIRECT_AI_QUESTION == 'true' && env.AI_RESPONSE_GENERATED == 'true') || github.event.inputs.auto_process == 'true'
         run: |
           # Extract the command
           COMMAND=$(echo "${{ env.BODY }}" | grep -oE '^@ai [a-z\-]+' | sed 's/@ai //')
