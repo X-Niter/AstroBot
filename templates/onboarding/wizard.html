@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}AstroBot AI Onboarding Wizard{% endblock %}
+{% block title %}AI Onboarding Wizard{% endblock %}
 
 {% block styles %}
+{{ super() }}
 <style>
     .wizard-container {
-        max-width: 800px;
+        max-width: 1000px;
         margin: 0 auto;
-        padding: 2rem;
     }
     
     .wizard-step {
@@ -19,1386 +19,823 @@
     }
     
     .wizard-nav {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 2rem;
-        padding-top: 1rem;
-        border-top: 1px solid #dee2e6;
-    }
-    
-    .wizard-progress {
-        margin-bottom: 2rem;
-    }
-    
-    .wizard-progress .progress {
-        height: 8px;
+        padding: 1rem 0;
     }
     
     .step-indicator {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-    }
-    
-    .step-indicator span {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background-color: #e9ecef;
-        color: #6c757d;
-        display: flex;
-        align-items: center;
         justify-content: center;
-        font-weight: bold;
-        z-index: 1;
+        margin-bottom: 2rem;
+    }
+    
+    .step-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background-color: #dee2e6;
+        margin: 0 8px;
         position: relative;
     }
     
-    .step-indicator span.active {
-        background-color: #5865F2;
-        color: white;
+    .step-dot.active {
+        background-color: var(--primary-color);
     }
     
-    .step-indicator span.completed {
-        background-color: #198754;
-        color: white;
+    .step-dot.completed {
+        background-color: var(--success-color);
     }
     
-    .step-indicator-line {
-        position: relative;
-    }
-    
-    .step-indicator-line::before {
+    .step-dot::after {
         content: '';
         position: absolute;
-        top: 15px;
-        left: 0;
-        right: 0;
+        width: 16px;
         height: 2px;
-        background-color: #e9ecef;
-        z-index: 0;
+        background-color: #dee2e6;
+        right: -16px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    
+    .step-dot:last-child::after {
+        display: none;
+    }
+    
+    .step-dot.completed::after {
+        background-color: var(--success-color);
+    }
+    
+    .feature-card {
+        border: 2px solid #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .feature-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .feature-card.selected {
+        border-color: var(--primary-color);
+        background-color: rgba(var(--primary-rgb), 0.05);
+    }
+    
+    .feature-card .feature-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .feature-card .feature-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+    
+    .feature-card .feature-description {
+        color: #6c757d;
+        font-size: 0.9rem;
     }
     
     .wizard-summary {
         background-color: #f8f9fa;
-        border-radius: 0.5rem;
+        border-radius: 8px;
         padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .wizard-summary h4 {
-        border-bottom: 1px solid #dee2e6;
-        padding-bottom: 0.5rem;
-        margin-bottom: 1rem;
     }
     
     .summary-item {
-        margin-bottom: 0.75rem;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #dee2e6;
     }
     
-    .summary-item label {
-        font-weight: bold;
-        margin-bottom: 0.25rem;
+    .summary-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
     }
     
-    .features-selector .card {
-        cursor: pointer;
-        transition: all 0.2s ease;
-        height: 100%;
-    }
-    
-    .features-selector .card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .features-selector .card.selected {
-        border-color: #5865F2;
-        background-color: rgba(88, 101, 242, 0.05);
-    }
-    
-    .features-selector .card.selected .card-header {
-        background-color: #5865F2;
-        color: white;
-    }
-    
-    .features-selector .form-check {
-        padding-left: 0;
-    }
-    
-    .features-selector .form-check-input {
-        position: absolute;
-        right: 1rem;
-        top: 1rem;
-    }
-    
-    .ai-thinking {
-        display: none;
-        margin: 1.5rem 0;
-        padding: 1rem;
+    .chat-bubble {
         background-color: #f8f9fa;
-        border-radius: 0.5rem;
-        text-align: center;
-    }
-    
-    .ai-thinking.visible {
-        display: block;
-    }
-    
-    .ai-recommendation {
-        background-color: rgba(88, 101, 242, 0.05);
-        border-left: 4px solid #5865F2;
-        padding: 1rem;
+        border-radius: 18px;
+        padding: 1rem 1.5rem;
         margin-bottom: 1.5rem;
-        border-radius: 0 0.5rem 0.5rem 0;
-    }
-    
-    .processing-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        color: white;
-    }
-    
-    .processing-overlay.visible {
-        display: flex;
-    }
-    
-    .dot-typing {
         position: relative;
-        left: -9999px;
-        width: 10px;
-        height: 10px;
-        border-radius: 5px;
-        background-color: white;
-        color: white;
-        box-shadow: 9984px 0 0 0 white, 9999px 0 0 0 white, 10014px 0 0 0 white;
-        animation: dot-typing 1.5s infinite linear;
+        max-width: 80%;
     }
     
-    @keyframes dot-typing {
-        0% {
-            box-shadow: 9984px 0 0 0 white, 9999px 0 0 0 white, 10014px 0 0 0 white;
-        }
-        16.667% {
-            box-shadow: 9984px -10px 0 0 white, 9999px 0 0 0 white, 10014px 0 0 0 white;
-        }
-        33.333% {
-            box-shadow: 9984px 0 0 0 white, 9999px 0 0 0 white, 10014px 0 0 0 white;
+    .chat-bubble::before {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 24px;
+        border-width: 10px 10px 0;
+        border-style: solid;
+        border-color: #f8f9fa transparent transparent;
+    }
+    
+    .chat-bubble.bot {
+        background-color: #e9f5ff;
+        margin-right: auto;
+    }
+    
+    .chat-bubble.bot::before {
+        left: 24px;
+        border-color: #e9f5ff transparent transparent;
+    }
+    
+    .chat-bubble.user {
+        background-color: #f0f7f0;
+        margin-left: auto;
+    }
+    
+    .chat-bubble.user::before {
+        left: auto;
+        right: 24px;
+        border-color: #f0f7f0 transparent transparent;
+    }
+    
+    .bot-thinking {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .bot-thinking .dot {
+        width: 8px;
+        height: 8px;
+        background-color: #6c757d;
+        border-radius: 50%;
+        margin: 0 2px;
+        opacity: 0.6;
+        animation: dotPulse 1.4s infinite ease-in-out;
+    }
+    
+    .bot-thinking .dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .bot-thinking .dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes dotPulse {
+        0%, 100% {
+            transform: scale(0.7);
+            opacity: 0.5;
         }
         50% {
-            box-shadow: 9984px 0 0 0 white, 9999px -10px 0 0 white, 10014px 0 0 0 white;
+            transform: scale(1.2);
+            opacity: 1;
         }
-        66.667% {
-            box-shadow: 9984px 0 0 0 white, 9999px 0 0 0 white, 10014px 0 0 0 white;
-        }
-        83.333% {
-            box-shadow: 9984px 0 0 0 white, 9999px 0 0 0 white, 10014px -10px 0 0 white;
-        }
-        100% {
-            box-shadow: 9984px 0 0 0 white, 9999px 0 0 0 white, 10014px 0 0 0 white;
-        }
+    }
+    
+    .ai-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--success-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .chat-message {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+    
+    .chat-content {
+        flex: 1;
+    }
+    
+    #aiChatInput {
+        border-radius: 20px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3">AstroBot AI Onboarding Wizard</h1>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+    
     <div class="wizard-container">
-        <h1 class="text-center mb-4">AstroBot AI Onboarding Wizard</h1>
-        <p class="lead text-center mb-4">Let's configure AstroBot AI to best suit your Discord server's needs. Our AI will provide personalized recommendations based on your preferences.</p>
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step-dot active" data-step="1"></div>
+            <div class="step-dot" data-step="2"></div>
+            <div class="step-dot" data-step="3"></div>
+            <div class="step-dot" data-step="4"></div>
+            <div class="step-dot" data-step="5"></div>
+        </div>
         
-        <div class="wizard-progress">
-            <div class="step-indicator-line">
-                <div class="step-indicator">
-                    <span class="active" id="step-indicator-1">1</span>
-                    <span id="step-indicator-2">2</span>
-                    <span id="step-indicator-3">3</span>
-                    <span id="step-indicator-4">4</span>
-                    <span id="step-indicator-5">5</span>
+        <!-- Introduction Step -->
+        <div class="wizard-step active" id="step1">
+            <div class="card">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <i class="bi bi-stars text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h2>Welcome to the AstroBot AI Setup Wizard</h2>
+                        <p class="lead">Let's personalize your bot experience with advanced AI assistance</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p>This wizard will help you configure your AstroBot with personalized settings and features that best match your community's needs. Our AI assistant will guide you through the process and make recommendations based on your preferences.</p>
+                        
+                        <div class="alert alert-info d-flex align-items-center mt-4">
+                            <i class="bi bi-info-circle-fill me-3" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <strong>What to expect:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Select the key features you want to enable</li>
+                                    <li>Configure advanced settings with AI assistance</li>
+                                    <li>Personalize moderation, commands, and integrations</li>
+                                    <li>Get a complete configuration summary at the end</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-bubble bot">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="ai-avatar me-2">
+                                <i class="bi bi-robot"></i>
+                            </div>
+                            <strong>AstroBot AI</strong>
+                        </div>
+                        Hi there! I'm your AstroBot AI assistant. I'll help you set up and configure your bot with features that best match your community's needs. Ready to get started?
+                    </div>
                 </div>
-            </div>
-            <div class="progress">
-                <div class="progress-bar bg-primary" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-        </div>
-        
-        <!-- Step 1: Server Information -->
-        <div class="wizard-step active" id="step-1">
-            <h3>Step 1: Tell us about your server</h3>
-            <p>To provide you with personalized recommendations, we need to understand your Discord server's purpose and size.</p>
-            
-            <div class="mb-3">
-                <label for="server-name" class="form-label">Server Name</label>
-                <input type="text" class="form-control" id="server-name" placeholder="e.g., Minecraft Community Hub">
-            </div>
-            
-            <div class="mb-3">
-                <label for="server-purpose" class="form-label">Primary Server Purpose</label>
-                <select class="form-select" id="server-purpose">
-                    <option value="" selected disabled>Select the main purpose of your server</option>
-                    <option value="gaming">Gaming Community</option>
-                    <option value="minecraft">Minecraft Server</option>
-                    <option value="modding">Modding Community</option>
-                    <option value="streaming">Streaming/Content Creation</option>
-                    <option value="general">General Community</option>
-                    <option value="education">Educational</option>
-                    <option value="professional">Professional/Work</option>
-                    <option value="other">Other</option>
-                </select>
-            </div>
-            
-            <div class="mb-3">
-                <label for="server-size" class="form-label">Server Size</label>
-                <select class="form-select" id="server-size">
-                    <option value="" selected disabled>Select your server size</option>
-                    <option value="small">Small (< 100 members)</option>
-                    <option value="medium">Medium (100-500 members)</option>
-                    <option value="large">Large (500-2000 members)</option>
-                    <option value="very_large">Very Large (2000+ members)</option>
-                </select>
-            </div>
-            
-            <div class="mb-3">
-                <label for="activity-level" class="form-label">Activity Level</label>
-                <select class="form-select" id="activity-level">
-                    <option value="" selected disabled>Select your server's activity level</option>
-                    <option value="low">Low (A few messages per day)</option>
-                    <option value="medium">Medium (Steady conversation throughout the day)</option>
-                    <option value="high">High (Active conversations all day)</option>
-                    <option value="very_high">Very High (Constant activity, multiple active channels)</option>
-                </select>
-            </div>
-            
-            <div class="mb-3">
-                <label for="moderation-needs" class="form-label">Moderation Needs</label>
-                <select class="form-select" id="moderation-needs">
-                    <option value="" selected disabled>Select your moderation requirements</option>
-                    <option value="minimal">Minimal (Mostly trusted members)</option>
-                    <option value="standard">Standard (Occasional moderation required)</option>
-                    <option value="high">High (Regular moderation required)</option>
-                    <option value="very_high">Very High (Constant moderation required)</option>
-                </select>
-            </div>
-        </div>
-        
-        <!-- Step 2: Feature Selection -->
-        <div class="wizard-step" id="step-2">
-            <h3>Step 2: Select Features</h3>
-            <p>Choose which AstroBot features you're interested in. Our AI will provide personalized configuration recommendations for selected features.</p>
-            
-            <div class="features-selector mb-4">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="card h-100" data-feature="moderation">
-                            <div class="card-header">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="selected-features" id="feature-moderation" value="moderation">
-                                    <label class="form-check-label" for="feature-moderation">
-                                        <strong>Moderation System</strong>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Advanced moderation tools with AI-powered context analysis, multi-stage warnings, and comprehensive logs.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="card h-100" data-feature="custom_commands">
-                            <div class="card-header">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="selected-features" id="feature-custom-commands" value="custom_commands">
-                                    <label class="form-check-label" for="feature-custom-commands">
-                                        <strong>Custom Commands</strong>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Create powerful custom commands with variables, conditionals, API integrations, and dynamic responses.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="card h-100" data-feature="minecraft">
-                            <div class="card-header">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="selected-features" id="feature-minecraft" value="minecraft">
-                                    <label class="form-check-label" for="feature-minecraft">
-                                        <strong>Minecraft Integration</strong>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Manage Minecraft servers, view status, run console commands, and manage whitelists from Discord.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="card h-100" data-feature="ai">
-                            <div class="card-header">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="selected-features" id="feature-ai" value="ai">
-                                    <label class="form-check-label" for="feature-ai">
-                                        <strong>AI Features</strong>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Leverage Claude 3.5 and GPT-4o for Q&A, mod ideas, content generation, and moderation assistance.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="card h-100" data-feature="twitch">
-                            <div class="card-header">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="selected-features" id="feature-twitch" value="twitch">
-                                    <label class="form-check-label" for="feature-twitch">
-                                        <strong>Twitch Integration</strong>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Stream alerts, viewer point systems, and fully integrated Twitch-Discord experience for streamers.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="card h-100" data-feature="analytics">
-                            <div class="card-header">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="selected-features" id="feature-analytics" value="analytics">
-                                    <label class="form-check-label" for="feature-analytics">
-                                        <strong>Advanced Analytics</strong>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Comprehensive server analytics, command usage, user activity, and moderation trend tracking.</p>
-                            </div>
-                        </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" disabled><i class="bi bi-arrow-left"></i> Previous</button>
+                        <button type="button" class="btn btn-primary next-step" data-next="2">Continue <i class="bi bi-arrow-right"></i></button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Step 3: Specific Requirements -->
-        <div class="wizard-step" id="step-3">
-            <h3>Step 3: Specific Requirements</h3>
-            <p>Tell us more about your specific requirements. This helps our AI suggest the best configuration for your server.</p>
-            
-            <div id="feature-specific-questions">
-                <!-- Questions will be dynamically added here based on selected features -->
-                <div class="alert alert-info">
-                    Please select features in the previous step to see specific configuration questions.
-                </div>
-            </div>
-            
-            <div class="mb-3">
-                <label for="additional-requirements" class="form-label">Additional Requirements or Notes</label>
-                <textarea class="form-control" id="additional-requirements" rows="3" placeholder="Tell us anything else that might help us customize AstroBot for your needs..."></textarea>
-            </div>
-        </div>
-        
-        <!-- Step 4: AI Recommendations -->
-        <div class="wizard-step" id="step-4">
-            <h3>Step 4: AI Personalized Recommendations</h3>
-            
-            <div class="ai-thinking" id="ai-thinking">
-                <div class="d-flex align-items-center justify-content-center">
-                    <div class="spinner-border text-primary me-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
+        <!-- Features Selection Step -->
+        <div class="wizard-step" id="step2">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h2 class="mb-4">Select Your Core Features</h2>
+                    <p class="mb-4">Choose the primary features you want to enable for your AstroBot. You can always change these later.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card selected" data-feature="moderation">
+                                <div class="feature-title">
+                                    <span class="feature-icon text-danger"><i class="bi bi-shield-check"></i></span>
+                                    <span>AI-Enhanced Moderation</span>
+                                </div>
+                                <div class="feature-description">
+                                    Smart content filtering, auto-moderation, and context-aware rule enforcement
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card selected" data-feature="minecraft">
+                                <div class="feature-title">
+                                    <span class="feature-icon text-success"><i class="bi bi-box"></i></span>
+                                    <span>Minecraft Integration</span>
+                                </div>
+                                <div class="feature-description">
+                                    Server management, whitelist control, and mod installation assistance
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card" data-feature="ai">
+                                <div class="feature-title">
+                                    <span class="feature-icon text-primary"><i class="bi bi-cpu"></i></span>
+                                    <span>AI Assistant & Generator</span>
+                                </div>
+                                <div class="feature-description">
+                                    Claude 3.5 & GPT-4o powered assistance for modding, Q&A, and content generation
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card" data-feature="commands">
+                                <div class="feature-title">
+                                    <span class="feature-icon text-info"><i class="bi bi-terminal"></i></span>
+                                    <span>Custom Commands</span>
+                                </div>
+                                <div class="feature-description">
+                                    Create and manage custom commands, reactions, and automated responses
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card" data-feature="twitch">
+                                <div class="feature-title">
+                                    <span class="feature-icon text-purple"><i class="bi bi-twitch"></i></span>
+                                    <span>Twitch StreamSync</span>
+                                </div>
+                                <div class="feature-description">
+                                    Stream notifications, chat integration, and community point system
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card" data-feature="analytics">
+                                <div class="feature-title">
+                                    <span class="feature-icon text-warning"><i class="bi bi-graph-up"></i></span>
+                                    <span>Advanced Analytics</span>
+                                </div>
+                                <div class="feature-description">
+                                    Detailed insights, usage stats, and community engagement metrics
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <p class="mb-0">Our AI is analyzing your requirements and generating personalized recommendations...</p>
                 </div>
-            </div>
-            
-            <div id="ai-recommendations">
-                <!-- AI recommendations will be inserted here -->
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary prev-step" data-prev="1"><i class="bi bi-arrow-left"></i> Previous</button>
+                        <button type="button" class="btn btn-primary next-step" data-next="3">Continue <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <!-- Step 5: Summary and Confirmation -->
-        <div class="wizard-step" id="step-5">
-            <h3>Step 5: Review and Confirm</h3>
-            <p>Review your choices and the AI recommendations before finalizing your AstroBot configuration.</p>
-            
-            <div class="wizard-summary">
-                <h4>Server Information</h4>
-                <div class="row">
-                    <div class="col-md-6">
+        <!-- AI Configuration Chat Step -->
+        <div class="wizard-step" id="step3">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h2 class="mb-4">AI-Assisted Setup</h2>
+                    <p class="mb-4">Chat with our AI assistant to configure your bot's features and preferences.</p>
+                    
+                    <div class="chat-area" id="chatArea">
+                        <div class="chat-message">
+                            <div class="ai-avatar">
+                                <i class="bi bi-robot"></i>
+                            </div>
+                            <div class="chat-content">
+                                <div class="chat-bubble bot">
+                                    Great! I see you've selected <span id="selectedFeaturesSummary">AI-Enhanced Moderation and Minecraft Integration</span>. Let's configure these features specifically for your needs.
+                                    
+                                    <p class="mt-2 mb-0">Tell me about your community: What kind of Minecraft server do you run? How many members do you have? What types of moderation challenges do you face?</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat messages will be dynamically added here -->
+                        
+                        <div id="typingIndicator" style="display: none;">
+                            <div class="chat-message">
+                                <div class="ai-avatar">
+                                    <i class="bi bi-robot"></i>
+                                </div>
+                                <div class="bot-thinking">
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input mt-4">
+                        <form id="aiChatForm">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="aiChatInput" placeholder="Type your response here...">
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary prev-step" data-prev="2"><i class="bi bi-arrow-left"></i> Previous</button>
+                        <button type="button" class="btn btn-primary next-step" data-next="4" id="aiChatNextBtn" disabled>Continue <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Configuration Details Step -->
+        <div class="wizard-step" id="step4">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h2 class="mb-4">Configuration Summary</h2>
+                    <p class="mb-4">Review your bot configuration before finalizing.</p>
+                    
+                    <div class="wizard-summary">
+                        <h5>Enabled Features</h5>
                         <div class="summary-item">
-                            <label>Server Name:</label>
-                            <div id="summary-server-name"></div>
+                            <div id="enabledFeaturesSummary">
+                                <!-- This will be populated by JavaScript -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                    <span>AI-Enhanced Moderation</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                    <span>Minecraft Integration</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
+                        
+                        <h5>Feature Settings</h5>
                         <div class="summary-item">
-                            <label>Primary Purpose:</label>
-                            <div id="summary-server-purpose"></div>
+                            <h6><i class="bi bi-shield-check text-danger me-2"></i> Moderation Configuration</h6>
+                            <div id="moderationSettings" class="ps-4 pt-2">
+                                <!-- Will be populated by JavaScript -->
+                                <div class="mb-2">
+                                    <strong>Sensitivity Level:</strong> <span>Medium (Balanced approach)</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Auto-moderation:</strong> <span>Enabled</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Warning System:</strong> <span>3-strike system</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
+                        
                         <div class="summary-item">
-                            <label>Server Size:</label>
-                            <div id="summary-server-size"></div>
+                            <h6><i class="bi bi-box text-success me-2"></i> Minecraft Configuration</h6>
+                            <div id="minecraftSettings" class="ps-4 pt-2">
+                                <!-- Will be populated by JavaScript -->
+                                <div class="mb-2">
+                                    <strong>Server Type:</strong> <span>SMP with mods</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Whitelist Management:</strong> <span>Enabled</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Server Monitoring:</strong> <span>Enabled</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="summary-item">
-                            <label>Activity Level:</label>
-                            <div id="summary-activity-level"></div>
+                        
+                        <div id="additionalConfigSections">
+                            <!-- Other configuration sections will be added here based on selected features -->
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="wizard-summary">
-                <h4>Selected Features</h4>
-                <div id="summary-features" class="row">
-                    <!-- Features will be inserted here -->
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary prev-step" data-prev="3"><i class="bi bi-arrow-left"></i> Previous</button>
+                        <button type="button" class="btn btn-primary next-step" data-next="5">Confirm & Complete <i class="bi bi-arrow-right"></i></button>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="wizard-summary">
-                <h4>Configuration Summary</h4>
-                <div id="summary-configuration">
-                    <!-- Configuration details will be inserted here -->
-                </div>
-            </div>
-            
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="confirm-setup">
-                <label class="form-check-label" for="confirm-setup">
-                    I confirm that I want to set up AstroBot with these configurations. I understand that I can make further adjustments later through the dashboard or Discord commands.
-                </label>
             </div>
         </div>
         
-        <!-- Navigation Buttons -->
-        <div class="wizard-nav">
-            <button class="btn btn-secondary" id="prev-step" disabled>Previous</button>
-            <button class="btn btn-primary" id="next-step">Next</button>
+        <!-- Completion Step -->
+        <div class="wizard-step" id="step5">
+            <div class="card">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="mb-3">Setup Complete!</h2>
+                    <p class="lead mb-4">Your AstroBot has been successfully configured with your preferred settings.</p>
+                    
+                    <div class="alert alert-success d-inline-block mb-4">
+                        <i class="bi bi-stars me-2"></i>
+                        Configuration has been saved and applied to your bot.
+                    </div>
+                    
+                    <div class="row justify-content-center mt-4">
+                        <div class="col-md-8">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5>Next Steps</h5>
+                                    <ul class="text-start">
+                                        <li>Invite AstroBot to your Discord server</li>
+                                        <li>Connect your Minecraft server for management</li>
+                                        <li>Explore additional features in the dashboard</li>
+                                        <li>Check out the documentation for advanced configurations</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('documentation_index') }}'"><i class="bi bi-book"></i> View Documentation</button>
+                        <button type="button" class="btn btn-primary" onclick="window.location.href='{{ url_for('index') }}'">Go to Dashboard <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-
-<!-- Processing Overlay -->
-<div class="processing-overlay" id="processing-overlay">
-    <div class="spinner-border text-light mb-3" style="width: 3rem; height: 3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-    <h4 class="text-white mb-2">Setting up AstroBot AI</h4>
-    <p class="mb-3">Please wait while we configure your bot...</p>
-    <div class="dot-typing"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Variables
-        let currentStep = 1;
-        const totalSteps = 5;
-        let serverData = {};
-        let selectedFeatures = [];
-        
-        // Elements
-        const wizardSteps = document.querySelectorAll('.wizard-step');
-        const progressBar = document.querySelector('.progress-bar');
-        const stepIndicators = document.querySelectorAll('.step-indicator span');
-        const prevButton = document.getElementById('prev-step');
-        const nextButton = document.getElementById('next-step');
-        const aiThinking = document.getElementById('ai-thinking');
-        const processingOverlay = document.getElementById('processing-overlay');
-        
-        // Feature specific elements
-        const featureCards = document.querySelectorAll('.features-selector .card');
-        const featureCheckboxes = document.querySelectorAll('input[name="selected-features"]');
-        const featureSpecificQuestions = document.getElementById('feature-specific-questions');
-        
-        // Setup event listeners
-        prevButton.addEventListener('click', goToPreviousStep);
-        nextButton.addEventListener('click', goToNextStep);
-        
-        // Feature cards click handler
+        // Feature selection logic
+        const featureCards = document.querySelectorAll('.feature-card');
         featureCards.forEach(card => {
-            card.addEventListener('click', function(e) {
-                const checkbox = this.querySelector('input[type="checkbox"]');
-                if (e.target !== checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                }
-                updateCardSelection(this, checkbox.checked);
+            card.addEventListener('click', function() {
+                this.classList.toggle('selected');
+                updateSelectedFeaturesSummary();
             });
         });
         
-        // Feature checkboxes change handler
-        featureCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const card = this.closest('.card');
-                updateCardSelection(card, this.checked);
+        // Step navigation
+        const nextButtons = document.querySelectorAll('.next-step');
+        const prevButtons = document.querySelectorAll('.prev-step');
+        const stepDots = document.querySelectorAll('.step-dot');
+        
+        nextButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const currentStep = document.querySelector('.wizard-step.active');
+                const nextStepNum = this.getAttribute('data-next');
+                const nextStep = document.getElementById('step' + nextStepNum);
+                
+                currentStep.classList.remove('active');
+                nextStep.classList.add('active');
+                
+                // Update step dots
+                updateStepDots(nextStepNum);
+                
+                // Scroll to top
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                
+                // If moving to step 3, update the selected features text
+                if (nextStepNum === '3') {
+                    updateSelectedFeaturesSummary();
+                }
+                
+                // If moving to step 4, update the summary
+                if (nextStepNum === '4') {
+                    updateConfigurationSummary();
+                }
             });
         });
         
-        // Functions
-        function updateCardSelection(card, isSelected) {
-            if (isSelected) {
-                card.classList.add('selected');
-            } else {
-                card.classList.remove('selected');
-            }
-        }
+        prevButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const currentStep = document.querySelector('.wizard-step.active');
+                const prevStepNum = this.getAttribute('data-prev');
+                const prevStep = document.getElementById('step' + prevStepNum);
+                
+                currentStep.classList.remove('active');
+                prevStep.classList.add('active');
+                
+                // Update step dots
+                updateStepDots(prevStepNum);
+                
+                // Scroll to top
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            });
+        });
         
-        function goToNextStep() {
-            // Validate current step
-            if (!validateStep(currentStep)) {
-                return;
-            }
-            
-            // Save data from current step
-            saveStepData(currentStep);
-            
-            // Move to next step
-            if (currentStep < totalSteps) {
-                // If we're moving to step 3, generate feature-specific questions
-                if (currentStep === 2) {
-                    generateFeatureSpecificQuestions();
-                }
+        function updateStepDots(activeStep) {
+            stepDots.forEach(dot => {
+                const stepNum = dot.getAttribute('data-step');
+                dot.classList.remove('active', 'completed');
                 
-                // If we're moving to step 4, simulate AI recommendation generation
-                if (currentStep === 3) {
-                    simulateAiRecommendation();
-                }
-                
-                // If we're moving to step 5, generate summary
-                if (currentStep === 4) {
-                    generateSummary();
-                }
-                
-                // Update step visibility
-                document.getElementById(`step-${currentStep}`).classList.remove('active');
-                currentStep++;
-                document.getElementById(`step-${currentStep}`).classList.add('active');
-                
-                // Update progress bar and indicators
-                updateProgress();
-                
-                // Update button states
-                prevButton.disabled = false;
-                
-                // Change Next button text on last step
-                if (currentStep === totalSteps) {
-                    nextButton.textContent = 'Finish & Configure Bot';
-                }
-            } else {
-                // Final step - handle form submission
-                if (document.getElementById('confirm-setup').checked) {
-                    submitConfiguration();
-                } else {
-                    alert('Please confirm that you want to set up AstroBot with these configurations.');
-                }
-            }
-        }
-        
-        function goToPreviousStep() {
-            if (currentStep > 1) {
-                document.getElementById(`step-${currentStep}`).classList.remove('active');
-                currentStep--;
-                document.getElementById(`step-${currentStep}`).classList.add('active');
-                
-                // Update progress bar and indicators
-                updateProgress();
-                
-                // Update button states
-                prevButton.disabled = currentStep === 1;
-                nextButton.textContent = 'Next';
-            }
-        }
-        
-        function updateProgress() {
-            const progressPercentage = (currentStep / totalSteps) * 100;
-            progressBar.style.width = `${progressPercentage}%`;
-            progressBar.setAttribute('aria-valuenow', progressPercentage);
-            
-            // Update step indicators
-            stepIndicators.forEach((indicator, index) => {
-                const stepNum = index + 1;
-                indicator.classList.remove('active', 'completed');
-                
-                if (stepNum === currentStep) {
-                    indicator.classList.add('active');
-                } else if (stepNum < currentStep) {
-                    indicator.classList.add('completed');
-                    indicator.textContent = '✓';
-                } else {
-                    indicator.textContent = stepNum;
+                if (stepNum < activeStep) {
+                    dot.classList.add('completed');
+                } else if (stepNum === activeStep) {
+                    dot.classList.add('active');
                 }
             });
         }
         
-        function validateStep(step) {
-            switch(step) {
-                case 1:
-                    // Validate server information
-                    const serverName = document.getElementById('server-name').value.trim();
-                    const serverPurpose = document.getElementById('server-purpose').value;
-                    const serverSize = document.getElementById('server-size').value;
-                    const activityLevel = document.getElementById('activity-level').value;
-                    const moderationNeeds = document.getElementById('moderation-needs').value;
+        // Chat input logic
+        const chatForm = document.getElementById('aiChatForm');
+        const chatInput = document.getElementById('aiChatInput');
+        const chatArea = document.getElementById('chatArea');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const aiChatNextBtn = document.getElementById('aiChatNextBtn');
+        
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userMessage = chatInput.value.trim();
+            if (userMessage) {
+                addUserMessage(userMessage);
+                chatInput.value = '';
+                
+                // Show typing indicator
+                typingIndicator.style.display = 'block';
+                
+                // Simulate AI response (in a real app, this would be an API call)
+                setTimeout(() => {
+                    typingIndicator.style.display = 'none';
                     
-                    if (!serverName || !serverPurpose || !serverSize || !activityLevel || !moderationNeeds) {
-                        alert('Please fill in all the fields to continue.');
-                        return false;
+                    // Get selected features
+                    const selectedFeatures = Array.from(document.querySelectorAll('.feature-card.selected'))
+                        .map(card => card.getAttribute('data-feature'));
+                    
+                    // Simulate AI response based on context
+                    let botResponse = '';
+                    if (userMessage.toLowerCase().includes('minecraft') || userMessage.toLowerCase().includes('server')) {
+                        botResponse = generateMinecraftResponse(userMessage);
+                    } else if (userMessage.toLowerCase().includes('moderation') || userMessage.toLowerCase().includes('filter')) {
+                        botResponse = generateModerationResponse(userMessage);
+                    } else {
+                        botResponse = 'Thanks for sharing! Based on what you\'ve told me, I\'ve created a customized configuration for your bot. Let\'s review the settings on the next screen.';
                     }
-                    return true;
                     
-                case 2:
-                    // Validate feature selection
-                    const selectedFeatureCount = document.querySelectorAll('input[name="selected-features"]:checked').length;
-                    if (selectedFeatureCount === 0) {
-                        alert('Please select at least one feature to continue.');
-                        return false;
-                    }
-                    return true;
+                    addBotMessage(botResponse);
                     
-                case 3:
-                    // Additional requirements can be optional
-                    return true;
-                    
-                case 4:
-                    // AI recommendations don't need validation
-                    return true;
-                    
-                case 5:
-                    // Final confirmation
-                    return document.getElementById('confirm-setup').checked;
-                    
-                default:
-                    return true;
+                    // Enable the next button after at least one exchange
+                    aiChatNextBtn.disabled = false;
+                }, 1500);
             }
-        }
+        });
         
-        function saveStepData(step) {
-            switch(step) {
-                case 1:
-                    // Save server information
-                    serverData.name = document.getElementById('server-name').value.trim();
-                    serverData.purpose = document.getElementById('server-purpose').value;
-                    serverData.size = document.getElementById('server-size').value;
-                    serverData.activityLevel = document.getElementById('activity-level').value;
-                    serverData.moderationNeeds = document.getElementById('moderation-needs').value;
-                    break;
-                    
-                case 2:
-                    // Save selected features
-                    selectedFeatures = Array.from(document.querySelectorAll('input[name="selected-features"]:checked'))
-                        .map(checkbox => checkbox.value);
-                    break;
-                    
-                case 3:
-                    // Save specific requirements
-                    serverData.additionalRequirements = document.getElementById('additional-requirements').value.trim();
-                    
-                    // Save feature-specific settings
-                    selectedFeatures.forEach(feature => {
-                        const featureQuestions = document.querySelectorAll(`[data-feature-section="${feature}"] select, [data-feature-section="${feature}"] input[type="text"], [data-feature-section="${feature}"] input[type="checkbox"]:checked`);
-                        
-                        if (!serverData.featureSettings) {
-                            serverData.featureSettings = {};
-                        }
-                        
-                        if (!serverData.featureSettings[feature]) {
-                            serverData.featureSettings[feature] = {};
-                        }
-                        
-                        featureQuestions.forEach(element => {
-                            if (element.type === 'checkbox') {
-                                serverData.featureSettings[feature][element.name] = element.checked;
-                            } else {
-                                serverData.featureSettings[feature][element.name] = element.value;
-                            }
-                        });
-                    });
-                    break;
-            }
-        }
-        
-        function generateFeatureSpecificQuestions() {
-            selectedFeatures = Array.from(document.querySelectorAll('input[name="selected-features"]:checked'))
-                .map(checkbox => checkbox.value);
-            
-            if (selectedFeatures.length === 0) {
-                featureSpecificQuestions.innerHTML = `
-                    <div class="alert alert-info">
-                        Please select features in the previous step to see specific configuration questions.
-                    </div>
-                `;
-                return;
-            }
-            
-            let questionsHTML = '';
-            
-            // Generate feature-specific questions
-            selectedFeatures.forEach(feature => {
-                switch(feature) {
-                    case 'moderation':
-                        questionsHTML += `
-                            <div class="mb-4 p-3 border rounded bg-light" data-feature-section="moderation">
-                                <h4>Moderation System Configuration</h4>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Auto-moderation Level</label>
-                                    <select class="form-select" name="automod_level">
-                                        <option value="low">Low - Basic automod (links, spam)</option>
-                                        <option value="medium" selected>Medium - Standard protection</option>
-                                        <option value="high">High - Strict moderation</option>
-                                        <option value="custom">Custom - I'll configure it manually</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">AI-powered moderation</label>
-                                    <select class="form-select" name="ai_moderation">
-                                        <option value="disabled">Disabled</option>
-                                        <option value="assisted" selected>AI-assisted (needs human approval)</option>
-                                        <option value="automatic">Fully automatic (with confidence threshold)</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Warning System</label>
-                                    <select class="form-select" name="warning_system">
-                                        <option value="basic">Basic (manual warnings only)</option>
-                                        <option value="standard" selected>Standard (auto-escalation)</option>
-                                        <option value="advanced">Advanced (context-aware, trust system)</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="create_mod_log" id="create-mod-log" checked>
-                                    <label class="form-check-label" for="create-mod-log">
-                                        Create a dedicated moderation log channel
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="setup_mod_roles" id="setup-mod-roles" checked>
-                                    <label class="form-check-label" for="setup-mod-roles">
-                                        Set up moderator roles with appropriate permissions
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'custom_commands':
-                        questionsHTML += `
-                            <div class="mb-4 p-3 border rounded bg-light" data-feature-section="custom_commands">
-                                <h4>Custom Commands Configuration</h4>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Command Prefix</label>
-                                    <select class="form-select" name="command_prefix">
-                                        <option value="!astro" selected>!astro (default)</option>
-                                        <option value="!">! (simple)</option>
-                                        <option value="!!">!!</option>
-                                        <option value="custom">Custom prefix</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Starter Commands</label>
-                                    <select class="form-select" name="starter_commands">
-                                        <option value="none">None - I'll create my own</option>
-                                        <option value="basic" selected>Basic set (help, info, rules)</option>
-                                        <option value="gaming">Gaming-focused set</option>
-                                        <option value="moderation">Moderation-focused set</option>
-                                        <option value="community">Community-focused set</option>
-                                        <option value="all">All available starter commands</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_advanced_commands" id="enable-advanced-commands" checked>
-                                    <label class="form-check-label" for="enable-advanced-commands">
-                                        Enable advanced command features (API integration, variables)
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_command_analytics" id="enable-command-analytics" checked>
-                                    <label class="form-check-label" for="enable-command-analytics">
-                                        Track command usage analytics
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'minecraft':
-                        questionsHTML += `
-                            <div class="mb-4 p-3 border rounded bg-light" data-feature-section="minecraft">
-                                <h4>Minecraft Integration Configuration</h4>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Server Type</label>
-                                    <select class="form-select" name="server_type">
-                                        <option value="vanilla">Vanilla</option>
-                                        <option value="spigot">Spigot/Paper</option>
-                                        <option value="forge" selected>Forge</option>
-                                        <option value="fabric">Fabric</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Integration Level</label>
-                                    <select class="form-select" name="integration_level">
-                                        <option value="basic">Basic (server status, player list)</option>
-                                        <option value="standard" selected>Standard (whitelist, basic commands)</option>
-                                        <option value="advanced">Advanced (console access, detailed stats)</option>
-                                        <option value="full">Full Integration (all features)</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="create_server_status_channel" id="create-server-status" checked>
-                                    <label class="form-check-label" for="create-server-status">
-                                        Create dedicated server status channel
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_whitelist_requests" id="enable-whitelist-requests" checked>
-                                    <label class="form-check-label" for="enable-whitelist-requests">
-                                        Enable whitelist request system
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_server_alerts" id="enable-server-alerts" checked>
-                                    <label class="form-check-label" for="enable-server-alerts">
-                                        Enable server status alerts (start, stop, crashes)
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'ai':
-                        questionsHTML += `
-                            <div class="mb-4 p-3 border rounded bg-light" data-feature-section="ai">
-                                <h4>AI Features Configuration</h4>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">AI Models to Enable</label>
-                                    <select class="form-select" name="ai_models">
-                                        <option value="both" selected>Both Claude 3.5 and GPT-4o</option>
-                                        <option value="claude">Claude 3.5 Only</option>
-                                        <option value="gpt">GPT-4o Only</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Usage Limits</label>
-                                    <select class="form-select" name="ai_usage_limits">
-                                        <option value="low">Low (conserve tokens, ~10 queries/day)</option>
-                                        <option value="medium" selected>Medium (balanced, ~50 queries/day)</option>
-                                        <option value="high">High (unlimited for admins, limits for users)</option>
-                                        <option value="unlimited">Unlimited (no restrictions)</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="create_ai_channel" id="create-ai-channel" checked>
-                                    <label class="form-check-label" for="create-ai-channel">
-                                        Create dedicated AI interaction channel
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_image_generation" id="enable-image-generation" checked>
-                                    <label class="form-check-label" for="enable-image-generation">
-                                        Enable image generation with DALL-E
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_ai_moderation" id="enable-ai-moderation" checked>
-                                    <label class="form-check-label" for="enable-ai-moderation">
-                                        Use AI for content moderation assistance
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'twitch':
-                        questionsHTML += `
-                            <div class="mb-4 p-3 border rounded bg-light" data-feature-section="twitch">
-                                <h4>Twitch Integration Configuration</h4>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Twitch Integration Level</label>
-                                    <select class="form-select" name="twitch_integration_level">
-                                        <option value="basic">Basic (stream announcements only)</option>
-                                        <option value="standard" selected>Standard (announcements, alerts, chat relay)</option>
-                                        <option value="advanced">Advanced (points system, rewards, full integration)</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="create_stream_announcements" id="create-stream-announcements" checked>
-                                    <label class="form-check-label" for="create-stream-announcements">
-                                        Create stream announcements channel
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_points_system" id="enable-points-system" checked>
-                                    <label class="form-check-label" for="enable-points-system">
-                                        Enable viewer points system
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_chat_relay" id="enable-chat-relay">
-                                    <label class="form-check-label" for="enable-chat-relay">
-                                        Enable Twitch-Discord chat relay
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'analytics':
-                        questionsHTML += `
-                            <div class="mb-4 p-3 border rounded bg-light" data-feature-section="analytics">
-                                <h4>Analytics Configuration</h4>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Analytics Detail Level</label>
-                                    <select class="form-select" name="analytics_detail">
-                                        <option value="basic">Basic (essential metrics only)</option>
-                                        <option value="standard" selected>Standard (comprehensive metrics)</option>
-                                        <option value="advanced">Advanced (all metrics, detailed reports)</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Data Retention</label>
-                                    <select class="form-select" name="data_retention">
-                                        <option value="30d">30 days</option>
-                                        <option value="90d" selected>90 days</option>
-                                        <option value="180d">180 days</option>
-                                        <option value="365d">1 year</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="enable_activity_reports" id="enable-activity-reports" checked>
-                                    <label class="form-check-label" for="enable-activity-reports">
-                                        Send periodic activity reports to admins
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="track_user_retention" id="track-user-retention" checked>
-                                    <label class="form-check-label" for="track-user-retention">
-                                        Track user retention metrics
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="track_command_usage" id="track-command-usage" checked>
-                                    <label class="form-check-label" for="track-command-usage">
-                                        Track command usage statistics
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                }
-            });
-            
-            featureSpecificQuestions.innerHTML = questionsHTML;
-        }
-        
-        function simulateAiRecommendation() {
-            // Show AI thinking animation
-            aiThinking.classList.add('visible');
-            nextButton.disabled = true;
-            prevButton.disabled = true;
-            
-            // Simulate AI processing time
-            setTimeout(() => {
-                generateAiRecommendations();
-                aiThinking.classList.remove('visible');
-                nextButton.disabled = false;
-                prevButton.disabled = false;
-            }, 3000);
-        }
-        
-        function generateAiRecommendations() {
-            // Generate recommendations based on server info and selected features
-            const aiRecommendationsElement = document.getElementById('ai-recommendations');
-            let recommendationsHTML = '';
-            
-            // General recommendations
-            recommendationsHTML += `
-                <div class="ai-recommendation mb-4">
-                    <h4>General Recommendations</h4>
-                    <p>Based on your ${serverData.purpose} server with ${serverData.size} size and ${serverData.activityLevel} activity level, I recommend the following configuration:</p>
-                    
-                    <ul>
-            `;
-            
-            // Server size specific recommendations
-            if (serverData.size === 'small') {
-                recommendationsHTML += `
-                    <li>Keep your bot configuration simple initially, focusing on core features most valuable to your community</li>
-                    <li>Start with basic moderation settings since your member count is manageable</li>
-                    <li>Consider implementing engagement features to help grow your community</li>
-                `;
-            } else if (serverData.size === 'medium') {
-                recommendationsHTML += `
-                    <li>Implement a structured channel organization with clear categories</li>
-                    <li>Set up role-based permissions with at least 3-4 member tiers</li>
-                    <li>Consider active moderation tools like auto-moderation for spam and inappropriate content</li>
-                `;
-            } else if (serverData.size === 'large' || serverData.size === 'very_large') {
-                recommendationsHTML += `
-                    <li>Implement comprehensive auto-moderation with AI assistance</li>
-                    <li>Set up a detailed hierarchy of roles with clear permissions</li>
-                    <li>Create dedicated channels for different activities and interests</li>
-                    <li>Establish a team of moderators with specialized responsibilities</li>
-                    <li>Consider implementing verification systems for new members</li>
-                `;
-            }
-            
-            recommendationsHTML += `
-                    </ul>
-                </div>
-            `;
-            
-            // Feature-specific recommendations
-            selectedFeatures.forEach(feature => {
-                switch(feature) {
-                    case 'moderation':
-                        recommendationsHTML += `
-                            <div class="ai-recommendation mb-4">
-                                <h4>Moderation System Recommendations</h4>
-                                <p>For a ${serverData.size} server with ${serverData.moderationNeeds} moderation needs:</p>
-                                
-                                <ul>
-                        `;
-                        
-                        if (serverData.moderationNeeds === 'minimal') {
-                            recommendationsHTML += `
-                                <li>Configure basic auto-moderation for spam and explicit content</li>
-                                <li>Set up a simple warning system</li>
-                                <li>Create a mod-log channel for transparency</li>
-                            `;
-                        } else if (serverData.moderationNeeds === 'standard') {
-                            recommendationsHTML += `
-                                <li>Enable AI-assisted moderation for context-aware enforcement</li>
-                                <li>Set up a multi-stage warning system with escalating consequences</li>
-                                <li>Configure auto-mod for spam, inappropriate content, and raid protection</li>
-                                <li>Create dedicated channels for moderation logs and appeals</li>
-                            `;
-                        } else if (serverData.moderationNeeds === 'high' || serverData.moderationNeeds === 'very_high') {
-                            recommendationsHTML += `
-                                <li>Enable full AI-powered auto-moderation with customized sensitivity</li>
-                                <li>Implement advanced trust scoring system for members</li>
-                                <li>Set up comprehensive auto-mod rules for all potential violation types</li>
-                                <li>Create verification system for new members</li>
-                                <li>Configure detailed moderation logging and analytics</li>
-                                <li>Establish moderator roles with specific permissions and responsibilities</li>
-                            `;
-                        }
-                        
-                        recommendationsHTML += `
-                                </ul>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'custom_commands':
-                        recommendationsHTML += `
-                            <div class="ai-recommendation mb-4">
-                                <h4>Custom Commands Recommendations</h4>
-                                <p>For your ${serverData.purpose} server:</p>
-                                
-                                <ul>
-                                    <li>Start with the ${serverData.purpose === 'gaming' || serverData.purpose === 'minecraft' || serverData.purpose === 'modding' ? 'gaming-focused' : 'basic'} command set</li>
-                                    <li>Create custom commands for frequently asked questions in your community</li>
-                                    <li>Set up role-assignment commands if you have a role system</li>
-                                    <li>${serverData.purpose === 'minecraft' ? 'Create Minecraft server status commands' : 'Create informational commands about your community'}</li>
-                                    <li>Enable advanced features to allow for dynamic command responses</li>
-                                </ul>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'minecraft':
-                        recommendationsHTML += `
-                            <div class="ai-recommendation mb-4">
-                                <h4>Minecraft Integration Recommendations</h4>
-                                <p>For your Minecraft-related server:</p>
-                                
-                                <ul>
-                                    <li>Set up a dedicated server status channel that updates automatically</li>
-                                    <li>Configure whitelist request system with customizable application questions</li>
-                                    <li>Enable console access for administrators (with appropriate permissions)</li>
-                                    <li>Set up player count tracking and statistics</li>
-                                    <li>Create commands for checking mod compatibility and server information</li>
-                                </ul>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'ai':
-                        recommendationsHTML += `
-                            <div class="ai-recommendation mb-4">
-                                <h4>AI Features Recommendations</h4>
-                                <p>Based on your server profile:</p>
-                                
-                                <ul>
-                                    <li>Create a dedicated AI interaction channel</li>
-                                    <li>Set up appropriate usage limits to manage costs (${serverData.size === 'small' ? 'medium limits' : 'higher limits with role-based access'})
-                                    <li>${serverData.purpose === 'minecraft' || serverData.purpose === 'modding' ? 'Configure AI to assist with Minecraft modding questions' : 'Configure AI to assist with community-specific topics'}</li>
-                                    <li>Enable image generation for creative content</li>
-                                    <li>${serverData.moderationNeeds === 'high' || serverData.moderationNeeds === 'very_high' ? 'Utilize AI for moderation assistance' : 'Keep AI moderation in assisted mode rather than automatic'}</li>
-                                </ul>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'twitch':
-                        recommendationsHTML += `
-                            <div class="ai-recommendation mb-4">
-                                <h4>Twitch Integration Recommendations</h4>
-                                <p>For your streaming community:</p>
-                                
-                                <ul>
-                                    <li>Set up automated stream announcements</li>
-                                    <li>Configure viewer points system with customizable rewards</li>
-                                    <li>Create stream highlights channel for clips and memorable moments</li>
-                                    <li>Enable streamer roles that are automatically assigned when live</li>
-                                    <li>Set up stream milestone celebrations (followers, subscribers)</li>
-                                </ul>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'analytics':
-                        recommendationsHTML += `
-                            <div class="ai-recommendation mb-4">
-                                <h4>Analytics Recommendations</h4>
-                                <p>For effective server metrics:</p>
-                                
-                                <ul>
-                                    <li>Track member activity patterns to optimize engagement</li>
-                                    <li>Monitor channel usage to identify popular content</li>
-                                    <li>Set up ${serverData.size === 'small' ? 'monthly' : 'weekly'} activity reports for administrators</li>
-                                    <li>Track command usage to see which features are most valuable</li>
-                                    <li>Monitor moderation actions to identify problem areas</li>
-                                </ul>
-                            </div>
-                        `;
-                        break;
-                }
-            });
-            
-            // Additional notes
-            recommendationsHTML += `
-                <div class="ai-recommendation">
-                    <h4>Additional Notes</h4>
-                    <p>These recommendations are tailored to your current server profile. As your community grows, you may want to adjust settings accordingly. All configurations can be modified through the dashboard or using Discord commands.</p>
-                </div>
-            `;
-            
-            aiRecommendationsElement.innerHTML = recommendationsHTML;
-        }
-        
-        function generateSummary() {
-            // Fill in summary information
-            document.getElementById('summary-server-name').textContent = serverData.name;
-            document.getElementById('summary-server-purpose').textContent = getPurposeLabel(serverData.purpose);
-            document.getElementById('summary-server-size').textContent = getSizeLabel(serverData.size);
-            document.getElementById('summary-activity-level').textContent = getActivityLabel(serverData.activityLevel);
-            
-            // Fill in selected features
-            const summaryFeatures = document.getElementById('summary-features');
-            let featuresHTML = '';
-            
-            selectedFeatures.forEach(feature => {
-                featuresHTML += `
-                    <div class="col-md-6">
-                        <div class="summary-item">
-                            <label>${getFeatureLabel(feature)}</label>
-                            <div>Enabled</div>
+        function addUserMessage(message) {
+            const messageHTML = `
+                <div class="chat-message justify-content-end">
+                    <div class="chat-content text-end">
+                        <div class="chat-bubble user">
+                            ${message}
                         </div>
                     </div>
+                    <div class="user-avatar ms-2">
+                        <i class="bi bi-person"></i>
+                    </div>
+                </div>
+            `;
+            
+            // Insert before typing indicator
+            typingIndicator.insertAdjacentHTML('beforebegin', messageHTML);
+            
+            // Scroll to bottom
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function addBotMessage(message) {
+            const messageHTML = `
+                <div class="chat-message">
+                    <div class="ai-avatar">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <div class="chat-content">
+                        <div class="chat-bubble bot">
+                            ${message}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Insert before typing indicator
+            typingIndicator.insertAdjacentHTML('beforebegin', messageHTML);
+            
+            // Scroll to bottom
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function generateMinecraftResponse(userMessage) {
+            // A simple response generator for Minecraft-related inputs
+            let response = 'I understand you\'re running a Minecraft server. ';
+            
+            if (userMessage.toLowerCase().includes('smp')) {
+                response += 'For your SMP server, I recommend enabling whitelist management, automated backups, and server status monitoring. ';
+            } else if (userMessage.toLowerCase().includes('mod')) {
+                response += 'For your modded server, I\'ve configured mod management tools, crash reporting, and update notifications. ';
+            } else {
+                response += 'I\'ve set up basic server management features including console access, player management, and status monitoring. ';
+            }
+            
+            response += 'Is there anything specific about your Minecraft setup you\'d like to tell me more about?';
+            return response;
+        }
+        
+        function generateModerationResponse(userMessage) {
+            // A simple response generator for moderation-related inputs
+            let response = 'Regarding moderation, ';
+            
+            if (userMessage.toLowerCase().includes('strict') || userMessage.toLowerCase().includes('strong')) {
+                response += 'I\'ve configured a strict moderation policy with automatic filtering for profanity, spam, and potentially harmful content. ';
+            } else if (userMessage.toLowerCase().includes('light') || userMessage.toLowerCase().includes('minimal')) {
+                response += 'I\'ve set up a lighter touch moderation approach that mainly focuses on spam prevention and filtering extreme content. ';
+            } else {
+                response += 'I\'ve configured a balanced moderation approach that handles common issues like spam and excessive profanity while allowing casual conversation. ';
+            }
+            
+            response += 'I\'ve also set up a warning system and audit logs for tracking moderation actions. Does this align with what you need?';
+            return response;
+        }
+        
+        function updateSelectedFeaturesSummary() {
+            const selectedFeatures = Array.from(document.querySelectorAll('.feature-card.selected'));
+            const featureNames = selectedFeatures.map(card => {
+                const titleEl = card.querySelector('.feature-title span:last-child');
+                return titleEl.textContent;
+            });
+            
+            let summaryText = '';
+            if (featureNames.length === 1) {
+                summaryText = featureNames[0];
+            } else if (featureNames.length === 2) {
+                summaryText = `${featureNames[0]} and ${featureNames[1]}`;
+            } else {
+                const lastFeature = featureNames.pop();
+                summaryText = `${featureNames.join(', ')}, and ${lastFeature}`;
+            }
+            
+            document.getElementById('selectedFeaturesSummary').textContent = summaryText || 'no features';
+        }
+        
+        function updateConfigurationSummary() {
+            // Update enabled features list
+            const selectedFeatures = Array.from(document.querySelectorAll('.feature-card.selected'));
+            const featuresHTML = selectedFeatures.map(card => {
+                const titleEl = card.querySelector('.feature-title span:last-child');
+                return `
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>${titleEl.textContent}</span>
+                    </div>
                 `;
-            });
+            }).join('');
             
-            summaryFeatures.innerHTML = featuresHTML;
+            document.getElementById('enabledFeaturesSummary').innerHTML = featuresHTML || '<p>No features selected</p>';
             
-            // Fill in configuration summary
-            const summaryConfiguration = document.getElementById('summary-configuration');
-            let configHTML = '';
-            
-            selectedFeatures.forEach(feature => {
-                configHTML += `<h5>${getFeatureLabel(feature)}</h5><ul>`;
-                
-                if (serverData.featureSettings && serverData.featureSettings[feature]) {
-                    for (const [key, value] of Object.entries(serverData.featureSettings[feature])) {
-                        if (typeof value === 'boolean') {
-                            configHTML += `<li>${formatSettingName(key)}: ${value ? 'Enabled' : 'Disabled'}</li>`;
-                        } else {
-                            configHTML += `<li>${formatSettingName(key)}: ${getSettingLabel(feature, key, value)}</li>`;
-                        }
-                    }
-                }
-                
-                configHTML += `</ul>`;
-            });
-            
-            summaryConfiguration.innerHTML = configHTML;
+            // For a real application, this would pull data from the AI chat
+            // and build a more detailed configuration based on the conversation
         }
         
-        function submitConfiguration() {
-            // Show processing overlay
-            processingOverlay.classList.add('visible');
-            
-            // Collect all configuration data
-            const configData = {
-                serverInfo: serverData,
-                selectedFeatures: selectedFeatures
-            };
-            
-            // Send configuration to server
-            fetch('/api/onboarding/configure', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(configData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Hide processing overlay
-                processingOverlay.classList.remove('visible');
-                
-                if (data.status === 'success') {
-                    // Redirect to the dashboard or configuration complete page
-                    window.location.href = data.redirectUrl || '/dashboard';
-                } else {
-                    alert('There was a problem configuring your bot: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error configuring bot:', error);
-                processingOverlay.classList.remove('visible');
-                alert('There was a problem configuring your bot. Please try again later.');
-            });
-        }
-        
-        // Helper functions for labels
-        function getPurposeLabel(purpose) {
-            const purposes = {
-                'gaming': 'Gaming Community',
-                'minecraft': 'Minecraft Server',
-                'modding': 'Modding Community',
-                'streaming': 'Streaming/Content Creation',
-                'general': 'General Community',
-                'education': 'Educational',
-                'professional': 'Professional/Work',
-                'other': 'Other'
-            };
-            
-            return purposes[purpose] || purpose;
-        }
-        
-        function getSizeLabel(size) {
-            const sizes = {
-                'small': 'Small (< 100 members)',
-                'medium': 'Medium (100-500 members)',
-                'large': 'Large (500-2000 members)',
-                'very_large': 'Very Large (2000+ members)'
-            };
-            
-            return sizes[size] || size;
-        }
-        
-        function getActivityLabel(activity) {
-            const activities = {
-                'low': 'Low (A few messages per day)',
-                'medium': 'Medium (Steady conversation throughout the day)',
-                'high': 'High (Active conversations all day)',
-                'very_high': 'Very High (Constant activity, multiple active channels)'
-            };
-            
-            return activities[activity] || activity;
-        }
-        
-        function getFeatureLabel(feature) {
-            const features = {
-                'moderation': 'Moderation System',
-                'custom_commands': 'Custom Commands',
-                'minecraft': 'Minecraft Integration',
-                'ai': 'AI Features',
-                'twitch': 'Twitch Integration',
-                'analytics': 'Advanced Analytics'
-            };
-            
-            return features[feature] || feature;
-        }
-        
-        function formatSettingName(key) {
-            return key
-                .replace(/_/g, ' ')
-                .replace(/\b\w/g, l => l.toUpperCase());
-        }
-        
-        function getSettingLabel(feature, key, value) {
-            // Special cases for specific settings
-            if (feature === 'moderation' && key === 'automod_level') {
-                const levels = {
-                    'low': 'Low - Basic automod',
-                    'medium': 'Medium - Standard protection',
-                    'high': 'High - Strict moderation',
-                    'custom': 'Custom - Manual configuration'
-                };
-                return levels[value] || value;
-            }
-            
-            if (feature === 'ai' && key === 'ai_models') {
-                const models = {
-                    'both': 'Both Claude 3.5 and GPT-4o',
-                    'claude': 'Claude 3.5 Only',
-                    'gpt': 'GPT-4o Only'
-                };
-                return models[value] || value;
-            }
-            
-            return value;
-        }
+        // Initialize the summary of selected features
+        updateSelectedFeaturesSummary();
     });
+    
+    // Function to handle the final submission
+    function submitConfiguration() {
+        // Collect data from the wizard
+        const selectedFeatures = Array.from(document.querySelectorAll('.feature-card.selected'))
+            .map(card => card.getAttribute('data-feature'));
+        
+        // This would be replaced with actual configuration data from the chat
+        const configData = {
+            features: selectedFeatures,
+            moderation: {
+                sensitivity: 'medium',
+                autoModeration: true,
+                warningSystem: '3-strike'
+            },
+            minecraft: {
+                serverType: 'smp',
+                whitelist: true,
+                monitoring: true
+            }
+        };
+        
+        // In a real app, this would be sent to the server
+        fetch('/api/onboarding/configure', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(configData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Configuration saved:', data);
+            // Move to the final step
+            const currentStep = document.querySelector('.wizard-step.active');
+            const finalStep = document.getElementById('step5');
+            
+            currentStep.classList.remove('active');
+            finalStep.classList.add('active');
+            
+            // Update step dots
+            updateStepDots(5);
+        })
+        .catch(error => {
+            console.error('Error saving configuration:', error);
+            alert('There was an error saving your configuration. Please try again.');
+        });
+    }
 </script>
 {% endblock %}

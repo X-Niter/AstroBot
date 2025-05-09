@@ -211,6 +211,29 @@ def documentation_feedback():
         logger.error(f"Error saving documentation feedback: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+# Onboarding wizard routes
+@app.route('/onboarding')
+def onboarding_wizard():
+    """Renders the AI onboarding wizard page"""
+    return render_template('onboarding/wizard.html', title="AstroBot AI Onboarding Wizard")
+
+@app.route('/api/onboarding/configure', methods=['POST'])
+@login_required
+def onboarding_configure():
+    """Process configuration data from the onboarding wizard"""
+    from services.onboarding_service import OnboardingService
+    
+    data = request.json
+    if not data:
+        return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+    
+    try:
+        result = OnboardingService.process_configuration(data, current_user.id if current_user.is_authenticated else None)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error processing onboarding configuration: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 # Feedback route
 @app.route('/feedback', methods=['GET', 'POST'])
 def feedback():
